@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+.venv/
+.coverage
+cov.xml
+coverage.xml
+badges/
+htmlcov/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+junit/
+.env
+.agents
+site/
+.cache/
+# copied from README.md and CHANGELOG.md by mkdocs-homepage-copier
+docs/index.md
+docs/changelog.md
+
+# Claude Code: personal permissions stay local; share only deliberate project settings in settings.json
+.claude/settings.local.json
