@@ -1,0 +1,19 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "Frigate Auto Notify is already set up"
+        },
+        "step": {
+            "user": {
+                "title": "Frigate Auto Notify",
+                "description": "Notifications for Frigate camera reviews, sent through Supernotify.\n\n{supernotify}",
+                "data": {
+                    "auto_discover": "Set up cameras automatically"
+                },
+                "data_description": {
+                    "auto_discover": "Add every Frigate camera as it's found. Switch off to be asked about each one instead"
+                }
+            }
+        }
+    }
+}

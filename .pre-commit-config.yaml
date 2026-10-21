@@ -1,0 +1,78 @@
+default_language_version:
+  python: python3.14
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+    -   id: check-yaml
+        args: [--unsafe]
+    -   id: end-of-file-fixer
+    -   id: trailing-whitespace
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.1
+    hooks:
+     # Run the linter.
+      - id: ruff-check
+        args: [ --fix ]
+      # Run the formatter.
+      - id: ruff-format
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.3
+    hooks:
+      - id: codespell
+        exclude: ^(docs/developer/diagrams/.*|README\.[a-z]{2}(-[A-Za-z]+)?\.md|docs/[a-z]{2}(-[A-Za-z]+)?/.+\.md)$
+        exclude_types: [csv, json]
+  - repo: https://github.com/PyCQA/bandit
+    rev: '1.9.4'
+    hooks:
+      - id: bandit
+        args:
+          - --quiet
+        files: ^(custom_components)/.+\.py$
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: 'v2.4.0'
+    hooks:
+      - id: mypy
+        args:
+          - --pretty
+          - --explicit-package-bases
+          - --show-error-codes
+          - --show-error-context
+        exclude: docgen/.*\.py
+        additional_dependencies:
+          - homeassistant-stubs==2026.9.3
+          - pytest-homeassistant-custom-component>=0.13.356
+          - types-python-slugify>=8.0.2.20240310
+          - voluptuous-stubs>=0.1.1
+          - pytest
+          - types-cachetools
+          - types-requests
+          - types-Pillow
+          - types-PyYAML
+          - types-aiofiles
+          - types-beautifulsoup4
+          - pytest_unordered
+          - pytest_mock
+          - pytest_httpserver
+  - repo: https://github.com/astral-sh/ty-pre-commit
+    rev: v0.0.90
+    hooks:
+      - id: ty
+        # docs group for docgen's bs4
+        args: [--isolated, --no-python-downloads, --group, docs]
+
+ci:
+    autofix_commit_msg: |
+        [pre-commit.ci] auto fixes from pre-commit.com hooks
+
+        for more information, see https://pre-commit.ci
+    autofix_prs: true
+    autoupdate_branch: ''
+    autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+    autoupdate_schedule: weekly
+    skip:
+      - bandit
+      - mypy
+      - ty
+    submodules: false

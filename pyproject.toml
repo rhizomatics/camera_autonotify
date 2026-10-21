@@ -1,0 +1,125 @@
+[project]
+name = "frigate_autonotify"
+description = "Home Assistant custom component for automatic Frigate camera notifications through Supernotify"
+readme = "README.md"
+dynamic = ["version"]
+requires-python = ">=3.14.2"
+dependencies = [
+    "homeassistant>=2026.4.0",
+]
+
+[dependency-groups]
+dev = [
+    "homeassistant-stubs",
+    "pytest",
+    "pytest-cov",
+    "pytest-asyncio",
+    "pytest-homeassistant-custom-component>=0.13.356",
+    "pre-commit",
+    "ruff",
+    "codespell",
+    "mypy",
+    "homeassistant-repl",
+    "genbadge[all]",
+    "ty"
+]
+docs=[
+    "pymdown-extensions",
+    "mkdocs-materialx[imaging]",
+    "mkdocs-autorefs",
+    "mkdocs-coverage",
+    "mkdocs-pagetree-plugin",
+    "properdocs",
+    "pngquant",
+    "mkdocstrings",
+    "mkdocstrings-python",
+    "mkdocs-git-revision-date-localized-plugin",
+    "mkdocs-meta-descriptions-plugin",
+    "mkdocs-minify-html-plugin",
+    "mkdocs-htmlproofer-plugin",
+    "mkdocs-minify-plugin",
+    "mkdocs-material-extensions",
+    "mkdocs-homepage-copier",
+    "mkdocs-llmstxt>=0.5.0,<0.6.0",
+    "bs4" # llmsgen doc hook
+]
+
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# the version Home Assistant and HACS read is the only one kept
+[tool.hatch.version]
+path = "custom_components/frigate_autonotify/manifest.json"
+pattern = '"version": "(?P<version>[^"]+)"'
+
+[tool.hatch.build.targets.wheel]
+packages = ["custom_components"]
+
+[tool.hatch.build.targets.sdist]
+include = ["custom_components", "README.md", "CHANGELOG.md", "LICENSE"]
+
+# a custom component is run from where it is, so there's nothing to install into the environment
+[tool.uv]
+package=false
+prerelease = "if-necessary"
+environments = [
+    "python_full_version >= '3.14.2'",
+]
+
+exclude-newer = "5 days"
+exclude-newer-package = { certifi=false, homeassistant_repl=false,ruff="2 days",homeassistant=false,homeassistant-stubs=false,pytest-homeassistant-custom-component=false,aiohttp=false,uv=false }
+add-bounds = "major"
+# Home Assistant pins uv exactly, and under `uv run` the venv's uv comes first on PATH,
+# shadowing the mise-managed one. Floor at the latest uv security fix (GHSA-hq85-5cpj-mr62).
+override-dependencies = ["uv>=0.13.4"]
+
+[tool.ruff]
+line-length = 128
+indent-width = 4
+target-version = "py314"
+
+[tool.ruff.lint]
+extend-select = ["ANN", "PYI"]
+preview = true
+ignore = [
+    "BLE001", # Blind except
+    "SIM117", # Multiple with statements
+]
+
+[tool.ruff.lint.flake8-annotations]
+allow-star-arg-any = true
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ANN201", "ANN204", "ANN001", "ANN202", "ARG001", "ARG002"]
+
+[tool.ruff.format]
+preview = true
+
+[tool.codespell]
+ignore-words-list = "hass"
+skip = "*.json,./.*,./htmlcov,./junit,cov.xml,coverage.xml,uv.lock"
+quiet-level = 2
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = [
+    "--cov=custom_components.frigate_autonotify",
+    "--cov-report=xml:cov.xml",
+    "--cov-report=html",
+    "--cov-report=term-missing",
+    "--cov-fail-under=90",
+]
+
+[[tool.mypy.overrides]]
+module = ["pytest_homeassistant_custom_component.*"]
+follow_untyped_imports = true
+
+[project.urls]
+Homepage="https://frigate-autonotify.rhizomatics.org.uk"
+Repository="https://github.com/rhizomatics/frigate_autonotify"
+Documentation="https://frigate-autonotify.rhizomatics.org.uk"
+Issues="https://github.com/rhizomatics/frigate_autonotify/issues"
+Changelog="https://github.com/rhizomatics/frigate_autonotify/blob/main/CHANGELOG.md"

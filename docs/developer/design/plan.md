@@ -1,0 +1,166 @@
+# Implementation Plan
+
+Plan for building [Supernotify RFC 0006 - Frigate Auto Notifier](https://supernotify.rhizomatics.org.uk/latest/developer/rfcs/0006-frigate_auto_notifier/)
+as the `frigate_autonotify` custom component, following the shape and tooling of
+[appliance_autonotify](https://github.com/rhizomatics/appliance_autonotify).
+
+## Approach
+
+- **Same model as Appliance AutoNotify**: a config entry per camera, discovered from the camera's existing Frigate
+  device and linked to it, so Frigate AutoNotify shows as one more integration on that device. A single
+  `discovery` entry holds the auto-discover switch. A camera added in Frigate shows up as discovered, beside
+  Frigate's own discovery of it
+- **One Frigate server is the target**. Each camera entry records the `frigate` config entry it came from, so a second
+  server isn't ruled out, but it gets no special handling or UI
+- **Needs Supernotify to be useful**. Without it, a plain `notify.send_message` goes to the chosen notify entities,
+  or to every mobile app, as in appliances. That means no images, no actions and no fix, and the setup screens say
+  so
+- **No YAML and no templating for users**. The fields are the Frigate blueprint's filters, as plain selectors, plus
+  the same notification tuning as appliances: targets and deliveries. Anything Supernotify already does, such as priority mapping, recipients, snoozing, the archive and
+  scenarios, is left to Supernotify
+- **RFC 0003a is set aside**. Only what the Frigate use cases need gets built, in this component, and each
+  workaround is listed in the [table below](#supernotify-candidates), to judge later whether it's worth moving
+  into Supernotify
+
+## Phase 0 - Scaffold
+
+Copy from `appliance_autonotify` and rename:
+
+- `pyproject.toml`, `mise.toml`, `.pre-commit-config.yaml`, `.python-version`, `refresh-deps.sh`, `hacs.json`,
+  `.github/` workflows, `properdocs.yml`, `docgen/`, `LICENSE`, `CHANGELOG.md`, `README.md` skeleton
+- `custom_components/frigate_autonotify/`:
+  - `manifest.json` - `dependencies: ["mqtt", "frigate"]`, since only Frigate cameras are ever set up,
+    and `after_dependencies: ["supernotify"]`,
+    `integration_type: service`, `iot_class: local_push`, version `0.1.0`
+  - `compat.py` (the voluptuous/probatio shim and `LINKED_DEVICES`), copied as is
+  - `supernotify_api.py` (`supernotify_available`, `deliveries_by_transport`), copied as is
+  - `const.py`, `translations/en.json`, `brand/`
+- `tests/conftest.py` using `pytest-homeassistant-custom-component`, coverage set to fail under 90%
+
+## Phase 1 - Spikes, run against a real HA with `ha-repl`
+
+Use the test instance, which will have Frigate installed alongside Supernotify. The real instance can be used
+through `ha-repl` too where needed, for example for real review payloads and real camera devices, but only to read
+it. `ha-repl` stays available in later phases for checking behaviour.
+
+1. **Camera devices and entities**: what a Frigate camera's device looks like, including its identifiers and which
+   `frigate` entry it belongs to, and how to find its `camera.*` entity and the camera name Frigate uses, from the
+   entity registry rather than by guessing entity IDs
+2. **Frigate config**: where the integration keeps the Frigate config, to read each camera's zones and tracked
+   labels, `mqtt.topic_prefix`, the client ID and whether the notification proxy is on. Fall back to the
+   integration's API client if it isn't held anywhere usable
+3. **Proxy URL paths**: the actual paths for snapshot, thumbnail, clip, HLS `master.m3u8` and the review page,
+   with and without a client ID, for both standalone Frigate and the HA app
+4. **Review payloads**: capture real `frigate/reviews` messages (`new`, `update`, `end`, alert and detection) as
+   test fixtures
+5. **Apple video**: which of `clip.mp4` and `master.m3u8` actually play from an iOS notification, through
+   Supernotify's `clip_url` as it stands today. This decides how much of the fix is needed
+
+## Phase 2 - Discovery and devices (`discovery.py`, `device.py`, `frigate.py`)
+
+- `find_cameras(hass)`: the Frigate camera devices, each with its device ID, name, camera name, camera entity and
+  `frigate` entry ID
+- `async_start_discovery`, as in appliances: look now, and again on entity registry `create` events for Frigate
+  camera entities, then either import (auto-discover on) or offer through `integration_discovery`. The unique ID is
+  the device ID
+- `async_register_device`: link to the camera's device by its shared identifiers, as appliances does with
+  `LINKED_DEVICES`, and do without a device on older Home Assistant versions
+- `frigate.py`: reads one camera's server details (topic prefix, client ID, zones, labels) and builds the URLs for
+  `snapshot_url`, `thumbnail_url`, `clip_url`, `hls_url` and `review_url` (the base comes from
+  `get_url(prefer_external=True)`)
+
+## Phase 3 - Review tracker (`tracker.py`)
+
+Pure logic with no Home Assistant I/O, so it's the most heavily tested part.
+
+- `ReviewTracker` per camera entry, holding in-memory state per `review_id`: severity, objects, sub-labels, zones,
+  last sent time, and count sent
+- `on_message(payload) -> Decision | None` applies the blueprint's filters:
+  - severity: alert or detection
+  - labels, zones, `zone_multi`, `zone_order_enforced`
+  - `cooldown` for new reviews
+  - `alert_once`, `update_sub_label`
+  - `initial_delay`, `final_delay`, `final_update`, `timeout`, as timers through `async_call_later`
+- A `Decision` carries what the notifier needs: the camera, label text with sub-labels merged, objects, zones,
+  severity, the review and detection IDs, whether this is a new review, an update or the final notification, and
+  why it was sent
+- Clean up state on `end` and on `timeout`
+- Tests are table-driven from the Phase 1 fixtures, one case per blueprint behaviour being replaced
+
+## Phase 4 - Notifier (`notifier.py`)
+
+Builds the `supernotify.notify` call in code:
+
+- `title` and `message` from fixed wording with the label, camera and zones filled in. Users can't edit them,
+  which keeps this free of templates
+- `media`: `snapshot_url` and `camera_entity_id`, plus `clip_url` unless the Apple fix drops it
+- `actions`: *View Clip* and *View Snapshot*, and a notification-level tap URI to the clip, as appliances does with
+  its dashboard
+- `priority`: `high` for alerts and `medium` for detections, with Supernotify handling the mapping to critical and
+  interruption level per platform
+- `extra_data`: `mobile_push_notification_tag` set to the review ID, so updates replace the earlier notification,
+  and a group by camera
+- `target`, `custom_target` and `delivery`, from the settings, sent the same way as appliances `_supernotify`
+- Context: a fresh `Context` per review, with later notifications as children of it, as in appliances
+- **Apple fix** (default on): HLS link as the tap and clip action, with no `clip.mp4` attachment. Scope it by the
+  result of spike 5. If it needs different data for Apple and Android in one call, that becomes a Supernotify
+  candidate rather than two calls from here
+- Without Supernotify: `notify.send_message` with the title and message only
+
+## Phase 5 - Config flow (`config_flow.py`)
+
+Same structure as appliances, reusing its `sectioned()` and `flattened()` helpers and its rule that a value left
+at its default isn't stored.
+
+- **User step**: creates the `discovery` entry (auto-discover on by default) and lists the cameras found, with the
+  Supernotify status text
+- **Import and integration_discovery steps**: a camera entry per discovered camera, titled with the camera name
+- **Camera options**:
+  - main fields: severity, then labels and zones as multi-selects filled from the Frigate config
+  - collapsed *Timing* section: cooldown, initial and final delay, final update, timeout, `alert_once`,
+    `update_sub_label`
+  - collapsed *Notify* section: `target`, `custom_target`, `deliveries` and the Apple fix switch. Without
+    Supernotify, this section is only a notify entity select
+- Conditions such as presence, state and time aren't offered for now. They may suit the proposed quick selectors
+  ([Supernotify RFC 0007](https://supernotify.rhizomatics.org.uk/latest/developer/rfcs/0007-quick_selectors/));
+  noted only, not planned here
+
+## Phase 6 - Runtime wiring (`__init__.py`)
+
+- One shared MQTT subscription for each topic prefix in use, made on the first camera entry's setup and dropped
+  with the last one. It routes each review by camera name to that entry's tracker
+- `async_setup_entry`: build the tracker and notifier, and register the device. If the camera's Frigate entry
+  isn't loaded, for example after a reload, raise `ConfigEntryNotReady`
+- Every timer and listener goes through `entry.async_on_unload`. Options changes reload the entry
+  (`OptionsFlowWithReload`)
+- Diagnostics: redacted server info and the tracker's current reviews
+
+## Phase 7 - Docs and release
+
+- README and docs site: install, what gets discovered, a table mapping each blueprint input to where it lives now
+  (here, in Supernotify, or dropped) for people migrating
+- HACS `0.1.0` pre-release, with a feedback thread linked from the Supernotify discussion
+
+## Supernotify candidates
+
+Each one is built here first and reviewed once the component is in use. If Frigate AutoNotify turns out to be the
+only user, it stays here.
+
+| Need | Done here as | Could move into Supernotify as |
+|------|--------------|--------------------------------|
+| Replace an earlier notification for the same review | Review ID as `mobile_push_notification_tag` | A first-class tag or notification ID (RFC 0009) |
+| Cooldown between reviews | In the tracker | Per-source rate limiting |
+| Apple-safe video links | Apple fix in the notifier | Per-platform media in the mobile push transport |
+| Tap to open the clip | Notification-level action URI | n/a, already supported |
+| Scenarios that match Frigate notifications | Message text only | A source or context passed on the call |
+
+## Out of scope (per RFC)
+
+GenAI summaries and `tracked_object_update`, ANPR, Telegram inline keyboards, Android TV overlays, Live Activities,
+TTS, custom actions, and user-editable message text.
+
+## Rough sequencing
+
+Phase 0 and Phase 1 first. Phases 2 and 3 can then run in parallel, since the tracker is pure logic over fixtures.
+Phase 4 needs the tracker's `Decision`, and Phase 5 needs Phase 2's discovery. Phase 6 joins them up and is the
+first end-to-end test on a real Frigate. Phase 7 comes last.

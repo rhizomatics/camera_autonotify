@@ -1,0 +1,114 @@
+site_name: Frigate AutoNotify for Home Assistant
+site_url: https://frigate-autonotify.rhizomatics.org.uk
+site_description: Automatic Frigate camera notifications through Supernotify, with no blueprint or YAML
+
+repo_name: rhizomatics/frigate_autonotify
+repo_url: https://github.com/rhizomatics/frigate_autonotify
+edit_uri: edit/main/docs/
+
+theme:
+  name: materialx
+  custom_dir: docs/overrides
+  highlightjs: true
+  language: en
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - content.action.edit
+    - content.action.view
+    - content.code.copy
+    - content.code.select
+    - content.code.annotate
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.indexes
+    - navigation.top
+    - search.suggest
+    - search
+    - search.share
+    - toc.follow
+    - toc.integrate
+plugins:
+  - search
+  - autorefs
+  - pagetree
+  - optimize
+  - meta-descriptions
+  - tags
+  - htmlproofer:
+      skip_downloads: True
+  - mkdocs-homepage-copier:
+      extras:
+        - src: CHANGELOG.md
+          dest: docs/changelog.md
+          copy: true
+  - llmstxt:
+      base_url: https://frigate-autonotify.rhizomatics.org.uk/
+      preprocess: docgen/llms_preprocess.py
+      markdown_description: >-
+        Frigate AutoNotify is a Home Assistant custom integration (installed via HACS) that
+        sends notifications for Frigate review events through Supernotify, with no blueprint,
+        automations or YAML. Frigate cameras are discovered and added automatically, each
+        with the same filters as the Frigate notifications blueprint.
+      full_output: llms-full.txt
+      sections:
+        Start here:
+          - index.md: What it does, requirements, installation, settings, what gets sent, known limits and issues
+        Optional:
+          - changelog.md: Release history
+        # developer pages left out - coverage reports are no use to an agent
+  - minify:
+      minify_html: true
+  - git-revision-date-localized:
+      enable_creation_date: true
+  - coverage:
+      page_path: developer/coverage
+      html_report_dir: htmlcov
+  - mkdocstrings:
+      handlers:
+      # See: https://mkdocstrings.github.io/python/usage/
+        python:
+          options:
+            show_source: false
+            show_root_heading: true
+            summary: true
+            show_inheritance_diagram: false
+            overloads_only: true
+            show_if_no_docstring: false
+
+extra_javascript:
+  - javascripts/markdown_actions.js
+
+hooks:
+  # records the site directory for the llmstxt preprocess
+  - docgen/llms_preprocess.py
+
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - md_in_html
+  - pymdownx.blocks.caption
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - toc:
+      permalink: true
+  - sane_lists
+  - pymdownx.snippets:
+      check_paths: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
