@@ -8,8 +8,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import async_fire_time_changed
 
-from custom_components.frigate_autonotify.const import CONF_INITIAL_DELAY, CONF_LABELS, DOMAIN
-from custom_components.frigate_autonotify.diagnostics import async_get_config_entry_diagnostics
+from custom_components.camera_autonotify.const import CONF_INITIAL_DELAY, CONF_LABELS, DOMAIN
+from custom_components.camera_autonotify.diagnostics import async_get_config_entry_diagnostics
 
 from .conftest import FakeMQTT, add_frigate, mock_supernotify
 from .test_discovery import set_up_discovery

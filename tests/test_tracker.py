@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from custom_components.frigate_autonotify.tracker import (
+from custom_components.camera_autonotify.tracker import (
     STALE_AFTER,
     Decision,
     Reason,

@@ -10,19 +10,19 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry, async_mock_service
 
-from custom_components.frigate_autonotify.const import (
+from custom_components.camera_autonotify.const import (
     CONF_CUSTOM_TARGET,
     CONF_DELIVERIES,
-    CONF_FRIGATE_ENTRY_ID,
-    CONF_FRIGATE_NAME,
+    CONF_SOURCE_ENTRY_ID,
+    CONF_SOURCE_NAME,
     CONF_TARGET,
     CONF_TARGETS,
     DOMAIN,
     TYPE_CAMERA,
     TYPE_ZONE,
 )
-from custom_components.frigate_autonotify.notifier import Notifier
-from custom_components.frigate_autonotify.tracker import Decision, Reason, Review
+from custom_components.camera_autonotify.notifier import Notifier
+from custom_components.camera_autonotify.tracker import Decision, Reason, Review
 
 from .conftest import FRIGATE_ENTRY_ID, add_frigate, mock_supernotify
 
@@ -50,7 +50,7 @@ def notifier(
     entry = MockConfigEntry(
         domain=DOMAIN,
         title=title,
-        data={CONF_DEVICE_ID: "x", CONF_TYPE: kind, CONF_FRIGATE_ENTRY_ID: FRIGATE_ENTRY_ID, CONF_FRIGATE_NAME: "x"},
+        data={CONF_DEVICE_ID: "x", CONF_TYPE: kind, CONF_SOURCE_ENTRY_ID: FRIGATE_ENTRY_ID, CONF_SOURCE_NAME: "x"},
         options=options or {},
     )
     entry.add_to_hass(hass)

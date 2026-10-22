@@ -1,8 +1,8 @@
-"""Constants for AutoNotify for Frigate"""
+"""Constants for Camera AutoNotify"""
 
 from typing import Final
 
-DOMAIN: Final[str] = "frigate_autonotify"
+DOMAIN: Final[str] = "camera_autonotify"
 SUPERNOTIFY_DOMAIN: Final[str] = "supernotify"
 FRIGATE_DOMAIN: Final[str] = "frigate"
 
@@ -16,9 +16,12 @@ CONF_DISCOVER_ZONES: Final[str] = "discover_zones"
 # what each entry notifies for, a camera, or a zone, which may be in the view of more than one camera
 TYPE_CAMERA: Final[str] = "camera"
 TYPE_ZONE: Final[str] = "zone"
-# the Frigate server's entry, and the camera's or zone's name as Frigate gives it
-CONF_FRIGATE_ENTRY_ID: Final[str] = "frigate_entry_id"
-CONF_FRIGATE_NAME: Final[str] = "frigate_name"
+# the integration a camera comes from, its own entry for the server or system, and the camera's or zone's name
+# as that integration gives it
+CONF_SOURCE: Final[str] = "source"
+SOURCE_FRIGATE: Final[str] = "frigate"
+CONF_SOURCE_ENTRY_ID: Final[str] = "source_entry_id"
+CONF_SOURCE_NAME: Final[str] = "source_name"
 
 # the filters and timing of a camera or zone, named as the tracker's settings
 CONF_SEVERITIES: Final[str] = "severities"

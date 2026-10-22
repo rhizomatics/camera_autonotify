@@ -6,7 +6,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType, section
 
-from custom_components.frigate_autonotify.const import (
+from custom_components.camera_autonotify.const import (
     CONF_ALERT_ONCE,
     CONF_COOLDOWN,
     CONF_DELIVERIES,
@@ -17,8 +17,8 @@ from custom_components.frigate_autonotify.const import (
     CONF_ZONES,
     DOMAIN,
 )
-from custom_components.frigate_autonotify.frigate import camera_choices, zone_labels
-from custom_components.frigate_autonotify.tracker import Settings
+from custom_components.camera_autonotify.frigate import camera_choices, zone_labels
+from custom_components.camera_autonotify.tracker import Settings
 
 from .conftest import add_frigate, mock_supernotify
 from .test_discovery import set_up_discovery

@@ -1,4 +1,4 @@
-"""Config flow for AutoNotify for Frigate, one config entry per camera, or zone"""
+"""Config flow for Camera AutoNotify, one config entry per camera, or zone"""
 
 from __future__ import annotations
 
@@ -35,11 +35,12 @@ from .const import (
     CONF_DISCOVER_ZONES,
     CONF_FINAL_DELAY,
     CONF_FINAL_UPDATE,
-    CONF_FRIGATE_ENTRY_ID,
-    CONF_FRIGATE_NAME,
     CONF_INITIAL_DELAY,
     CONF_LABELS,
     CONF_SEVERITIES,
+    CONF_SOURCE,
+    CONF_SOURCE_ENTRY_ID,
+    CONF_SOURCE_NAME,
     CONF_TARGET,
     CONF_TARGETS,
     CONF_TIMEOUT,
@@ -69,7 +70,7 @@ DEFAULTS: dict[str, Any] = {
     f.name: sorted(value) if isinstance(value := getattr(Settings(), f.name), frozenset) else value for f in fields(Settings)
 }
 # what a camera or zone's entry holds, as it's found
-ENTRY_DATA = (CONF_DEVICE_ID, CONF_TYPE, CONF_FRIGATE_ENTRY_ID, CONF_FRIGATE_NAME)
+ENTRY_DATA = (CONF_DEVICE_ID, CONF_TYPE, CONF_SOURCE, CONF_SOURCE_ENTRY_ID, CONF_SOURCE_NAME)
 
 
 def supernotify_status(hass: HomeAssistant) -> str:
@@ -153,7 +154,7 @@ def flattened(user_input: dict[str, Any]) -> dict[str, Any]:
     return settings
 
 
-class FrigateAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
+class CameraAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
     VERSION = 1
     MINOR_VERSION = 1
 
@@ -162,8 +163,8 @@ class FrigateAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry: ConfigEntry) -> FrigateAutoNotifyOptionsFlow:
-        return FrigateAutoNotifyOptionsFlow()
+    def async_get_options_flow(config_entry: ConfigEntry) -> CameraAutoNotifyOptionsFlow:
+        return CameraAutoNotifyOptionsFlow()
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Automatic discovery, the cameras themselves set up as they're found"""
@@ -212,7 +213,7 @@ class FrigateAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
         )
 
 
-class FrigateAutoNotifyOptionsFlow(OptionsFlowWithReload):
+class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if self.config_entry.data.get(CONF_TYPE) == TYPE_DISCOVERY:
             return await self.async_step_discovery()
@@ -236,11 +237,11 @@ class FrigateAutoNotifyOptionsFlow(OptionsFlowWithReload):
             }
             return self.async_create_entry(data=settings)
         data = self.config_entry.data
-        config = frigate_config(self.hass, data[CONF_FRIGATE_ENTRY_ID])
+        config = frigate_config(self.hass, data[CONF_SOURCE_ENTRY_ID])
         if data.get(CONF_TYPE) == TYPE_ZONE:
-            labels, zones = zone_labels(config, data[CONF_FRIGATE_NAME]), None
+            labels, zones = zone_labels(config, data[CONF_SOURCE_NAME]), None
         else:
-            labels, zones = camera_choices(config, data[CONF_FRIGATE_NAME])
+            labels, zones = camera_choices(config, data[CONF_SOURCE_NAME])
         schema = await settings_schema(self.hass, labels, zones)
         return self.async_show_form(
             step_id=STEP_SETTINGS,

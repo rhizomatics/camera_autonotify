@@ -15,5 +15,5 @@ jobs:
       - name: indexnow-action
         uses: bojieyang/indexnow-action@38ddfbd93579a8a44c0dee662121bf9d51098f71
         with:
-          sitemap-location: 'https://frigate-autonotify.rhizomatics.org.uk/sitemap.xml'
+          sitemap-location: 'https://camera-autonotify.rhizomatics.org.uk/sitemap.xml'
           key: ${{ secrets.INDEXNOW_KEY }}

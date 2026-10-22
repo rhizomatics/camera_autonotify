@@ -1,7 +1,7 @@
 {
-    "name": "AutoNotify for Frigate",
+    "name": "Camera AutoNotify",
     "homeassistant": "2026.4.0",
     "render_readme": true,
     "zip_release": true,
-    "filename": "frigate_autonotify.zip"
+    "filename": "camera_autonotify.zip"
 }

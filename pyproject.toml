@@ -1,6 +1,6 @@
 [project]
-name = "frigate_autonotify"
-description = "Home Assistant custom component for automatic Frigate camera notifications through Supernotify"
+name = "camera_autonotify"
+description = "Home Assistant custom component for automatic camera notifications through Supernotify, starting with Frigate"
 readme = "README.md"
 dynamic = ["version"]
 requires-python = ">=3.14.2"
@@ -51,7 +51,7 @@ build-backend = "hatchling.build"
 
 # the version Home Assistant and HACS read is the only one kept
 [tool.hatch.version]
-path = "custom_components/frigate_autonotify/manifest.json"
+path = "custom_components/camera_autonotify/manifest.json"
 pattern = '"version": "(?P<version>[^"]+)"'
 
 [tool.hatch.build.targets.wheel]
@@ -106,7 +106,7 @@ quiet-level = 2
 asyncio_mode = "auto"
 testpaths = ["tests"]
 addopts = [
-    "--cov=custom_components.frigate_autonotify",
+    "--cov=custom_components.camera_autonotify",
     "--cov-report=xml:cov.xml",
     "--cov-report=html",
     "--cov-report=term-missing",
@@ -118,8 +118,8 @@ module = ["pytest_homeassistant_custom_component.*"]
 follow_untyped_imports = true
 
 [project.urls]
-Homepage="https://frigate-autonotify.rhizomatics.org.uk"
-Repository="https://github.com/rhizomatics/frigate_autonotify"
-Documentation="https://frigate-autonotify.rhizomatics.org.uk"
-Issues="https://github.com/rhizomatics/frigate_autonotify/issues"
-Changelog="https://github.com/rhizomatics/frigate_autonotify/blob/main/CHANGELOG.md"
+Homepage="https://camera-autonotify.rhizomatics.org.uk"
+Repository="https://github.com/rhizomatics/camera_autonotify"
+Documentation="https://camera-autonotify.rhizomatics.org.uk"
+Issues="https://github.com/rhizomatics/camera_autonotify/issues"
+Changelog="https://github.com/rhizomatics/camera_autonotify/blob/main/CHANGELOG.md"

@@ -13,7 +13,7 @@ from homeassistant.const import CONF_TYPE
 from homeassistant.core import CALLBACK_TYPE, Context, HomeAssistant, callback
 from homeassistant.helpers.event import async_call_later
 
-from .const import CONF_FRIGATE_NAME, DOMAIN, TYPE_ZONE
+from .const import CONF_SOURCE_NAME, DOMAIN, TYPE_ZONE
 from .notifier import Notifier
 from .tracker import Decision, ReviewTracker, Settings, Wait
 
@@ -36,7 +36,7 @@ class ReviewWatcher:
         self.hass = hass
         self.entry = entry
         settings = Settings.from_options(entry.options)
-        name = entry.data[CONF_FRIGATE_NAME]
+        name = entry.data[CONF_SOURCE_NAME]
         if entry.data.get(CONF_TYPE) == TYPE_ZONE:
             self.tracker = ReviewTracker(settings, zone=name)
         else:
@@ -51,7 +51,7 @@ class ReviewWatcher:
         try:
             outcome = self.tracker.on_message(payload, time.time())
         except ValueError, KeyError, TypeError:
-            _LOGGER.warning("FRIGATE_AUTONOTIFY Review not understood: %s", payload)
+            _LOGGER.warning("CAMERA_AUTONOTIFY Review not understood: %s", payload)
             return
         self._act(outcome)
 

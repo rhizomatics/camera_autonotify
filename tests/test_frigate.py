@@ -3,7 +3,7 @@ from __future__ import annotations
 from homeassistant.core import HomeAssistant
 from homeassistant.core_config import async_process_ha_core_config
 
-from custom_components.frigate_autonotify.frigate import (
+from custom_components.camera_autonotify.frigate import (
     base_url,
     frigate_config,
     hls_url,

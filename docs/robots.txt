@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://frigate-autonotify.rhizomatics.org.uk/sitemap.xml
+Sitemap: https://camera-autonotify.rhizomatics.org.uk/sitemap.xml

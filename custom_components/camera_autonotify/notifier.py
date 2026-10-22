@@ -13,7 +13,7 @@ from .const import (
     ACTION_VIEW_SNAPSHOT,
     CONF_CUSTOM_TARGET,
     CONF_DELIVERIES,
-    CONF_FRIGATE_ENTRY_ID,
+    CONF_SOURCE_ENTRY_ID,
     CONF_TARGET,
     CONF_TARGETS,
     MESSAGE_ENDED,
@@ -57,7 +57,7 @@ class Notifier:
         self.entry = entry
         self.name: str = entry.title
         self.is_zone: bool = entry.data.get(CONF_TYPE) == TYPE_ZONE
-        self.frigate_entry_id: str = entry.data[CONF_FRIGATE_ENTRY_ID]
+        self.source_entry_id: str = entry.data[CONF_SOURCE_ENTRY_ID]
 
     def message(self, decision: Decision) -> str:
         review = decision.review
@@ -88,7 +88,7 @@ class Notifier:
             },
         }
         media: dict[str, Any] = {}
-        if camera := camera_entity_id(self.hass, self.frigate_entry_id, review.camera):
+        if camera := camera_entity_id(self.hass, self.source_entry_id, review.camera):
             # for Supernotify's camera snooze, the snapshot still being the image
             media["camera_entity_id"] = camera
         base = base_url(self.hass)
@@ -118,7 +118,7 @@ class Notifier:
                 SUPERNOTIFY_DOMAIN, "notify", self.supernotify_data(decision), blocking=True, context=context
             )
         except HomeAssistantError:
-            _LOGGER.exception("FRIGATE_AUTONOTIFY Supernotify notification failed for %s", self.name)
+            _LOGGER.exception("CAMERA_AUTONOTIFY Supernotify notification failed for %s", self.name)
 
     async def _send_message(self, decision: Decision, context: Context) -> None:
         """Plain text only, with no snapshot or link, Supernotify being what's needed for those"""
@@ -132,7 +132,7 @@ class Notifier:
             if entity.domain == "notify" and entity.platform == MOBILE_APP_PLATFORM and not entity.disabled
         ]
         if not targets:
-            _LOGGER.warning("FRIGATE_AUTONOTIFY Nothing to notify for %s, choose targets in its settings", self.name)
+            _LOGGER.warning("CAMERA_AUTONOTIFY Nothing to notify for %s, choose targets in its settings", self.name)
             return
         try:
             await self.hass.services.async_call(
@@ -143,4 +143,4 @@ class Notifier:
                 context=context,
             )
         except HomeAssistantError:
-            _LOGGER.exception("FRIGATE_AUTONOTIFY Notification failed for %s", self.name)
+            _LOGGER.exception("CAMERA_AUTONOTIFY Notification failed for %s", self.name)

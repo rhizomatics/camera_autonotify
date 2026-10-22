@@ -5,7 +5,7 @@ from homeassistant.const import CONF_TYPE
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 
-from custom_components.frigate_autonotify.const import (
+from custom_components.camera_autonotify.const import (
     CONF_AUTO_DISCOVER,
     CONF_DISCOVER_ZONES,
     DOMAIN,
@@ -13,7 +13,7 @@ from custom_components.frigate_autonotify.const import (
     SUPERNOTIFY_PRESENT,
     TYPE_DISCOVERY,
 )
-from custom_components.frigate_autonotify.supernotify_api import deliveries_by_transport
+from custom_components.camera_autonotify.supernotify_api import deliveries_by_transport
 
 from .conftest import add_frigate, mock_supernotify
 

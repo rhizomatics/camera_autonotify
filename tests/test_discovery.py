@@ -6,17 +6,19 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import device_registry as dr
 
-from custom_components.frigate_autonotify.const import (
+from custom_components.camera_autonotify.const import (
     CONF_AUTO_DISCOVER,
     CONF_DISCOVER_ZONES,
-    CONF_FRIGATE_ENTRY_ID,
-    CONF_FRIGATE_NAME,
+    CONF_SOURCE,
+    CONF_SOURCE_ENTRY_ID,
+    CONF_SOURCE_NAME,
     DOMAIN,
+    SOURCE_FRIGATE,
     TYPE_CAMERA,
     TYPE_DISCOVERY,
     TYPE_ZONE,
 )
-from custom_components.frigate_autonotify.discovery import find_cameras, find_zones
+from custom_components.camera_autonotify.discovery import find_cameras, find_zones
 
 from .conftest import FRIGATE_ENTRY_ID, add_camera, add_frigate
 
@@ -39,16 +41,16 @@ def watched(hass: HomeAssistant) -> dict[str, dict]:
 
 async def test_cameras_found_by_their_camera_entity(hass: HomeAssistant):
     frigate = add_frigate(hass)
-    cameras = {camera.frigate_name: camera for camera in find_cameras(hass)}
+    cameras = {camera.source_name: camera for camera in find_cameras(hass)}
     assert set(cameras) == {"driveway", "courtyard"}
     assert cameras["driveway"].device_id == frigate.cameras["driveway"]
     assert cameras["driveway"].name == "Driveway"
-    assert cameras["driveway"].frigate_entry_id == FRIGATE_ENTRY_ID
+    assert cameras["driveway"].source_entry_id == FRIGATE_ENTRY_ID
 
 
 async def test_zones_are_the_other_frigate_devices(hass: HomeAssistant):
     frigate = add_frigate(hass)
-    zones = {zone.frigate_name: zone for zone in find_zones(hass)}
+    zones = {zone.source_name: zone for zone in find_zones(hass)}
     # slugified as for their device, neither the server nor a camera, and a zone of two cameras only once
     assert set(zones) == {"turning_circle", "pend", "barn_door"}
     assert zones["barn_door"].device_id == frigate.zones["Barn_Door"]
@@ -62,14 +64,16 @@ async def test_cameras_set_up_automatically(hass: HomeAssistant):
         "Driveway": {
             CONF_DEVICE_ID: frigate.cameras["driveway"],
             CONF_TYPE: TYPE_CAMERA,
-            CONF_FRIGATE_ENTRY_ID: FRIGATE_ENTRY_ID,
-            CONF_FRIGATE_NAME: "driveway",
+            CONF_SOURCE: SOURCE_FRIGATE,
+            CONF_SOURCE_ENTRY_ID: FRIGATE_ENTRY_ID,
+            CONF_SOURCE_NAME: "driveway",
         },
         "Courtyard": {
             CONF_DEVICE_ID: frigate.cameras["courtyard"],
             CONF_TYPE: TYPE_CAMERA,
-            CONF_FRIGATE_ENTRY_ID: FRIGATE_ENTRY_ID,
-            CONF_FRIGATE_NAME: "courtyard",
+            CONF_SOURCE: SOURCE_FRIGATE,
+            CONF_SOURCE_ENTRY_ID: FRIGATE_ENTRY_ID,
+            CONF_SOURCE_NAME: "courtyard",
         },
     }
 
@@ -110,7 +114,7 @@ async def test_offered_without_automatic_discovery(hass: HomeAssistant):
     result = await hass.config_entries.flow.async_configure(flow["flow_id"], {})
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == "Driveway"
-    assert result["data"][CONF_FRIGATE_NAME] == "driveway"
+    assert result["data"][CONF_SOURCE_NAME] == "driveway"
 
 
 async def test_new_camera_found(hass: HomeAssistant):

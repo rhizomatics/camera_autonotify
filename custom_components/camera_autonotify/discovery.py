@@ -15,10 +15,12 @@ from homeassistant.helpers import entity_registry as er
 from .const import (
     CONF_AUTO_DISCOVER,
     CONF_DISCOVER_ZONES,
-    CONF_FRIGATE_ENTRY_ID,
-    CONF_FRIGATE_NAME,
+    CONF_SOURCE,
+    CONF_SOURCE_ENTRY_ID,
+    CONF_SOURCE_NAME,
     DOMAIN,
     FRIGATE_DOMAIN,
+    SOURCE_FRIGATE,
     TYPE_CAMERA,
     TYPE_DISCOVERY,
     TYPE_ZONE,
@@ -39,10 +41,10 @@ class Found:
     device_id: str
     name: str
     type: str
-    frigate_entry_id: str
+    source_entry_id: str
     # the camera's name as Frigate has it, as reviews give it, or a zone's as slugified for its device, since reviews
     # give a zone as written in the Frigate config, with whatever case it has there
-    frigate_name: str
+    source_name: str
 
 
 def _device_name(device: dr.DeviceEntry) -> str:
@@ -57,11 +59,11 @@ def find_cameras(hass: HomeAssistant) -> list[Found]:
     for entity in er.async_get(hass).entities.values():
         if entity.platform != FRIGATE_DOMAIN or entity.domain != CAMERA_DOMAIN or entity.disabled:
             continue
-        frigate_entry_id, sep, camera = entity.unique_id.partition(CAMERA_UNIQUE_ID)
+        source_entry_id, sep, camera = entity.unique_id.partition(CAMERA_UNIQUE_ID)
         device = device_registry.async_get(entity.device_id) if entity.device_id else None
         if not sep or not isinstance(device, dr.DeviceEntry):
             continue
-        found.append(Found(device.id, _device_name(device), TYPE_CAMERA, frigate_entry_id, camera))
+        found.append(Found(device.id, _device_name(device), TYPE_CAMERA, source_entry_id, camera))
     return found
 
 
@@ -119,8 +121,9 @@ def async_discover(hass: HomeAssistant) -> None:
                 CONF_DEVICE_ID: item.device_id,
                 CONF_NAME: item.name,
                 CONF_TYPE: item.type,
-                CONF_FRIGATE_ENTRY_ID: item.frigate_entry_id,
-                CONF_FRIGATE_NAME: item.frigate_name,
+                CONF_SOURCE: SOURCE_FRIGATE,
+                CONF_SOURCE_ENTRY_ID: item.source_entry_id,
+                CONF_SOURCE_NAME: item.source_name,
             },
         )
 

@@ -53,7 +53,7 @@ jobs:
 
       # against the locked, latest, Home Assistant, whose type hints are probatio's
       - name: mypy
-        run: uv run mypy custom_components/frigate_autonotify
+        run: uv run mypy custom_components/camera_autonotify
 
   test:
     runs-on: ubuntu-latest

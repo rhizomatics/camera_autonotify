@@ -55,9 +55,9 @@ class FakeMQTT:
 def fake_mqtt() -> Iterator[FakeMQTT]:
     fake = FakeMQTT()
     with (
-        patch("custom_components.frigate_autonotify.hub.mqtt.async_subscribe", fake.subscribe),
+        patch("custom_components.camera_autonotify.hub.mqtt.async_subscribe", fake.subscribe),
         patch(
-            "custom_components.frigate_autonotify.mqtt.async_wait_for_mqtt_client",
+            "custom_components.camera_autonotify.mqtt.async_wait_for_mqtt_client",
             AsyncMock(side_effect=lambda hass: fake.available),
         ),
     ):

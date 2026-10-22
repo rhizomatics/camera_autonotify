@@ -1,13 +1,20 @@
 # Implementation Plan
 
 Plan for building [Supernotify RFC 0006 - Frigate Auto Notifier](https://supernotify.rhizomatics.org.uk/latest/developer/rfcs/0006-frigate_auto_notifier/)
-as the `frigate_autonotify` custom component, following the shape and tooling of
+as the `camera_autonotify` custom component, following the shape and tooling of
 [appliance_autonotify](https://github.com/rhizomatics/appliance_autonotify).
 
 ## Approach
 
+- **Camera AutoNotify, Frigate first** (renamed 2026-10-22 from Frigate AutoNotify). Later sources are anpr2mqtt,
+  UniFi Protect, Viseron and doorbell cameras.
+  - **Entry data**: each entry records `source` (now always `frigate`), `source_entry_id` for that integration's
+    own entry, and `source_name` for the camera's or zone's name as that integration gives it.
+  - **Dependencies**: Frigate and MQTT are `after_dependencies`, so it installs without them.
+  - **Still Frigate-specific**: `frigate.py`, the discovery in `discovery.py`, and the review tracker. Split them
+    into a source interface when the second source comes, shaped by what it needs, rather than guessing now.
 - **Same model as Appliance AutoNotify**: a config entry per camera, discovered from the camera's existing Frigate
-  device and linked to it, so AutoNotify for Frigate shows as one more integration on that device. A single
+  device and linked to it, so Camera AutoNotify shows as one more integration on that device. A single
   `discovery` entry holds the auto-discover switch. A camera added in Frigate shows up as discovered, beside
   Frigate's own discovery of it
 - **Zones, optionally**. Frigate gives each zone a device as well. A second switch on the `discovery` entry,
@@ -30,7 +37,7 @@ Copy from `appliance_autonotify` and rename:
 
 - `pyproject.toml`, `mise.toml`, `.pre-commit-config.yaml`, `.python-version`, `refresh-deps.sh`, `hacs.json`,
   `.github/` workflows, `properdocs.yml`, `docgen/`, `LICENSE`, `CHANGELOG.md`, `README.md` skeleton
-- `custom_components/frigate_autonotify/`:
+- `custom_components/camera_autonotify/`:
   - `manifest.json` - `dependencies: ["mqtt", "frigate"]`, since only Frigate cameras are ever set up,
     and `after_dependencies: ["supernotify"]`,
     `integration_type: service`, `iot_class: local_push`, version `0.1.0`
@@ -276,7 +283,7 @@ camera's or zone's entry has a `ReviewWatcher`:
 
 ## Supernotify candidates
 
-Each one is built here first and reviewed once the component is in use. If AutoNotify for Frigate turns out to be the
+Each one is built here first and reviewed once the component is in use. If Camera AutoNotify turns out to be the
 only user, it stays here.
 
 | Need | Done here as | Could move into Supernotify as |

@@ -19,9 +19,9 @@ NOTIFICATIONS_PATH = "/api/frigate/notifications"
 
 
 @callback
-def frigate_config(hass: HomeAssistant, frigate_entry_id: str) -> dict[str, Any] | None:
+def frigate_config(hass: HomeAssistant, source_entry_id: str) -> dict[str, Any] | None:
     """The config of a Frigate server, once its entry is set up"""
-    data = hass.data.get(FRIGATE_DOMAIN, {}).get(frigate_entry_id)
+    data = hass.data.get(FRIGATE_DOMAIN, {}).get(source_entry_id)
     return data.get(FRIGATE_CONFIG) if isinstance(data, dict) else None
 
 
@@ -52,9 +52,9 @@ def review_thumbnail_url(base: str, review_id: str, camera: str) -> str:
 
 
 @callback
-def camera_entity_id(hass: HomeAssistant, frigate_entry_id: str, camera: str) -> str | None:
+def camera_entity_id(hass: HomeAssistant, source_entry_id: str, camera: str) -> str | None:
     """The camera entity the Frigate integration has for a camera, by the unique id it gives it"""
-    return er.async_get(hass).async_get_entity_id("camera", FRIGATE_DOMAIN, f"{frigate_entry_id}:camera:{camera}")
+    return er.async_get(hass).async_get_entity_id("camera", FRIGATE_DOMAIN, f"{source_entry_id}:camera:{camera}")
 
 
 def _labels(camera: dict[str, Any]) -> set[str]:

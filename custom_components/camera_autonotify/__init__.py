@@ -1,4 +1,4 @@
-"""AutoNotify for Frigate - automatic notifications for Frigate camera reviews"""
+"""Camera AutoNotify - automatic notifications for Frigate camera reviews"""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from homeassistant.const import CONF_TYPE
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
 
-from .const import CONF_FRIGATE_ENTRY_ID, DOMAIN, TYPE_DISCOVERY
+from .const import CONF_SOURCE_ENTRY_ID, DOMAIN, TYPE_DISCOVERY
 from .device import async_register_device
 from .discovery import async_discover, async_start_discovery
 from .frigate import frigate_config, topic_prefix
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
-type FrigateAutoNotifyConfigEntry = ConfigEntry[ReviewWatcher | None]
+type CameraAutoNotifyConfigEntry = ConfigEntry[ReviewWatcher | None]
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -30,13 +30,13 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     return True
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: FrigateAutoNotifyConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: CameraAutoNotifyConfigEntry) -> bool:
     entry.runtime_data = None
     if entry.data.get(CONF_TYPE) == TYPE_DISCOVERY:
         # nothing to watch, only to look again now that what's discovered may have been switched
         async_discover(hass)
         return True
-    config = frigate_config(hass, entry.data[CONF_FRIGATE_ENTRY_ID])
+    config = frigate_config(hass, entry.data[CONF_SOURCE_ENTRY_ID])
     if config is None:
         raise ConfigEntryNotReady("Frigate isn't set up yet")
     if not await mqtt.async_wait_for_mqtt_client(hass):
@@ -48,6 +48,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: FrigateAutoNotifyConfigE
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: FrigateAutoNotifyConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: CameraAutoNotifyConfigEntry) -> bool:
     # the subscription and timers are stopped by the entry's own unload callbacks
     return True

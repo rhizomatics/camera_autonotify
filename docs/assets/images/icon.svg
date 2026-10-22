@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <title>AutoNotify for Frigate</title>
+  <title>Camera AutoNotify</title>
   <!-- the AutoNotify tile, with no progress bar, there being no Live Activity -->
   <rect width="512" height="512" rx="112" fill="#16313F"/>
   <!-- a CCTV camera, tilted down to the left, on an arm from the wall -->

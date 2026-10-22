@@ -1,7 +1,9 @@
-# AutoNotify for Frigate
+# Camera AutoNotify
 
-Notifications for [Frigate](https://frigate.video) camera reviews in Home Assistant, sent through
+Notifications for what your security cameras see in Home Assistant, sent through
 [Supernotify](https://supernotify.rhizomatics.org.uk), with no blueprint, automations or YAML.
+
+Starts with [Frigate](https://frigate.video) reviews, with other camera integrations to follow.
 
 **Work in progress** - see the [implementation plan](docs/developer/design/plan.md) and
 [Supernotify RFC 0006](https://supernotify.rhizomatics.org.uk/latest/developer/rfcs/0006-frigate_auto_notifier/).
@@ -9,5 +11,5 @@ Notifications for [Frigate](https://frigate.video) camera reviews in Home Assist
 ## Requirements
 
 - Home Assistant 2026.4 or later
-- The [Frigate integration](https://docs.frigate.video/integrations/home-assistant/) and MQTT
+- For Frigate cameras, the [Frigate integration](https://docs.frigate.video/integrations/home-assistant/) and MQTT
 - [Supernotify](https://supernotify.rhizomatics.org.uk), for anything more than a plain text notification

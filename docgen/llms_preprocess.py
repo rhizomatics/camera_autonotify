@@ -9,9 +9,9 @@ from properdocs.config.defaults import ProperDocsConfig
 # passes the page's output .md path, so the URL is worked out from where that sits in the site directory.
 
 # Keep in step with the llmstxt plugin's base_url in properdocs.yml
-BASE_URL = "https://frigate-autonotify.rhizomatics.org.uk/"
+BASE_URL = "https://camera-autonotify.rhizomatics.org.uk/"
 # Where on_config leaves the site directory, since the plugin loads this module separately from the hook
-SITE_DIR_ENV = "FRIGATE_AUTONOTIFY_DOCS_SITE_DIR"
+SITE_DIR_ENV = "CAMERA_AUTONOTIFY_DOCS_SITE_DIR"
 
 
 def on_config(config: ProperDocsConfig) -> None:
