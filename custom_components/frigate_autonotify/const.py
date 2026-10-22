@@ -20,6 +20,13 @@ TYPE_ZONE: Final[str] = "zone"
 CONF_FRIGATE_ENTRY_ID: Final[str] = "frigate_entry_id"
 CONF_FRIGATE_NAME: Final[str] = "frigate_name"
 
+# as the `target` and `custom_target` of supernotify.notify
+CONF_TARGET: Final[str] = "target"
+CONF_CUSTOM_TARGET: Final[str] = "custom_target"
+CONF_DELIVERIES: Final[str] = "deliveries"
+# notify entities, used only without Supernotify
+CONF_TARGETS: Final[str] = "targets"
+
 # English only for the MVP
 DISCOVERY_TITLE: Final[str] = "Automatic discovery"
 SUPERNOTIFY_PRESENT: Final[str] = (
@@ -29,3 +36,9 @@ SUPERNOTIFY_MISSING: Final[str] = (
     "**Supernotify is not installed.** Only a plain text notification can be sent, to every phone with the Home "
     "Assistant app, with no snapshot or links. Install Supernotify from HACS for the full experience."
 )
+# what a notification says, the title being the camera's or zone's name
+MESSAGE_SEEN: Final[str] = "{label} detected"
+MESSAGE_IN_ZONES: Final[str] = "{label} detected in {zones}"
+MESSAGE_ON_CAMERA: Final[str] = "{label} detected on {camera}"
+MESSAGE_ENDED: Final[str] = "{message}, now ended"
+ACTION_VIEW_SNAPSHOT: Final[str] = "View snapshot"

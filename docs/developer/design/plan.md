@@ -190,6 +190,27 @@ Builds the `supernotify.notify` call in code:
 - Context: a fresh `Context` per review, with later notifications as children of it, as in appliances
 - Without Supernotify: `notify.send_message` with the title and message only
 
+### Built (2026-10-22)
+
+`notifier.py` builds the `supernotify.notify` call for each `Decision`.
+
+- **Title**: the entry's name.
+- **Message**:
+  - `Person detected in Barn Door` for a camera, or `Person detected on Courtyard` for a zone.
+  - `, now ended` is added to the final notification.
+- **Priority**:
+  - `high` for an alert, `medium` for a detection.
+  - `low` for an update with alert once, since `low` is iOS passive, so no sound on any delivery.
+- **Grouping**: tag `frigate_{review_id}` and group `frigate_{camera}`.
+- **Media**:
+  - the camera entity, for Supernotify's camera snooze, with the snapshot still the image;
+  - the snapshot URL;
+  - a tap to the HLS link, and a *View snapshot* button.
+- **Options**: deliveries and targets from the entry's options.
+- **Without an external or internal URL**: no snapshot or links.
+- **Without Supernotify**: `notify.send_message` for the first notification of a review only, since each update
+  would be a new notification with nothing to replace.
+
 ## Phase 5 - Config flow (`config_flow.py`)
 
 Same structure as appliances, reusing its `sectioned()` and `flattened()` helpers and its rule that a value left
@@ -233,6 +254,7 @@ only user, it stays here.
 |------|--------------|--------------------------------|
 | Replace an earlier notification for the same review | Review ID as `mobile_push_notification_tag` | A first-class tag or notification ID (RFC 0009) |
 | Cooldown between reviews | In the tracker | Per-source rate limiting |
+| Silent updates (`alert_once`) | `priority: low` | An explicit `silent` on the call, so it's not tied to priority |
 | Video that works on iOS | Snapshot plus a tap to the HLS link, never `clip_url` | Supernotify warning, or dropping an `m3u8` `clip_url` |
 | Tap to open the clip | Notification-level action URI | n/a, already supported |
 | Scenarios that match Frigate notifications | Message text only | A source or context passed on the call |

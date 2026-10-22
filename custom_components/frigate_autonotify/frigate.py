@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.network import NoURLAvailableError, get_url
 
 from .const import FRIGATE_DOMAIN
@@ -47,3 +48,9 @@ def hls_url(base: str, detection_id: str, camera: str) -> str:
 
 def review_thumbnail_url(base: str, review_id: str, camera: str) -> str:
     return f"{base}{NOTIFICATIONS_PATH}/{review_id}/{camera}/review_thumbnail.webp"
+
+
+@callback
+def camera_entity_id(hass: HomeAssistant, frigate_entry_id: str, camera: str) -> str | None:
+    """The camera entity the Frigate integration has for a camera, by the unique id it gives it"""
+    return er.async_get(hass).async_get_entity_id("camera", FRIGATE_DOMAIN, f"{frigate_entry_id}:camera:{camera}")
