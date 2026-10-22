@@ -6,6 +6,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import device_registry as dr
 
+from custom_components.camera_autonotify.compat import LINKED_DEVICES
 from custom_components.camera_autonotify.const import (
     CONF_AUTO_DISCOVER,
     CONF_DISCOVER_ZONES,
@@ -137,6 +138,10 @@ async def test_device_linked_to_camera(hass: HomeAssistant):
     await set_up_discovery(hass)
     entry = next(e for e in hass.config_entries.async_entries(DOMAIN) if e.title == "Driveway")
     devices = dr.async_entries_for_config_entry(dr.async_get(hass), entry.entry_id)
+    if not LINKED_DEVICES:
+        # before devices were linked, the camera's own device is all there is
+        assert devices == []
+        return
     assert len(devices) == 1
     camera = dr.async_get(hass).async_get(frigate.cameras["driveway"])
     assert camera is not None
