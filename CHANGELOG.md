@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+- Documentation update
+- Tests work now on older less compatible HA 2026.4 releases
+
 ## 0.3.0
 
 First pre-release, for feedback.
