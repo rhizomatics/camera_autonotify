@@ -256,6 +256,18 @@ directly. Values left at the default aren't stored.
   (`OptionsFlowWithReload`)
 - Diagnostics: redacted server info and the tracker's current reviews
 
+### Built (2026-10-22)
+
+`hub.py` has one shared `{prefix}/reviews` subscription for each topic prefix, dropped with its last entry. Each
+camera's or zone's entry has a `ReviewWatcher`:
+
+- **Settings**: its tracker is built from the entry's options, and a reload on saving the settings applies them.
+- **Timing**: it times each `Wait` with `async_call_later`, and cancels the timers on unload.
+- **Sending**: it sends each `Decision` as a background task.
+- **Context**: each review gets a `Context`, and each later notification for it is a child of that one.
+- **Readiness**: setup raises `ConfigEntryNotReady` until the Frigate entry's config and the MQTT client are ready.
+- **Diagnostics**: entry data, options with targets redacted, and the reviews being followed.
+
 ## Phase 7 - Docs and release
 
 - README and docs site: install, what gets discovered, a table mapping each blueprint input to where it lives now

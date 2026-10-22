@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import json
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
+from types import SimpleNamespace
+from typing import Any
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
@@ -27,6 +32,36 @@ def dependencies(hass: HomeAssistant) -> None:
     """The Frigate integration, a custom one not installed here, and MQTT, with no broker"""
     mock_integration(hass, MockModule("frigate"))
     mock_integration(hass, MockModule("mqtt"))
+
+
+class FakeMQTT:
+    """MQTT as far as it's used, a subscription to the reviews of a topic prefix, and messages sent to it"""
+
+    def __init__(self) -> None:
+        self.subscriptions: dict[str, list[Callable[[Any], None]]] = {}
+        self.available = True
+
+    async def subscribe(self, hass: HomeAssistant, topic: str, received: Callable[[Any], None]) -> Callable[[], None]:
+        self.subscriptions.setdefault(topic, []).append(received)
+        return lambda: self.subscriptions[topic].remove(received)
+
+    def publish(self, topic: str, payload: dict[str, Any] | str) -> None:
+        message = SimpleNamespace(topic=topic, payload=payload if isinstance(payload, str) else json.dumps(payload))
+        for received in list(self.subscriptions.get(topic, [])):
+            received(message)
+
+
+@pytest.fixture(autouse=True)
+def fake_mqtt() -> Iterator[FakeMQTT]:
+    fake = FakeMQTT()
+    with (
+        patch("custom_components.frigate_autonotify.hub.mqtt.async_subscribe", fake.subscribe),
+        patch(
+            "custom_components.frigate_autonotify.mqtt.async_wait_for_mqtt_client",
+            AsyncMock(side_effect=lambda hass: fake.available),
+        ),
+    ):
+        yield fake
 
 
 def mock_supernotify(hass: HomeAssistant) -> list[ServiceCall]:

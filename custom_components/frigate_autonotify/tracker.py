@@ -176,9 +176,9 @@ class ReviewTracker:
         self._reviews: dict[str, _Tracked] = {}
         self._last_new: float | None = None
 
-    def on_message(self, payload: str | bytes | dict[str, Any], now: float) -> Decision | Wait | None:
+    def on_message(self, payload: str | bytes | bytearray | dict[str, Any], now: float) -> Decision | Wait | None:
         """A message from `{topic_prefix}/reviews`"""
-        message = json.loads(payload) if isinstance(payload, (str, bytes)) else payload
+        message = json.loads(payload) if isinstance(payload, (str, bytes, bytearray)) else payload
         after = message.get("after")
         if not isinstance(after, dict) or not after.get("id") or not after.get("camera"):
             return None
