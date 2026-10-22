@@ -11,8 +11,7 @@ as the `camera_autonotify` custom component, following the shape and tooling of
   - **Entry data**: each entry records `source` (now always `frigate`), `source_entry_id` for that integration's
     own entry, and `source_name` for the camera's or zone's name as that integration gives it.
   - **Dependencies**: Frigate and MQTT are `after_dependencies`, so it installs without them.
-  - **Still Frigate-specific**: `frigate.py`, the discovery in `discovery.py`, and the review tracker. Split them
-    into a source interface when the second source comes, shaped by what it needs, rather than guessing now.
+  - **Still Frigate-specific**: `frigate.py`, the discovery in `discovery.py`, and the review tracker. Split them into a source interface when the second source comes, shaped by what it needs, rather than guessing now.
 - **Same model as Appliance AutoNotify**: a config entry per camera, discovered from the camera's existing Frigate
   device and linked to it, so Camera AutoNotify shows as one more integration on that device. A single
   `discovery` entry holds the auto-discover switch. A camera added in Frigate shows up as discovered, beside
@@ -280,6 +279,19 @@ camera's or zone's entry has a `ReviewWatcher`:
 - README and docs site: install, what gets discovered, a table mapping each blueprint input to where it lives now
   (here, in Supernotify, or dropped) for people migrating
 - HACS `0.1.0` pre-release, with a feedback thread linked from the Supernotify discussion
+
+### Built (2026-10-22)
+
+- **README**, which is also the docs site's home page:
+  - what you need, installing, choosing cameras yourself, zones and the linked device;
+  - the settings, with their defaults, and what gets sent, with and without Supernotify;
+  - why the clip is never attached, in place of the Apple push fix;
+  - a table of each blueprint input and where it is now, for moving from the blueprint;
+  - known limits.
+- **Release**: `0.3.0`, already tagged, rather than `0.1.0`. The changelog describes it as the first pre-release.
+- **Feedback**: through the repository's issues, since it has no discussions. A thread in the Supernotify discussions
+  is still to be made.
+- **Not built**: the warning for a Frigate entry with its notification proxy off, listed as a known limit instead.
 
 ## Supernotify candidates
 
