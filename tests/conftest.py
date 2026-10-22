@@ -131,7 +131,7 @@ def add_frigate(
             identifiers={("frigate", f"{entry.entry_id}:{slugify(zone)}")},
             name=zone.replace("_", " ").title(),
             manufacturer="Frigate",
-            via_device_id=server.id,
+            via_device=("frigate", entry.entry_id),
         )
         er.async_get(hass).async_get_or_create(
             "binary_sensor",
@@ -151,7 +151,7 @@ def add_camera(hass: HomeAssistant, frigate: FakeFrigate, name: str) -> str:
         name=name.title(),
         manufacturer="Frigate",
         model="0.18.2",
-        via_device_id=frigate.server_device_id,
+        via_device=("frigate", frigate.entry.entry_id),
     )
     er.async_get(hass).async_get_or_create(
         "camera", "frigate", f"{frigate.entry.entry_id}:camera:{name}", device_id=device.id, config_entry=frigate.entry

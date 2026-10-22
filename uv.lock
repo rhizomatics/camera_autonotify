@@ -758,6 +758,88 @@ wheels = [
 ]
 
 [[package]]
+name = "camera-autonotify"
+source = { virtual = "." }
+dependencies = [
+    { name = "homeassistant" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "codespell" },
+    { name = "genbadge", extra = ["all"] },
+    { name = "homeassistant-repl" },
+    { name = "homeassistant-stubs" },
+    { name = "mypy" },
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "pytest-homeassistant-custom-component" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+docs = [
+    { name = "bs4" },
+    { name = "mkdocs-autorefs" },
+    { name = "mkdocs-coverage" },
+    { name = "mkdocs-git-revision-date-localized-plugin" },
+    { name = "mkdocs-homepage-copier" },
+    { name = "mkdocs-htmlproofer-plugin" },
+    { name = "mkdocs-llmstxt" },
+    { name = "mkdocs-material-extensions" },
+    { name = "mkdocs-materialx", extra = ["imaging"] },
+    { name = "mkdocs-meta-descriptions-plugin" },
+    { name = "mkdocs-minify-html-plugin" },
+    { name = "mkdocs-minify-plugin" },
+    { name = "mkdocs-pagetree-plugin" },
+    { name = "mkdocstrings" },
+    { name = "mkdocstrings-python" },
+    { name = "pngquant" },
+    { name = "properdocs" },
+    { name = "pymdown-extensions" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "homeassistant", specifier = ">=2026.4.0" }]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "codespell" },
+    { name = "genbadge", extras = ["all"] },
+    { name = "homeassistant-repl" },
+    { name = "homeassistant-stubs" },
+    { name = "mypy" },
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "pytest-homeassistant-custom-component", specifier = ">=0.13.356" },
+    { name = "ruff" },
+    { name = "ty" },
+]
+docs = [
+    { name = "bs4" },
+    { name = "mkdocs-autorefs" },
+    { name = "mkdocs-coverage" },
+    { name = "mkdocs-git-revision-date-localized-plugin" },
+    { name = "mkdocs-homepage-copier" },
+    { name = "mkdocs-htmlproofer-plugin" },
+    { name = "mkdocs-llmstxt", specifier = ">=0.5.0,<0.6.0" },
+    { name = "mkdocs-material-extensions" },
+    { name = "mkdocs-materialx", extras = ["imaging"] },
+    { name = "mkdocs-meta-descriptions-plugin" },
+    { name = "mkdocs-minify-html-plugin" },
+    { name = "mkdocs-minify-plugin" },
+    { name = "mkdocs-pagetree-plugin" },
+    { name = "mkdocstrings" },
+    { name = "mkdocstrings-python" },
+    { name = "pngquant" },
+    { name = "properdocs" },
+    { name = "pymdown-extensions" },
+]
+
+[[package]]
 name = "certifi"
 version = "2026.10.19"
 source = { registry = "https://pypi.org/simple" }
@@ -1267,88 +1349,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/95/dd/23e2f4e357f8fd3bdff613c1fe4466d21bfb00a6177f238079b17f7b1c84/freezegun-1.5.5.tar.gz", hash = "sha256:ac7742a6cc6c25a2c35e9292dfd554b897b517d2dec26891a2e8debf205cb94a", size = 35914, upload-time = "2025-08-09T10:39:08.338Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5e/2e/b41d8a1a917d6581fc27a35d05561037b048e47df50f27f8ac9c7e27a710/freezegun-1.5.5-py3-none-any.whl", hash = "sha256:cd557f4a75cf074e84bc374249b9dd491eaeacd61376b9eb3c423282211619d2", size = 19266, upload-time = "2025-08-09T10:39:06.636Z" },
-]
-
-[[package]]
-name = "frigate-autonotify"
-source = { virtual = "." }
-dependencies = [
-    { name = "homeassistant" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "codespell" },
-    { name = "genbadge", extra = ["all"] },
-    { name = "homeassistant-repl" },
-    { name = "homeassistant-stubs" },
-    { name = "mypy" },
-    { name = "pre-commit" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-cov" },
-    { name = "pytest-homeassistant-custom-component" },
-    { name = "ruff" },
-    { name = "ty" },
-]
-docs = [
-    { name = "bs4" },
-    { name = "mkdocs-autorefs" },
-    { name = "mkdocs-coverage" },
-    { name = "mkdocs-git-revision-date-localized-plugin" },
-    { name = "mkdocs-homepage-copier" },
-    { name = "mkdocs-htmlproofer-plugin" },
-    { name = "mkdocs-llmstxt" },
-    { name = "mkdocs-material-extensions" },
-    { name = "mkdocs-materialx", extra = ["imaging"] },
-    { name = "mkdocs-meta-descriptions-plugin" },
-    { name = "mkdocs-minify-html-plugin" },
-    { name = "mkdocs-minify-plugin" },
-    { name = "mkdocs-pagetree-plugin" },
-    { name = "mkdocstrings" },
-    { name = "mkdocstrings-python" },
-    { name = "pngquant" },
-    { name = "properdocs" },
-    { name = "pymdown-extensions" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "homeassistant", specifier = ">=2026.4.0" }]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "codespell" },
-    { name = "genbadge", extras = ["all"] },
-    { name = "homeassistant-repl" },
-    { name = "homeassistant-stubs" },
-    { name = "mypy" },
-    { name = "pre-commit" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-cov" },
-    { name = "pytest-homeassistant-custom-component", specifier = ">=0.13.356" },
-    { name = "ruff" },
-    { name = "ty" },
-]
-docs = [
-    { name = "bs4" },
-    { name = "mkdocs-autorefs" },
-    { name = "mkdocs-coverage" },
-    { name = "mkdocs-git-revision-date-localized-plugin" },
-    { name = "mkdocs-homepage-copier" },
-    { name = "mkdocs-htmlproofer-plugin" },
-    { name = "mkdocs-llmstxt", specifier = ">=0.5.0,<0.6.0" },
-    { name = "mkdocs-material-extensions" },
-    { name = "mkdocs-materialx", extras = ["imaging"] },
-    { name = "mkdocs-meta-descriptions-plugin" },
-    { name = "mkdocs-minify-html-plugin" },
-    { name = "mkdocs-minify-plugin" },
-    { name = "mkdocs-pagetree-plugin" },
-    { name = "mkdocstrings" },
-    { name = "mkdocstrings-python" },
-    { name = "pngquant" },
-    { name = "properdocs" },
-    { name = "pymdown-extensions" },
 ]
 
 [[package]]
