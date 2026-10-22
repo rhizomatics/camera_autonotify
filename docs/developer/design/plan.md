@@ -149,6 +149,30 @@ Pure logic with no Home Assistant I/O, so it's the most heavily tested part.
 - Clean up state on `end` and on `timeout`
 - Tests are table-driven from the Phase 1 fixtures, one case per blueprint behaviour being replaced
 
+### Built (2026-10-22)
+
+`tracker.py` is pure logic: the time is passed in, and anything held back comes back as a `Wait` for the caller to
+time and then call `on_timer` for.
+
+- **Messages**: `on_message` gives a `Decision` (`NEW`, `LABEL`, `ZONE`, `SUB_LABEL`, `SEVERITY` or `FINAL`), a
+  `Wait`, or `None`.
+- **Matching**: a zone tracker follows its zone on any camera, matched by slug.
+- **Audio**: audio labels count as objects.
+- **Sub-labels**: given as `[name, score]` by newer Frigate, and read as the name.
+- **Late matches**: a review that starts out not matching the filters is notified as `NEW` as soon as an update
+  makes it match, for example a detection raised to an alert, or a chosen label appearing.
+- **Cooldown**: a review passed over for the cooldown gets none of its updates either.
+- **Already over**: a review that has ended before its first notification is due gets that one notification and
+  nothing more.
+- **Defaults**:
+  - alerts only
+  - `cooldown` 30 s
+  - `timeout` 600 s
+  - `alert_once` on
+  - `update_sub_label` on
+  - `final_update` off
+  - no delays
+
 ## Phase 4 - Notifier (`notifier.py`)
 
 Builds the `supernotify.notify` call in code:
