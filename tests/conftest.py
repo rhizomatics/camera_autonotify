@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import json
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
@@ -20,6 +21,14 @@ from pytest_homeassistant_custom_component.common import (
 )
 
 FRIGATE_ENTRY_ID = "01FRIGATE"
+
+
+def _via(device_id: str, identifier: tuple[str, str]) -> dict[str, Any]:
+    """The server a Frigate device is connected via: by `via_device_id` where Home Assistant has it, its older
+    `via_device` by identifier being deprecated from then on, and the only one before"""
+    if "via_device_id" in inspect.signature(dr.DeviceRegistry.async_get_or_create).parameters:
+        return {"via_device_id": device_id}
+    return {"via_device": identifier}
 
 
 @pytest.fixture(autouse=True)
@@ -131,7 +140,7 @@ def add_frigate(
             identifiers={("frigate", f"{entry.entry_id}:{slugify(zone)}")},
             name=zone.replace("_", " ").title(),
             manufacturer="Frigate",
-            via_device=("frigate", entry.entry_id),
+            **_via(server.id, ("frigate", entry.entry_id)),
         )
         er.async_get(hass).async_get_or_create(
             "binary_sensor",
@@ -151,7 +160,7 @@ def add_camera(hass: HomeAssistant, frigate: FakeFrigate, name: str) -> str:
         name=name.title(),
         manufacturer="Frigate",
         model="0.18.2",
-        via_device=("frigate", frigate.entry.entry_id),
+        **_via(frigate.server_device_id, ("frigate", frigate.entry.entry_id)),
     )
     er.async_get(hass).async_get_or_create(
         "camera", "frigate", f"{frigate.entry.entry_id}:camera:{name}", device_id=device.id, config_entry=frigate.entry
