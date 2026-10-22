@@ -69,7 +69,18 @@ def add_frigate(
     hass.data.setdefault("frigate", {})[entry.entry_id] = {
         "config": {
             "mqtt": {"topic_prefix": "frigate"},
-            "cameras": {name: {"zones": {zone: {} for zone in zones}} for name, zones in cameras.items()},
+            "cameras": {
+                name: {
+                    "zones": {zone: {} for zone in zones},
+                    "objects": {"track": ["person", "car"]},
+                    "audio": {"listen": ["bark"]},
+                    "review": {
+                        "alerts": {"labels": ["person", "car"]},
+                        "detections": {"labels": [name == "driveway" and "fox" or "cat"]},
+                    },
+                }
+                for name, zones in cameras.items()
+            },
         }
     }
     devices = dr.async_get(hass)

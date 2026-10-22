@@ -138,12 +138,3 @@ async def test_device_linked_to_camera(hass: HomeAssistant):
     assert camera is not None
     assert devices[0].identifiers == camera.identifiers
     assert devices[0].manufacturer == "Frigate"
-
-
-async def test_camera_has_no_settings_yet(hass: HomeAssistant):
-    add_frigate(hass)
-    await set_up_discovery(hass)
-    entry = next(e for e in hass.config_entries.async_entries(DOMAIN) if e.title == "Driveway")
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-    assert result["type"] is FlowResultType.ABORT
-    assert result["reason"] == "no_settings"

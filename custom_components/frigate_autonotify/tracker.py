@@ -7,7 +7,8 @@ a `Wait` for the caller to time, and then call `on_timer` for.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from collections.abc import Mapping
+from dataclasses import dataclass, field, fields
 from enum import StrEnum
 from typing import Any
 
@@ -62,6 +63,17 @@ class Settings:
     alert_once: bool = True
     # told again when a sub label, such as a face or plate, is recognised
     update_sub_label: bool = True
+
+    @classmethod
+    def from_options(cls, options: Mapping[str, Any]) -> Settings:
+        """From a camera's options, which are named as these, and only kept where they differ from the default"""
+        given = {f.name: options[f.name] for f in fields(cls) if f.name in options}
+        for name in ("severities", "labels"):
+            if name in given:
+                given[name] = frozenset(given[name])
+        if "zones" in given:
+            given["zones"] = tuple(given["zones"])
+        return cls(**given)
 
 
 @dataclass(frozen=True)

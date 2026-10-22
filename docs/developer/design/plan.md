@@ -229,6 +229,23 @@ at its default isn't stored.
   ([Supernotify RFC 0007](https://supernotify.rhizomatics.org.uk/latest/developer/rfcs/0007-quick_selectors/));
   noted only, not planned here
 
+### Built (2026-10-22)
+
+Each camera or zone entry's settings form:
+
+- **Main fields**:
+  - **Severity**: alerts and detections, with alerts chosen by default.
+  - **Objects**: tracked objects, audio labels and review labels from the camera's Frigate config. A zone offers
+    those of every camera it's on.
+  - **Zones**, **Every zone** and **Zones in order**: for cameras only.
+  - **Typed values**: objects and zones accept values that aren't in the list, for a label Frigate's config doesn't
+    list.
+- **Collapsed *Timing* section**: the tracker's timing settings.
+- **Collapsed *Notification targets* section**: as in appliances.
+
+**Storage**: options are stored flat under the tracker's own setting names, so `Settings.from_options` reads them
+directly. Values left at the default aren't stored.
+
 ## Phase 6 - Runtime wiring (`__init__.py`)
 
 - One shared MQTT subscription for each topic prefix in use, made on the first camera entry's setup and dropped

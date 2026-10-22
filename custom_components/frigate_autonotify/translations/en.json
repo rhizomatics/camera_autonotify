@@ -25,9 +25,6 @@
         }
     },
     "options": {
-        "abort": {
-            "no_settings": "There's nothing to set here yet"
-        },
         "step": {
             "discovery": {
                 "title": "Automatic discovery",
@@ -40,6 +37,72 @@
                     "auto_discover": "Add every Frigate camera as it's found. Switch off to be offered each one instead",
                     "discover_zones": "Offer each Frigate zone like a camera, for notifications about that zone alone"
                 }
+            },
+            "settings": {
+                "title": "Notifications for {name}",
+                "description": "Everything here is optional.\n\n{supernotify}",
+                "data": {
+                    "severities": "Severity",
+                    "labels": "Objects",
+                    "zones": "Zones",
+                    "zone_multi": "Every zone",
+                    "zone_order": "Zones in order"
+                },
+                "data_description": {
+                    "severities": "Which of Frigate's reviews to notify. Alerts are what Frigate is set to treat as important, detections are everything else it tracks.",
+                    "labels": "Only notify when one of these is seen or heard. Leave empty for anything.",
+                    "zones": "Only notify when one of these zones is entered. Leave empty for anywhere.",
+                    "zone_multi": "Only notify once every zone chosen has been entered, rather than any of them.",
+                    "zone_order": "Only notify when the zones chosen are entered in the order listed, such as from the gate to the door."
+                },
+                "sections": {
+                    "timing": {
+                        "name": "Timing",
+                        "description": "When notifications are sent, and how often.",
+                        "data": {
+                            "cooldown": "Cooldown",
+                            "initial_delay": "Initial delay",
+                            "final_update": "Notify when over",
+                            "final_delay": "Delay when over",
+                            "timeout": "Stop updates after",
+                            "alert_once": "Sound only the first",
+                            "update_sub_label": "Notify recognised faces and plates"
+                        },
+                        "data_description": {
+                            "cooldown": "Time after a notification before another is sent for something new. Updates of what's already been notified aren't held back.",
+                            "initial_delay": "Wait this long before the first notification, for a better snapshot.",
+                            "final_update": "Send one more notification once Frigate has finished with what it saw.",
+                            "final_delay": "Wait this long after it's over before that last notification.",
+                            "timeout": "No more updates after this long, however long it goes on.",
+                            "alert_once": "Updates replace the first notification silently, rather than sounding again.",
+                            "update_sub_label": "Send an update when Frigate recognises a face or a number plate."
+                        }
+                    },
+                    "notify": {
+                        "name": "Notification targets",
+                        "description": "Who and what is notified. Leave everything empty for the usual choice.",
+                        "data": {
+                            "targets": "Targets",
+                            "target": "Targets",
+                            "custom_target": "Custom targets",
+                            "deliveries": "Deliveries"
+                        },
+                        "data_description": {
+                            "targets": "Notify entities to send to. Leave empty for every phone with the Home Assistant app.",
+                            "target": "Who or what to notify, as for any Supernotify notification. Leave empty for Supernotify to choose.",
+                            "custom_target": "Targets outside of Home Assistant, such as e-mail addresses or phone numbers.",
+                            "deliveries": "Limit notifications to these Supernotify deliveries. Leave empty for Supernotify to choose."
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "selector": {
+        "severities": {
+            "options": {
+                "alert": "Alerts",
+                "detection": "Detections"
             }
         }
     }

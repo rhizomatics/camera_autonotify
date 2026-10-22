@@ -20,6 +20,21 @@ TYPE_ZONE: Final[str] = "zone"
 CONF_FRIGATE_ENTRY_ID: Final[str] = "frigate_entry_id"
 CONF_FRIGATE_NAME: Final[str] = "frigate_name"
 
+# the filters and timing of a camera or zone, named as the tracker's settings
+CONF_SEVERITIES: Final[str] = "severities"
+CONF_LABELS: Final[str] = "labels"
+CONF_ZONES: Final[str] = "zones"
+CONF_ZONE_MULTI: Final[str] = "zone_multi"
+CONF_ZONE_ORDER: Final[str] = "zone_order"
+CONF_COOLDOWN: Final[str] = "cooldown"
+CONF_INITIAL_DELAY: Final[str] = "initial_delay"
+CONF_FINAL_UPDATE: Final[str] = "final_update"
+CONF_FINAL_DELAY: Final[str] = "final_delay"
+CONF_TIMEOUT: Final[str] = "timeout"
+CONF_ALERT_ONCE: Final[str] = "alert_once"
+CONF_UPDATE_SUB_LABEL: Final[str] = "update_sub_label"
+SEVERITIES: Final[tuple[str, ...]] = ("alert", "detection")
+
 # as the `target` and `custom_target` of supernotify.notify
 CONF_TARGET: Final[str] = "target"
 CONF_CUSTOM_TARGET: Final[str] = "custom_target"

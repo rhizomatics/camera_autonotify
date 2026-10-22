@@ -7,6 +7,7 @@ from typing import Any
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.network import NoURLAvailableError, get_url
+from homeassistant.util import slugify
 
 from .const import FRIGATE_DOMAIN
 
@@ -54,3 +55,28 @@ def review_thumbnail_url(base: str, review_id: str, camera: str) -> str:
 def camera_entity_id(hass: HomeAssistant, frigate_entry_id: str, camera: str) -> str | None:
     """The camera entity the Frigate integration has for a camera, by the unique id it gives it"""
     return er.async_get(hass).async_get_entity_id("camera", FRIGATE_DOMAIN, f"{frigate_entry_id}:camera:{camera}")
+
+
+def _labels(camera: dict[str, Any]) -> set[str]:
+    """What a camera can see or hear, and what its reviews are made of"""
+    review = camera.get("review") or {}
+    return {
+        *((camera.get("objects") or {}).get("track") or []),
+        *((camera.get("audio") or {}).get("listen") or []),
+        *((review.get("alerts") or {}).get("labels") or []),
+        *((review.get("detections") or {}).get("labels") or []),
+    }
+
+
+def camera_choices(config: dict[str, Any] | None, camera: str) -> tuple[list[str], list[str]]:
+    """The labels and zones of a camera, as its config has them, to choose from"""
+    settings = ((config or {}).get("cameras") or {}).get(camera) or {}
+    return sorted(_labels(settings)), list(settings.get("zones") or {})
+
+
+def zone_labels(config: dict[str, Any] | None, zone: str) -> list[str]:
+    """The labels of every camera a zone is on, the zone as slugified for its device"""
+    cameras = ((config or {}).get("cameras") or {}).values()
+    return sorted({
+        label for camera in cameras if zone in {slugify(z) for z in camera.get("zones") or {}} for label in _labels(camera)
+    })
