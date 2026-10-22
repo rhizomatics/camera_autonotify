@@ -50,7 +50,7 @@ jobs:
       with:
         category: "integration"
     - name: HACS Hassfest
-      uses: "home-assistant/actions/hassfest@50baf3a307f87100cf550d4ae127746595030d5d"
+      uses: "home-assistant/actions/hassfest@cd6f3635a740c84d8a14f6121a90068b8ece6bf6"
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v7
       with:
