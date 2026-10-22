@@ -1,5 +1,5 @@
 {
-    "name": "Frigate Auto Notify",
+    "name": "AutoNotify for Frigate",
     "homeassistant": "2026.4.0",
     "render_readme": true,
     "zip_release": true,

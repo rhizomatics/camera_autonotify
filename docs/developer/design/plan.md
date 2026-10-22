@@ -7,9 +7,11 @@ as the `frigate_autonotify` custom component, following the shape and tooling of
 ## Approach
 
 - **Same model as Appliance AutoNotify**: a config entry per camera, discovered from the camera's existing Frigate
-  device and linked to it, so Frigate AutoNotify shows as one more integration on that device. A single
+  device and linked to it, so AutoNotify for Frigate shows as one more integration on that device. A single
   `discovery` entry holds the auto-discover switch. A camera added in Frigate shows up as discovered, beside
   Frigate's own discovery of it
+- **Zones, optionally**. Frigate gives each zone a device as well. A second switch on the `discovery` entry,
+  off by default, discovers zones too. A zone entry notifies for reviews on any camera whose zones include it
 - **One Frigate server is the target**. Each camera entry records the `frigate` config entry it came from, so a second
   server isn't ruled out, but it gets no special handling or UI
 - **Needs Supernotify to be useful**. Without it, a plain `notify.send_message` goes to the chosen notify entities,
@@ -56,6 +58,66 @@ it. `ha-repl` stays available in later phases for checking behaviour.
 5. **Apple video**: which of `clip.mp4` and `master.m3u8` actually play from an iOS notification, through
    Supernotify's `clip_url` as it stands today. This decides how much of the fix is needed
 
+### Findings (2026-10-22)
+
+From Frigate integration 5.15.6 with Frigate 0.18.2, on the test server and the real one.
+
+- **Devices**: each Frigate device has the identifier `("frigate", "{entry_id}:{slug}")`, with `via` set to the
+  server device `("frigate", entry_id)`.
+  - **Cameras** have exactly one `camera.*` entity, whose unique ID is `{entry_id}:camera:{name}`. Read the camera
+    name from that unique ID.
+  - **Zones** get devices of the same shape, but have no camera entity, only occupancy and count sensors. Tell
+    them apart by whether a camera entity is present. A zone is matched back to its cameras through the Frigate
+    config.
+  - **Name case**: zone names keep their case in the config and in review payloads (`Barn_Door`), but are
+    slugified in device identifiers (`barn_door`), so compare slugs.
+  - **Name clash**: a zone named the same as a camera would get the same identifier, an edge case in the Frigate
+    integration.
+- **Frigate config**: `hass.data["frigate"][entry_id]` has `client`, `config`, `coordinator`, `model`, and the
+  `ws_event_proxy` and `ws_review_proxy` (these only forward MQTT to frontend websockets). From `config["cameras"][name]`:
+  - `zones`
+  - `objects.track`
+  - `review.alerts` and `review.detections`, each with `labels` and `required_zones`
+  - `enabled`
+
+  The topic prefix is `config["mqtt"]["topic_prefix"]`.
+- **Proxy URLs**: `/api/frigate/notifications/{id}/{path}`, with an optional `{instance_id}/` after `frigate/`, which
+  is left out for a single server.
+  - **By detection ID**: `snapshot.jpg`, `thumbnail.jpg`, `{camera}/clip.mp4` and `{camera}/master.m3u8` (HLS
+    through Frigate's VOD module).
+  - **By review ID**: `review_preview.gif` and `{camera}/review_thumbnail.webp`.
+  - **Access**: unauthenticated requests are allowed unless `notification_proxy_expire_after_seconds` is set on
+    the Frigate entry, and `notification_proxy_enable` is on by default. Warn if a user has switched it off.
+- **Review shape**: `id`, `camera`, `start_time`, `end_time`, `severity`, `thumb_path`, and `data` with
+  `detections`, `objects`, `verified_objects`, `sub_labels`, `zones`, `audio`, `thumb_time` and `metadata`
+  (`metadata` holds the GenAI output, out of scope).
+- **Test server**: MQTT was added on 2026-10-22, after the first capture attempt.
+- **Apple video (spike 5)**: tested on an iPhone through Supernotify `mobile_push`, using the Nabu Casa URL and a
+  review that had already ended.
+  - **A**: `clip_url` set to `clip.mp4` showed a thumbnail the first time, but **no image** when sent again, so
+    it's unreliable even for the image.
+  - **B**: `clip_url` set to `master.m3u8` shows **no image at all**. iOS can't attach the playlist, and the
+    `video` attachment replaces the snapshot.
+  - **C**: snapshot only, with a notification-level tap to `master.m3u8`, shows the snapshot and opens the video
+    when tapped. It worked both times.
+
+  So **never send the `m3u8` as `clip_url`**. The broken image in the recipe comes from that.
+  - **Tap**: tapping C opens the video through `master.m3u8`. Tapping A or B only opens the Home Assistant app,
+    since neither had a tap URI.
+  - **Long-press**: long-pressing A shows the action buttons and a loading spinner that never finishes. The clip
+    was 15 MB at 3040x1368, which iOS doesn't play inline.
+
+  **Decision**: never send `clip_url`. Every notification gets the snapshot, plus a notification-level action to
+  `master.m3u8`, so tapping opens the video. The *Apple fix* is then simply how this component works, with no
+  setting to turn it off. Android gets the same links, since `clickAction` to the playlist works there too (to
+  confirm on an Android device).
+- **Fixtures**: `tests/fixtures/reviews.json` has 7 real reviews from the API, used as the `after` of an MQTT
+  message (`{"type": "new"|"update"|"end", "before": ..., "after": ...}`).
+  - **Not seen**: the sample has no `detection` severity, sub-labels or audio. Capture a live `new`, `update` and
+    `end` sequence in the daytime, when Frigate is busier (7.5 minutes in the evening caught nothing).
+  - **Zones cross cameras**: `Pend` shows up in reviews from both `courtyard` and `driveway`, so one zone can
+    belong to more than one camera.
+
 ## Phase 2 - Discovery and devices (`discovery.py`, `device.py`, `frigate.py`)
 
 - `find_cameras(hass)`: the Frigate camera devices, each with its device ID, name, camera name, camera entity and
@@ -66,7 +128,7 @@ it. `ha-repl` stays available in later phases for checking behaviour.
 - `async_register_device`: link to the camera's device by its shared identifiers, as appliances does with
   `LINKED_DEVICES`, and do without a device on older Home Assistant versions
 - `frigate.py`: reads one camera's server details (topic prefix, client ID, zones, labels) and builds the URLs for
-  `snapshot_url`, `thumbnail_url`, `clip_url`, `hls_url` and `review_url` (the base comes from
+  `snapshot_url`, `thumbnail_url`, `hls_url` and `review_url` (the base comes from
   `get_url(prefer_external=True)`)
 
 ## Phase 3 - Review tracker (`tracker.py`)
@@ -93,18 +155,15 @@ Builds the `supernotify.notify` call in code:
 
 - `title` and `message` from fixed wording with the label, camera and zones filled in. Users can't edit them,
   which keeps this free of templates
-- `media`: `snapshot_url` and `camera_entity_id`, plus `clip_url` unless the Apple fix drops it
-- `actions`: *View Clip* and *View Snapshot*, and a notification-level tap URI to the clip, as appliances does with
-  its dashboard
+- `media`: `snapshot_url` and `camera_entity_id`, and never `clip_url` (see the spike 5 findings)
+- `actions`: a notification-level tap URI to `master.m3u8`, as appliances does with its dashboard, plus a *View
+  Snapshot* button
 - `priority`: `high` for alerts and `medium` for detections, with Supernotify handling the mapping to critical and
   interruption level per platform
 - `extra_data`: `mobile_push_notification_tag` set to the review ID, so updates replace the earlier notification,
   and a group by camera
 - `target`, `custom_target` and `delivery`, from the settings, sent the same way as appliances `_supernotify`
 - Context: a fresh `Context` per review, with later notifications as children of it, as in appliances
-- **Apple fix** (default on): HLS link as the tap and clip action, with no `clip.mp4` attachment. Scope it by the
-  result of spike 5. If it needs different data for Apple and Android in one call, that becomes a Supernotify
-  candidate rather than two calls from here
 - Without Supernotify: `notify.send_message` with the title and message only
 
 ## Phase 5 - Config flow (`config_flow.py`)
@@ -119,7 +178,7 @@ at its default isn't stored.
   - main fields: severity, then labels and zones as multi-selects filled from the Frigate config
   - collapsed *Timing* section: cooldown, initial and final delay, final update, timeout, `alert_once`,
     `update_sub_label`
-  - collapsed *Notify* section: `target`, `custom_target`, `deliveries` and the Apple fix switch. Without
+  - collapsed *Notify* section: `target`, `custom_target` and `deliveries`. Without
     Supernotify, this section is only a notify entity select
 - Conditions such as presence, state and time aren't offered for now. They may suit the proposed quick selectors
   ([Supernotify RFC 0007](https://supernotify.rhizomatics.org.uk/latest/developer/rfcs/0007-quick_selectors/));
@@ -143,14 +202,14 @@ at its default isn't stored.
 
 ## Supernotify candidates
 
-Each one is built here first and reviewed once the component is in use. If Frigate AutoNotify turns out to be the
+Each one is built here first and reviewed once the component is in use. If AutoNotify for Frigate turns out to be the
 only user, it stays here.
 
 | Need | Done here as | Could move into Supernotify as |
 |------|--------------|--------------------------------|
 | Replace an earlier notification for the same review | Review ID as `mobile_push_notification_tag` | A first-class tag or notification ID (RFC 0009) |
 | Cooldown between reviews | In the tracker | Per-source rate limiting |
-| Apple-safe video links | Apple fix in the notifier | Per-platform media in the mobile push transport |
+| Video that works on iOS | Snapshot plus a tap to the HLS link, never `clip_url` | Supernotify warning, or dropping an `m3u8` `clip_url` |
 | Tap to open the clip | Notification-level action URI | n/a, already supported |
 | Scenarios that match Frigate notifications | Message text only | A source or context passed on the call |
 

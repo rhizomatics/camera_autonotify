@@ -1,6 +1,6 @@
 {
     "domain": "frigate_autonotify",
-    "name": "Frigate Auto Notify",
+    "name": "AutoNotify for Frigate",
     "after_dependencies": [
         "supernotify"
     ],

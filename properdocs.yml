@@ -1,4 +1,4 @@
-site_name: Frigate AutoNotify for Home Assistant
+site_name: AutoNotify for Frigate, for Home Assistant
 site_url: https://frigate-autonotify.rhizomatics.org.uk
 site_description: Automatic Frigate camera notifications through Supernotify, with no blueprint or YAML
 
@@ -11,6 +11,7 @@ theme:
   custom_dir: docs/overrides
   highlightjs: true
   language: en
+  logo: assets/images/icon.png
   icon:
     repo: fontawesome/brands/github
   features:
@@ -50,7 +51,7 @@ plugins:
       base_url: https://frigate-autonotify.rhizomatics.org.uk/
       preprocess: docgen/llms_preprocess.py
       markdown_description: >-
-        Frigate AutoNotify is a Home Assistant custom integration (installed via HACS) that
+        AutoNotify for Frigate is a Home Assistant custom integration (installed via HACS) that
         sends notifications for Frigate review events through Supernotify, with no blueprint,
         automations or YAML. Frigate cameras are discovered and added automatically, each
         with the same filters as the Frigate notifications blueprint.

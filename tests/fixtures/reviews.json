@@ -1,0 +1,185 @@
+[
+  {
+    "id": "1792602227.99407-wz2vj1",
+    "camera": "courtyard",
+    "start_time": 1792602227.99407,
+    "end_time": 1792602256.915387,
+    "severity": "alert",
+    "thumb_path": "/media/frigate/clips/review/thumb-courtyard-1792602227.99407-wz2vj1.webp",
+    "data": {
+      "detections": [
+        "1792602227.86265-dyoaxn"
+      ],
+      "objects": [
+        "person"
+      ],
+      "verified_objects": [],
+      "sub_labels": [],
+      "zones": [
+        "Barn_Door"
+      ],
+      "audio": [],
+      "thumb_time": 1792602228.201417,
+      "metadata": null
+    },
+    "has_been_reviewed": false
+  },
+  {
+    "id": "1792601498.779687-3461f9",
+    "camera": "courtyard",
+    "start_time": 1792601498.779687,
+    "end_time": 1792601499.239011,
+    "severity": "alert",
+    "thumb_path": "/media/frigate/clips/review/thumb-courtyard-1792601498.779687-3461f9.webp",
+    "data": {
+      "detections": [
+        "1792601498.77448-xyd7t5"
+      ],
+      "objects": [
+        "person"
+      ],
+      "verified_objects": [],
+      "sub_labels": [],
+      "zones": [],
+      "audio": [],
+      "thumb_time": 1792601499.069414,
+      "metadata": null
+    },
+    "has_been_reviewed": false
+  },
+  {
+    "id": "1792601416.600419-hwkwrt",
+    "camera": "courtyard",
+    "start_time": 1792601416.600419,
+    "end_time": 1792601426.79005,
+    "severity": "alert",
+    "thumb_path": "/media/frigate/clips/review/thumb-courtyard-1792601416.600419-hwkwrt.webp",
+    "data": {
+      "detections": [
+        "1792601416.358097-fvxjt5",
+        "1792601422.229536-68vo24"
+      ],
+      "objects": [
+        "car",
+        "person"
+      ],
+      "verified_objects": [],
+      "sub_labels": [],
+      "zones": [
+        "Barn_Door"
+      ],
+      "audio": [],
+      "thumb_time": 1792601416.795988,
+      "metadata": null
+    },
+    "has_been_reviewed": false
+  },
+  {
+    "id": "1792592988.183992-6qsbem",
+    "camera": "driveway",
+    "start_time": 1792592988.183992,
+    "end_time": 1792592997.850312,
+    "severity": "alert",
+    "thumb_path": "/media/frigate/clips/review/thumb-driveway-1792592988.183992-6qsbem.webp",
+    "data": {
+      "detections": [
+        "1792592987.035981-buzne7"
+      ],
+      "objects": [
+        "car"
+      ],
+      "verified_objects": [],
+      "sub_labels": [],
+      "zones": [
+        "Turning_Circle",
+        "Driveway"
+      ],
+      "audio": [],
+      "thumb_time": 1792592988.478697,
+      "metadata": null
+    },
+    "has_been_reviewed": false
+  },
+  {
+    "id": "1792592987.057512-00py7o",
+    "camera": "doorbell",
+    "start_time": 1792592987.057512,
+    "end_time": 1792592994.656677,
+    "severity": "alert",
+    "thumb_path": "/media/frigate/clips/review/thumb-doorbell-1792592987.057512-00py7o.webp",
+    "data": {
+      "detections": [
+        "1792592989.656934-gxa5uc",
+        "1792592984.657965-l6ler7"
+      ],
+      "objects": [
+        "car"
+      ],
+      "verified_objects": [],
+      "sub_labels": [],
+      "zones": [
+        "anywhere"
+      ],
+      "audio": [],
+      "thumb_time": 1792592987.51596,
+      "metadata": null
+    },
+    "has_been_reviewed": false
+  },
+  {
+    "id": "1792592931.467341-k8q3xv",
+    "camera": "doorbell",
+    "start_time": 1792592931.467341,
+    "end_time": 1792592935.457597,
+    "severity": "alert",
+    "thumb_path": "/media/frigate/clips/review/thumb-doorbell-1792592931.467341-k8q3xv.webp",
+    "data": {
+      "detections": [
+        "1792592930.653415-lkblvy"
+      ],
+      "objects": [
+        "car"
+      ],
+      "verified_objects": [],
+      "sub_labels": [],
+      "zones": [
+        "anywhere"
+      ],
+      "audio": [],
+      "thumb_time": 1792592931.702031,
+      "metadata": null
+    },
+    "has_been_reviewed": false
+  },
+  {
+    "id": "1792580561.574964-kho1ng",
+    "camera": "driveway",
+    "start_time": 1792580561.574964,
+    "end_time": 1792580671.457648,
+    "severity": "alert",
+    "thumb_path": "/media/frigate/clips/review/thumb-driveway-1792580561.574964-kho1ng.webp",
+    "data": {
+      "detections": [
+        "1792580559.452777-os5l4y",
+        "1792580619.572295-w6ebe0",
+        "1792580602.895234-4fi2bm",
+        "1792580587.960792-t6q6dn"
+      ],
+      "objects": [
+        "car",
+        "person"
+      ],
+      "verified_objects": [],
+      "sub_labels": [],
+      "zones": [
+        "Driveway",
+        "Turning_Circle",
+        "Pend"
+      ],
+      "audio": [],
+      "thumb_time": 1792580603.780601,
+      "metadata": null
+    },
+    "has_been_reviewed": false
+  }
+]

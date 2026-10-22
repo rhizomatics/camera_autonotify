@@ -7,6 +7,7 @@ from homeassistant.data_entry_flow import FlowResultType
 
 from custom_components.frigate_autonotify.const import (
     CONF_AUTO_DISCOVER,
+    CONF_DISCOVER_ZONES,
     DOMAIN,
     SUPERNOTIFY_MISSING,
     SUPERNOTIFY_PRESENT,
@@ -14,24 +15,34 @@ from custom_components.frigate_autonotify.const import (
 )
 from custom_components.frigate_autonotify.supernotify_api import deliveries_by_transport
 
-from .conftest import mock_supernotify
+from .conftest import add_frigate, mock_supernotify
 
 
 async def test_discovery_entry_created(hass: HomeAssistant):
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
     assert result["type"] is FlowResultType.FORM
-    assert result["description_placeholders"] == {"supernotify": SUPERNOTIFY_MISSING}
+    assert result["description_placeholders"] == {
+        "supernotify": SUPERNOTIFY_MISSING,
+        "found": "No Frigate cameras found yet.",
+    }
 
-    result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_AUTO_DISCOVER: True})
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"] == {CONF_TYPE: TYPE_DISCOVERY}
-    assert result["options"] == {CONF_AUTO_DISCOVER: True}
+    # cameras found by default, and not zones
+    assert result["options"] == {CONF_AUTO_DISCOVER: True, CONF_DISCOVER_ZONES: False}
 
 
 async def test_supernotify_present(hass: HomeAssistant):
     mock_supernotify(hass)
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
-    assert result["description_placeholders"] == {"supernotify": SUPERNOTIFY_PRESENT}
+    assert (result.get("description_placeholders") or {}).get("supernotify") == SUPERNOTIFY_PRESENT
+
+
+async def test_cameras_found_listed(hass: HomeAssistant):
+    add_frigate(hass)
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
+    assert (result.get("description_placeholders") or {}).get("found") == "Cameras found:\n\n- Driveway\n- Courtyard"
 
 
 async def test_only_one_discovery_entry(hass: HomeAssistant):

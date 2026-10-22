@@ -1,4 +1,4 @@
-# Frigate AutoNotify
+# AutoNotify for Frigate
 
 Notifications for [Frigate](https://frigate.video) camera reviews in Home Assistant, sent through
 [Supernotify](https://supernotify.rhizomatics.org.uk), with no blueprint, automations or YAML.

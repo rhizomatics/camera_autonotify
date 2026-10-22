@@ -1,17 +1,44 @@
 {
     "config": {
+        "flow_title": "{name}",
         "abort": {
-            "already_configured": "Frigate Auto Notify is already set up"
+            "already_configured": "This is already set up",
+            "already_in_progress": "Set up of this is already in progress"
         },
         "step": {
             "user": {
-                "title": "Frigate Auto Notify",
-                "description": "Notifications for Frigate camera reviews, sent through Supernotify.\n\n{supernotify}",
+                "title": "Frigate notifications",
+                "description": "Notifications for Frigate camera reviews, sent through Supernotify.\n\n{supernotify}\n\n{found}",
                 "data": {
-                    "auto_discover": "Set up cameras automatically"
+                    "auto_discover": "Set up cameras automatically",
+                    "discover_zones": "Find zones too"
                 },
                 "data_description": {
-                    "auto_discover": "Add every Frigate camera as it's found. Switch off to be asked about each one instead"
+                    "auto_discover": "Add every Frigate camera as it's found. Switch off to be offered each one instead",
+                    "discover_zones": "Offer each Frigate zone like a camera, for notifications about that zone alone"
+                }
+            },
+            "confirm": {
+                "title": "Notifications for {name}",
+                "description": "Get notified when Frigate sees something at {name}?\n\n{supernotify}"
+            }
+        }
+    },
+    "options": {
+        "abort": {
+            "no_settings": "There's nothing to set here yet"
+        },
+        "step": {
+            "discovery": {
+                "title": "Automatic discovery",
+                "description": "Cameras and zones already set up are left as they are.",
+                "data": {
+                    "auto_discover": "Set up cameras automatically",
+                    "discover_zones": "Find zones too"
+                },
+                "data_description": {
+                    "auto_discover": "Add every Frigate camera as it's found. Switch off to be offered each one instead",
+                    "discover_zones": "Offer each Frigate zone like a camera, for notifications about that zone alone"
                 }
             }
         }

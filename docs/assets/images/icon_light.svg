@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>AutoNotify for Frigate, for light themes</title>
+  <!-- the AutoNotify tile, with no progress bar, there being no Live Activity -->
+  <rect width="512" height="512" rx="112" fill="#E4EDF2"/>
+  <!-- a CCTV camera, tilted down to the left, on an arm from the wall -->
+  <g fill="#16313F">
+    <g transform="rotate(-18 220 250)">
+      <rect x="80" y="196" width="72" height="112" rx="20"/>
+      <rect x="132" y="212" width="196" height="80" rx="30"/>
+    </g>
+    <rect x="262" y="262" width="26" height="78" rx="4"/>
+    <rect x="262" y="320" width="156" height="26" rx="4"/>
+    <rect x="404" y="268" width="28" height="132" rx="12"/>
+  </g>
+  <!-- the notification going out from it -->
+  <g fill="none" stroke="#FFB300" stroke-width="26" stroke-linecap="round">
+    <path d="M364 120 a56 56 0 0 1 56 56"/>
+    <path d="M364 64 a108 108 0 0 1 108 108"/>
+  </g>
+  <circle cx="366" cy="174" r="20" fill="#FFB300"/>
+</svg>
