@@ -165,5 +165,7 @@ See the [implementation plan](https://github.com/rhizomatics/camera_autonotify/b
 [RFC 0006](https://supernotify.rhizomatics.org.uk/latest/developer/rfcs/0006-frigate_auto_notifier/) from
 [Supernotify](https://supernotify.rhizomatics.org.uk).
 
+If you liked this try [Appliance AutoNotify](https://appliance-autonotify.rhizomatics.org.uk) - Live activities on your phone for dishwashers, robot vacuums, power monitors etc with no config, no YAML, no blueprints, no automations.
+
 [hacs]: https://hacs.xyz
 [hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange.svg
