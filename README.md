@@ -26,10 +26,9 @@ anything wrong, in the [issues](https://github.com/rhizomatics/camera_autonotify
 
 ## Install
 
-[![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=rhizomatics&repository=camera_autonotify&category=integration)
+[![Open in Marketplace](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=rhizomatics&repository=camera_autonotify&category=integration)
 
-1. Use the button above, or in HACS add `https://github.com/rhizomatics/camera_autonotify` as a custom repository of
-   type *Integration*, then install *Camera AutoNotify* and restart Home Assistant
+1. Use the button above, or look for **Camera Autonotify** in the Home Assistant Marketplace (its one of the default repositories), install it and restart Home Assistant
 2. In *Settings*, *Devices & services*, choose *Add integration* and pick *Camera AutoNotify*
 3. Leave *Set up cameras automatically* on, and submit
 
