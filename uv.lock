@@ -3,9 +3,10 @@ revision = 5
 requires-python = ">=3.14.2"
 resolution-markers = [
     "python_full_version >= '3.15'",
-    "python_full_version < '3.15'",
+    "python_full_version >= '3.14.10' and python_full_version < '3.15'",
 ]
 supported-markers = [
+    "python_full_version >= '3.14.10'",
 ]
 
 [options]
@@ -801,7 +802,7 @@ docs = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "homeassistant", specifier = ">=2026.4.0" }]
+requires-dist = [{ name = "homeassistant", specifier = ">=2026.5.0" }]
 
 [package.metadata.requires-dev]
 dev = [
@@ -825,7 +826,7 @@ docs = [
     { name = "mkdocs-git-revision-date-localized-plugin" },
     { name = "mkdocs-homepage-copier" },
     { name = "mkdocs-htmlproofer-plugin" },
-    { name = "mkdocs-llmstxt", specifier = ">=0.5.0,<0.6.0" },
+    { name = "mkdocs-llmstxt", specifier = ">=0.5.0" },
     { name = "mkdocs-material-extensions" },
     { name = "mkdocs-materialx", extras = ["imaging"] },
     { name = "mkdocs-meta-descriptions-plugin" },
