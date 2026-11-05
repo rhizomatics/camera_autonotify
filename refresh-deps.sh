@@ -5,8 +5,8 @@ set -euo pipefail
 
 echo "Pull in bot PRs ..."
 git pull
-#echo "Upgrading uv and other mise tools ..."
-#mise upgrade
+echo "Upgrading uv and other mise tools ..."
+mise upgrade --local
 
 # Hide the user-level ~/.config/uv/uv.toml from uv, whose settings (e.g. exclude-newer-package
 # entries for other projects) would otherwise be written into uv.lock and fail CI's --locked sync.
