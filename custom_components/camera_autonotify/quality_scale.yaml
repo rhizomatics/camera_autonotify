@@ -1,0 +1,282 @@
+# Quality Scale tracking for Camera AutoNotify
+# Created: 2026-11-06 (2026-Q4 architecture review, rhizomatics/hq-private)
+# Rule set verified against https://contributors.home-assistant.io/core/quality-scale/rules/#checklist
+# (HA 2026.11; 54 rules: Bronze 20, Silver 10, Gold 21, Platinum 3). No rules added, removed,
+# renamed or moved since the set Supernotify verified on 2026-08-06.
+#
+# The integration has no entity platforms: it follows Frigate reviews over MQTT and notifies through
+# Supernotify or notify entities, with one device per camera or zone entry (device.py). The entity
+# rules are exempt for that reason.
+#
+# Changelog
+# 2026-11-06: first file. Silver met once docs-removal-instructions is done (same change).
+
+rules:
+  # ==================
+  # BRONZE TIER
+  # ==================
+
+  action-setup:
+    status: exempt
+    comment: Registers no actions. It calls supernotify.notify, supernotify's enquire actions and notify.send_message.
+
+  appropriate-polling:
+    status: exempt
+    comment: Nothing is polled (iot_class local_push). Reviews arrive on Frigate's MQTT reviews topic (hub.py).
+
+  brands:
+    status: done
+    comment: Icons and logos in custom_components/camera_autonotify/brand/, checked by the HACS action in CI.
+
+  common-modules:
+    status: done
+    comment: |
+      hub.py (one MQTT subscription per Frigate topic prefix, shared by the entries), tracker.py
+      (the review state machine, no Home Assistant dependency), notifier.py, frigate.py, device.py,
+      discovery.py and supernotify_api.py. No coordinator, since there is nothing to poll.
+
+  config-flow:
+    status: done
+    comment: |
+      config_flow.py: user, import, integration_discovery and confirm steps, and an
+      OptionsFlowWithReload. Every top-level field has a data_description in translations/en.json.
+
+  config-flow-test-coverage:
+    status: done
+    comment: tests/test_config_flow.py and tests/test_settings.py. CI enforces 90% overall coverage (pyproject.toml addopts).
+
+  dependency-transparency:
+    status: done
+    comment: No requirements in manifest.json.
+
+  docs-actions:
+    status: exempt
+    comment: Provides no actions.
+
+  docs-conditions:
+    status: exempt
+    comment: Provides no conditions.
+
+  docs-high-level-description:
+    status: done
+    comment: README.md introduction.
+
+  docs-installation-instructions:
+    status: done
+    comment: README.md "What You Need" and "Install".
+
+  docs-removal-instructions:
+    status: done
+    comment: README.md "Removing" (added 2026-11-06).
+
+  docs-triggers:
+    status: exempt
+    comment: Provides no triggers.
+
+  entity-event-setup:
+    status: exempt
+    comment: No entities. The MQTT subscription and timers belong to the watcher and are removed through entry.async_on_unload.
+
+  entity-unique-id:
+    status: exempt
+    comment: No entities.
+
+  has-entity-name:
+    status: exempt
+    comment: No entities.
+
+  runtime-data:
+    status: done
+    comment: __init__.py sets entry.runtime_data to the ReviewWatcher, typed as CameraAutoNotifyConfigEntry.
+
+  test-before-configure:
+    status: exempt
+    comment: |
+      Nothing to connect to. Entries are only created for Frigate cameras and zones that discovery
+      has found in the device and entity registries.
+
+  test-before-setup:
+    status: done
+    comment: |
+      __init__.py raises ConfigEntryNotReady while the Frigate entry's config isn't loaded or MQTT
+      isn't connected, so setup retries.
+
+  unique-config-entry:
+    status: done
+    comment: |
+      Unique ID per Frigate camera or zone device, and a single "discovery" entry
+      (config_flow.py, async_set_unique_id plus _abort_if_unique_id_configured).
+
+  # ==================
+  # SILVER TIER
+  # ==================
+
+  action-exceptions:
+    status: exempt
+    comment: Provides no actions.
+
+  config-entry-unloading:
+    status: done
+    comment: |
+      async_unload_entry; the shared MQTT subscription is released by the stop callback from
+      hub.async_watch, registered with entry.async_on_unload, which also cancels the watcher's
+      timers. Notifications run as entry background tasks, cancelled on unload.
+
+  docs-configuration-parameters:
+    status: done
+    comment: README.md "Settings".
+
+  docs-installation-parameters:
+    status: done
+    comment: README.md "Install" (the two discovery options), "Choosing Cameras Yourself" and "Zones".
+
+  entity-unavailable:
+    status: exempt
+    comment: No entities.
+
+  integration-owner:
+    status: done
+    comment: codeowners in manifest.json.
+
+  log-when-unavailable:
+    status: exempt
+    comment: |
+      Connects to no device or service of its own. MQTT broker loss is logged by Home
+      Assistant's MQTT integration, and a missing Frigate entry holds setup in ConfigEntryNotReady.
+
+  parallel-updates:
+    status: exempt
+    comment: No entity platforms.
+
+  reauthentication-flow:
+    status: exempt
+    comment: No authentication.
+
+  test-coverage:
+    status: done
+    comment: --cov-fail-under=90 in pyproject.toml, enforced in CI on the oldest and latest supported HA.
+
+  # ==================
+  # GOLD TIER
+  # ==================
+
+  devices:
+    status: done
+    comment: |
+      device.py: one device per camera or zone, linked to Frigate's device for it by shared
+      identifiers. Only from HA 2026.8, where devices are linked (compat.LINKED_DEVICES); earlier
+      releases go without.
+
+  diagnostics:
+    status: done
+    comment: diagnostics.py, with the entry's data, its options with targets redacted, and the reviews being followed.
+
+  discovery:
+    status: done
+    comment: |
+      discovery.py finds Frigate cameras and zones in the registries, set up by themselves (import)
+      or offered as integration_discovery flows with automatic discovery off.
+
+  discovery-update-info:
+    status: exempt
+    comment: Discovers Home Assistant devices, not network devices with addresses to update.
+
+  docs-data-update:
+    status: done
+    comment: README.md "What Gets Sent" (pushed by Frigate over MQTT, nothing polled; added 2026-11-06).
+
+  docs-examples:
+    status: exempt
+    comment: |
+      Needs no automations; notifications are sent with no YAML. "Moving From the Frigate
+      Blueprint" maps each blueprint input to where it is now.
+
+  docs-known-limitations:
+    status: done
+    comment: README.md "Known Limits".
+
+  docs-supported-devices:
+    status: done
+    comment: README.md introduction and "What You Need" (Frigate cameras and zones).
+
+  docs-supported-functions:
+    status: done
+    comment: README.md "Settings" and "What Gets Sent".
+
+  docs-troubleshooting:
+    status: todo
+    comment: |
+      "Video on iPhones" covers one symptom. Missing: what to do when nothing is sent (the
+      "Nothing to notify" warning in notifier.py, MQTT on a different broker from Frigate, the
+      notification proxy switched off) or an entry stays not ready.
+
+  docs-use-cases:
+    status: done
+    comment: README.md introduction.
+
+  dynamic-devices:
+    status: done
+    comment: discovery.py listens for Frigate entity registry creations and picks up cameras and zones added after setup.
+
+  entity-category:
+    status: exempt
+    comment: No entities.
+
+  entity-device-class:
+    status: exempt
+    comment: No entities.
+
+  entity-disabled-by-default:
+    status: exempt
+    comment: No entities.
+
+  entity-translations:
+    status: exempt
+    comment: No entities.
+
+  exception-translations:
+    status: todo
+    comment: |
+      ConfigEntryNotReady messages in __init__.py ("Frigate isn't set up yet", "MQTT isn't
+      available") are literal strings; translations/en.json has no "exceptions".
+
+  icon-translations:
+    status: exempt
+    comment: No entities.
+
+  reconfiguration-flow:
+    status: exempt
+    comment: |
+      The entry's data is only the camera's or zone's identity in Frigate; everything that can
+      change is in the options flow.
+
+  repair-issues:
+    status: todo
+    comment: |
+      Candidates: no notify targets and no Supernotify (notifier.py logs "Nothing to notify"), and
+      an entry whose Frigate entry has been deleted (see stale-devices). Both are only logged or
+      retried today.
+
+  stale-devices:
+    status: todo
+    comment: |
+      An entry keeps the Frigate entry ID it was found under. If Frigate is deleted, or removed and
+      added again, frigate_config() returns None for it forever, so the old entries stay in
+      "retrying setup" next to the new ones discovery creates. Remove them, or raise a repair, when
+      the source Frigate entry no longer exists.
+
+  # ==================
+  # PLATINUM TIER
+  # ==================
+
+  async-dependency:
+    status: exempt
+    comment: No requirements.
+
+  inject-websession:
+    status: exempt
+    comment: Makes no HTTP requests.
+
+  strict-typing:
+    status: todo
+    comment: mypy runs in CI, but without strict = true in pyproject.toml.

@@ -15,7 +15,7 @@ anything wrong, in the [issues](https://github.com/rhizomatics/camera_autonotify
 
 ## What You Need
 
-- Home Assistant 2026.4 or later
+- Home Assistant 2026.5 or later
 - The [Frigate integration](https://docs.frigate.video/integrations/home-assistant/), with MQTT set up in Home
   Assistant, using the same broker as Frigate
 - Home Assistant's external URL, or its internal one, set in *Settings*, *System*, *Network*, for the snapshot and
@@ -38,6 +38,15 @@ the integration's page, alongside *Automatic discovery*, and notifies Frigate's 
 To stop the notifications for a camera, disable it rather than delete it, since a deleted camera is found and set up
 again.
 
+### Removing
+
+1. In *Settings*, *Devices & services*, open *Camera AutoNotify* and delete *Automatic discovery* first, so the
+   cameras aren't found and set up again, then delete each camera and zone
+2. Remove *Camera AutoNotify* in Marketplace and restart Home Assistant
+
+It adds no automations, scripts or YAML of its own, and changes nothing in Frigate, so there is nothing else to clear
+up. If you moved from the Frigate blueprint, re-enable its automations to go back to it.
+
 ### Choosing Cameras Yourself
 
 Turn *Set up cameras automatically* off, on the first screen or later from the settings of *Automatic discovery*,
@@ -54,8 +63,9 @@ limit it to some of its zones.
 
 ### The Camera's Device
 
-Each camera or zone gets a device of its own, sharing the identifiers of the device Frigate gave it, so each shows
-the other under *Linked devices*, and Camera AutoNotify shows as one more integration on that device.
+From Home Assistant 2026.8, each camera or zone gets a device of its own, sharing the identifiers of the device
+Frigate gave it, so each shows the other under *Linked devices*, and Camera AutoNotify shows as one more integration
+on that device. Earlier releases go without it, and notifications are the same either way.
 
 ## Settings
 
@@ -76,6 +86,9 @@ of them optional.
 | Notification targets | With Supernotify, *Targets* is the same choice of entities, devices, areas, floors and labels as any Supernotify notification, *Custom targets* is for those outside Home Assistant, such as e-mail addresses or phone numbers, and *Deliveries* limits notifications to those chosen. Leave them empty for Supernotify to choose. Without Supernotify, *Targets* is a choice of notify entities, and left empty means every phone with the Home Assistant app |
 
 ## What Gets Sent
+
+Nothing is polled. Frigate publishes each review over MQTT as it starts, changes and ends, and a notification goes
+out as soon as one matches the settings, held back only by the *Timing* settings.
 
 The title is the camera's or zone's name, and the message what was seen and where, such as "Person detected in Barn
 Door" for a camera, or "Car detected on Driveway" for a zone.
