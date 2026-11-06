@@ -6,6 +6,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.const import ATTR_ENTITY_ID, CONF_TYPE
+from homeassistant.core import callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
 
@@ -16,14 +17,20 @@ from .const import (
     CONF_SOURCE_ENTRY_ID,
     CONF_TARGET,
     CONF_TARGETS,
+    CONF_THREAT_PRIORITIES,
+    DOMAIN,
     MESSAGE_ENDED,
     MESSAGE_IN_ZONES,
     MESSAGE_ON_CAMERA,
     MESSAGE_SEEN,
+    SUBENTRY_RULE,
     SUPERNOTIFY_DOMAIN,
+    THREAT_PRIORITY_DEFAULTS,
+    TYPE_DISCOVERY,
     TYPE_ZONE,
 )
 from .frigate import camera_entity_id, hls_url, notifications_url, snapshot_url
+from .rules import Outcome, Rule, apply_rules, rank
 from .supernotify_api import supernotify_available
 
 if TYPE_CHECKING:
@@ -49,6 +56,21 @@ def _friendly(name: str) -> str:
     return name.replace("_", " ").title()
 
 
+@callback
+def notification_rules(hass: HomeAssistant) -> list[Rule]:
+    """The rules for every notification, the subentries of the discovery entry, read as each is sent so a change
+    applies straight away"""
+    for entry in hass.config_entries.async_entries(DOMAIN, include_disabled=False):
+        if entry.data.get(CONF_TYPE) == TYPE_DISCOVERY:
+            built = [
+                Rule.from_data(subentry.title, subentry.data)
+                for subentry in entry.subentries.values()
+                if subentry.subentry_type == SUBENTRY_RULE
+            ]
+            return [rule for rule in built if rule is not None]
+    return []
+
+
 class Notifier:
     """Sends each notification for a camera's or a zone's entry"""
 
@@ -59,8 +81,20 @@ class Notifier:
         self.is_zone: bool = entry.data.get(CONF_TYPE) == TYPE_ZONE
         self.source_entry_id: str = entry.data[CONF_SOURCE_ENTRY_ID]
 
+    def title(self, decision: Decision) -> str:
+        summary = decision.summary
+        return summary.title if summary is not None and summary.title else self.name
+
     def message(self, decision: Decision) -> str:
+        """What the notification says, before rules"""
         review = decision.review
+        if (summary := decision.summary) is not None:
+            message = summary.short_summary or summary.title
+            if summary.other_concerns:
+                message = f"{message} ({', '.join(summary.other_concerns)})"
+            return message
+        if decision.description:
+            return decision.description
         if self.is_zone:
             message = MESSAGE_ON_CAMERA.format(label=review.label, camera=_friendly(review.camera))
         elif review.zones:
@@ -69,21 +103,39 @@ class Notifier:
             message = MESSAGE_SEEN.format(label=review.label)
         return MESSAGE_ENDED.format(message=message) if decision.is_final else message
 
-    def supernotify_data(self, decision: Decision) -> dict[str, Any]:
+    def ruled(self, decision: Decision) -> Outcome:
+        return apply_rules(notification_rules(self.hass), self.message(decision))
+
+    def priority(self, decision: Decision, outcome: Outcome) -> str:
+        """By the review's severity, or a summary's threat level, raised by a rule, and only sounding again for an
+        update with alert once when raised"""
+        review = decision.review
+        own = PRIORITY_ALERT if review.severity == SEVERITY_ALERT else PRIORITY_DETECTION
+        priority = own
+        raised = False
+        if (summary := decision.summary) is not None:
+            level = min(max(summary.threat_level, 0), len(CONF_THREAT_PRIORITIES) - 1)
+            priority = self.entry.options.get(CONF_THREAT_PRIORITIES[level]) or THREAT_PRIORITY_DEFAULTS[level]
+            raised = summary.threat_level > 0
+        if rank(outcome.priority) > rank(priority) or (outcome.priority and summary is None):
+            priority = outcome.priority or priority
+        raised = raised or rank(priority) > rank(own)
+        if decision.silent and not raised:
+            return PRIORITY_SILENT
+        return priority
+
+    def supernotify_data(self, decision: Decision, outcome: Outcome | None = None) -> dict[str, Any]:
         """The `supernotify.notify` call: the snapshot, tapped for the clip as HLS, and never `clip_url`, which iOS
         fails to show, even the image"""
         review = decision.review
-        if decision.silent:
-            priority = PRIORITY_SILENT
-        else:
-            priority = PRIORITY_ALERT if review.severity == SEVERITY_ALERT else PRIORITY_DETECTION
+        outcome = outcome or self.ruled(decision)
         data: dict[str, Any] = {
-            "title": self.name,
-            "message": self.message(decision),
-            "priority": priority,
+            "title": self.title(decision),
+            "message": outcome.message,
+            "priority": self.priority(decision, outcome),
             "extra_data": {
                 # each update of a review takes the place of its last notification
-                "mobile_push_notification_tag": f"frigate_{review.id}",
+                "mobile_push_notification_tag": f"frigate_{decision.key}",
                 "group": f"frigate_{review.camera}",
             },
         }
@@ -107,20 +159,26 @@ class Notifier:
         for key in (CONF_TARGET, CONF_CUSTOM_TARGET):
             if value := self.entry.options.get(key):
                 data[key] = value
+        if outcome.scenarios:
+            data["apply_scenarios"] = list(outcome.scenarios)
         return data
 
     async def async_notify(self, decision: Decision, context: Context) -> None:
+        outcome = self.ruled(decision)
+        if outcome.silence:
+            _LOGGER.debug("CAMERA_AUTONOTIFY Silenced for %s by %s", self.name, ", ".join(outcome.matched))
+            return
         if not supernotify_available(self.hass):
-            await self._send_message(decision, context)
+            await self._send_message(decision, outcome, context)
             return
         try:
             await self.hass.services.async_call(
-                SUPERNOTIFY_DOMAIN, "notify", self.supernotify_data(decision), blocking=True, context=context
+                SUPERNOTIFY_DOMAIN, "notify", self.supernotify_data(decision, outcome), blocking=True, context=context
             )
         except HomeAssistantError:
             _LOGGER.exception("CAMERA_AUTONOTIFY Supernotify notification failed for %s", self.name)
 
-    async def _send_message(self, decision: Decision, context: Context) -> None:
+    async def _send_message(self, decision: Decision, outcome: Outcome, context: Context) -> None:
         """Plain text only, with no snapshot or link, Supernotify being what's needed for those"""
         if decision.is_update:
             # each would be a new notification, with nothing to take the place of the last
@@ -138,7 +196,7 @@ class Notifier:
             await self.hass.services.async_call(
                 "notify",
                 "send_message",
-                {ATTR_ENTITY_ID: targets, "title": self.name, "message": self.message(decision)},
+                {ATTR_ENTITY_ID: targets, "title": self.title(decision), "message": outcome.message},
                 blocking=True,
                 context=context,
             )

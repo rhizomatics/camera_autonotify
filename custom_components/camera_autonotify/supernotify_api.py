@@ -41,3 +41,11 @@ async def deliveries_by_transport(hass: HomeAssistant, context: Context | None =
         if name not in names:
             names.append(name)
     return by_transport
+
+
+async def scenario_names(hass: HomeAssistant, context: Context | None = None) -> list[str]:
+    """The scenarios Supernotify has, to apply by a rule"""
+    scenarios = (await _enquire(hass, "enquire_configuration", context or Context())).get("scenarios") or []
+    if isinstance(scenarios, dict):
+        scenarios = list(scenarios)
+    return sorted(str(name) for name in scenarios if name)

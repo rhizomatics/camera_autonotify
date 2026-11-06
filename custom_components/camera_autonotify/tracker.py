@@ -19,6 +19,10 @@ SEVERITY_DETECTION = "detection"
 TYPE_NEW = "new"
 TYPE_UPDATE = "update"
 TYPE_END = "end"
+# a review's summary by Frigate's generative AI, once the review has ended
+TYPE_GENAI = "genai"
+# an object's description by Frigate's generative AI, on `{topic_prefix}/tracked_object_update`
+TYPE_DESCRIPTION = "description"
 # a review that never ends, from a lost MQTT message or a restart of Frigate, is forgotten after this long
 STALE_AFTER = 3600
 
@@ -36,6 +40,8 @@ class Reason(StrEnum):
     SUB_LABEL = "sub_label"
     SEVERITY = "severity"
     FINAL = "final"
+    SUMMARY = "summary"
+    DESCRIPTION = "description"
 
 
 @dataclass(frozen=True)
@@ -63,6 +69,14 @@ class Settings:
     alert_once: bool = True
     # told again when a sub label, such as a face or plate, is recognised
     update_sub_label: bool = True
+    # Frigate's review summaries, below this threat level left out
+    summaries: bool = True
+    min_threat_level: int = 0
+    # Frigate's object descriptions, and those of objects in no review this entry follows
+    descriptions: bool = True
+    unreviewed_descriptions: bool = False
+    # seconds an ended review, or a description of an object in no review yet, is kept, for what GenAI adds later
+    genai_wait: float = 120
 
     @classmethod
     def from_options(cls, options: Mapping[str, Any]) -> Settings:
@@ -73,7 +87,74 @@ class Settings:
                 given[name] = frozenset(given[name])
         if "zones" in given:
             given["zones"] = tuple(given["zones"])
+        if "min_threat_level" in given:
+            given["min_threat_level"] = int(given["min_threat_level"])
         return cls(**given)
+
+    @property
+    def genai(self) -> bool:
+        return self.summaries or self.descriptions
+
+
+def _json(value: object) -> object:
+    """A value that may arrive as JSON text, as Frigate's metadata can, rather than as itself"""
+    if isinstance(value, (str, bytes, bytearray)):
+        try:
+            return json.loads(value)
+        except ValueError:
+            return None
+    return value
+
+
+@dataclass(frozen=True)
+class Summary:
+    """Frigate's GenAI summary of a review, in the review's `data.metadata`"""
+
+    title: str
+    short_summary: str
+    # 0 normal, 1 suspicious, 2 critical
+    threat_level: int
+    # those of the camera's `additional_concerns` that were seen
+    other_concerns: tuple[str, ...] = ()
+
+    @classmethod
+    def from_metadata(cls, metadata: object) -> Summary | None:
+        metadata = _json(metadata)
+        if not isinstance(metadata, dict):
+            return None
+        title = str(metadata.get("title") or "").strip()
+        short_summary = str(metadata.get("shortSummary") or metadata.get("scene") or "").strip()
+        if not title and not short_summary:
+            return None
+        try:
+            threat_level = int(metadata.get("potential_threat_level") or 0)
+        except TypeError, ValueError:
+            threat_level = 0
+        concerns = metadata.get("other_concerns") or []
+        return cls(
+            title,
+            short_summary,
+            threat_level,
+            tuple(str(concern) for concern in concerns if concern) if isinstance(concerns, list) else (),
+        )
+
+
+@dataclass(frozen=True)
+class Description:
+    """Frigate's GenAI description of a tracked object, which may be part of a review, and of more than one"""
+
+    object_id: str
+    camera: str
+    text: str
+
+    @classmethod
+    def from_payload(cls, message: dict[str, Any]) -> Description | None:
+        if message.get("type") != TYPE_DESCRIPTION:
+            return None
+        object_id, camera, text = message.get("id"), message.get("camera"), message.get("description")
+        if not object_id or not camera or not isinstance(text, str) or not text.strip():
+            return None
+        return cls(str(object_id), str(camera), text.strip())
 
 
 @dataclass(frozen=True)
@@ -89,6 +170,7 @@ class Review:
     zones: tuple[str, ...]
     detections: tuple[str, ...]
     ended: bool
+    summary: Summary | None = None
 
     @classmethod
     def from_payload(cls, after: dict[str, Any]) -> Review:
@@ -105,6 +187,21 @@ class Review:
             zones=tuple(dict.fromkeys(data.get("zones") or [])),
             detections=tuple(data.get("detections") or []),
             ended=after.get("end_time") is not None,
+            summary=Summary.from_metadata(data.get("metadata")),
+        )
+
+    @classmethod
+    def of_object(cls, description: Description) -> Review:
+        """A stand-in for the review of an object described in none, so it can be notified by itself"""
+        return cls(
+            description.object_id,
+            description.camera,
+            SEVERITY_DETECTION,
+            (),
+            (),
+            (),
+            (description.object_id,),
+            ended=True,
         )
 
     @property
@@ -123,6 +220,20 @@ class Decision:
     # the notifications sent for the review before this one
     previous: int
     silent: bool
+    # what Frigate's generative AI said of the object, the one described
+    description: str | None = None
+    described_id: str | None = None
+    # what the notification is known by, so each takes the place of the last, the review's id unless an object's
+    # description was notified first, by itself
+    tag_id: str | None = None
+
+    @property
+    def key(self) -> str:
+        return self.tag_id or self.review.id
+
+    @property
+    def summary(self) -> Summary | None:
+        return self.review.summary if self.reason is Reason.SUMMARY else None
 
     @property
     def is_update(self) -> bool:
@@ -134,7 +245,10 @@ class Decision:
 
     @property
     def detection_id(self) -> str | None:
-        """The detection whose snapshot shows the review, the first, which is what set it off"""
+        """The detection whose snapshot shows the review, the first, which is what set it off, or the object
+        described"""
+        if self.described_id:
+            return self.described_id
         return self.review.detections[0] if self.review.detections else None
 
 
@@ -163,6 +277,18 @@ class _Tracked:
     waiting: Reason | None = None
     # passed over for the cooldown, so none of its updates are sent either
     skipped: bool = False
+    # an object's description notified by itself before the review was known, so the review takes its place
+    tag_id: str | None = None
+
+
+@dataclass
+class _Described:
+    """A description of an object in no review yet, kept for a review that may come"""
+
+    description: Description
+    until: float
+    # notified by itself, for a camera with descriptions without a review on
+    sent: bool = False
 
 
 class ReviewTracker:
@@ -174,6 +300,10 @@ class ReviewTracker:
         # a zone is matched by its slug, as its device has it, since reviews give it as written in the Frigate config
         self.zone = slugify(zone) if zone else None
         self._reviews: dict[str, _Tracked] = {}
+        # notified and ended, kept until the time given, for what GenAI adds after
+        self._ended: dict[str, tuple[_Tracked, float]] = {}
+        # by object id
+        self._described: dict[str, _Described] = {}
         self._last_new: float | None = None
 
     def on_message(self, payload: str | bytes | bytearray | dict[str, Any], now: float) -> Decision | Wait | None:
@@ -186,6 +316,11 @@ class ReviewTracker:
         if not self._ours(review):
             return None
         self._forget_stale(now)
+        if message.get("type") == TYPE_GENAI:
+            return self._summary(review)
+        if review.id in self._ended:
+            # all there is to know once it's over is what GenAI makes of it
+            return None
         tracked = self._reviews.get(review.id)
         if tracked is None:
             if message.get("type") == TYPE_END and not self._wanted(review):
@@ -205,7 +340,39 @@ class ReviewTracker:
             return None
         if review.ended:
             return self._ending(tracked, now)
-        return self._update(tracked)
+        return self._update(tracked) or self._described_since(tracked)
+
+    def on_description(self, payload: str | bytes | bytearray | dict[str, Any], now: float) -> Decision | None:
+        """A message from `{topic_prefix}/tracked_object_update`, of which only descriptions are wanted"""
+        message = json.loads(payload) if isinstance(payload, (str, bytes, bytearray)) else payload
+        description = Description.from_payload(message) if isinstance(message, dict) else None
+        if description is None or not self.settings.descriptions:
+            return None
+        self._forget_stale(now)
+        tracked = self._reviewing(description)
+        if tracked is not None and tracked.notified_at is not None and not tracked.skipped:
+            if tracked.waiting is Reason.NEW:
+                # the first notification, when it goes, says what this does
+                self._described[description.object_id] = _Described(description, now + self.settings.genai_wait)
+                return None
+            return self._decide(tracked, Reason.DESCRIPTION, description)
+        if tracked is not None and tracked.skipped:
+            return None
+        if self.camera is not None and description.camera != self.camera:
+            return None
+        # a review may yet come with it, or a review not yet wanted may become so
+        described = self._described[description.object_id] = _Described(description, now + self.settings.genai_wait)
+        if tracked is None and self.camera is not None and self.settings.unreviewed_descriptions:
+            described.sent = True
+            return Decision(
+                Review.of_object(description),
+                Reason.DESCRIPTION,
+                0,
+                silent=False,
+                description=description.text,
+                described_id=description.object_id,
+            )
+        return None
 
     def on_timer(self, review_id: str, now: float) -> Decision | Wait | None:
         """A notification held back is due"""
@@ -214,13 +381,59 @@ class ReviewTracker:
             return None
         reason, tracked.waiting = tracked.waiting, None
         if reason is Reason.FINAL:
-            del self._reviews[review_id]
+            self._retire(tracked, now)
             return self._decide(tracked, Reason.FINAL)
-        return self._first_decision(tracked)
+        return self._first_decision(tracked, now)
 
     @property
     def tracked(self) -> list[str]:
-        return list(self._reviews)
+        return [*self._reviews, *self._ended]
+
+    @property
+    def described(self) -> list[str]:
+        """Objects described before their review, if any, was known"""
+        return list(self._described)
+
+    def _find(self, review_id: str) -> _Tracked | None:
+        if (tracked := self._reviews.get(review_id)) is not None:
+            return tracked
+        ended = self._ended.get(review_id)
+        return ended[0] if ended is not None else None
+
+    def _summary(self, review: Review) -> Decision | None:
+        tracked = self._find(review.id)
+        if tracked is None or tracked.skipped or tracked.notified_at is None:
+            return None
+        tracked.review = review
+        summary = review.summary
+        if not self.settings.summaries or summary is None or tracked.waiting is not None:
+            return None
+        if summary.threat_level < self.settings.min_threat_level:
+            return None
+        return self._decide(tracked, Reason.SUMMARY)
+
+    def _reviewing(self, description: Description) -> _Tracked | None:
+        """The latest review the object is in, since one that stays put, such as a parked car, is in later ones too"""
+        candidates = [
+            tracked
+            for tracked in [*self._reviews.values(), *(ended for ended, _ in self._ended.values())]
+            if tracked.review.camera == description.camera and description.object_id in tracked.review.detections
+        ]
+        return max(candidates, key=lambda tracked: tracked.first_seen, default=None)
+
+    def _take_described(self, tracked: _Tracked) -> _Described | None:
+        """A description of one of the review's objects that came before the review knew of it"""
+        for object_id in tracked.review.detections:
+            if (described := self._described.pop(object_id, None)) is not None:
+                if described.sent and tracked.tag_id is None:
+                    tracked.tag_id = object_id
+                return described
+        return None
+
+    def _described_since(self, tracked: _Tracked) -> Decision | None:
+        if (described := self._take_described(tracked)) is None:
+            return None
+        return self._decide(tracked, Reason.DESCRIPTION, described.description)
 
     def _ours(self, review: Review) -> bool:
         if self.zone is not None:
@@ -258,13 +471,14 @@ class ReviewTracker:
         if self.settings.initial_delay > 0:
             tracked.waiting = Reason.NEW
             return Wait(tracked.review.id, now + self.settings.initial_delay, Reason.NEW)
-        return self._first_decision(tracked)
+        return self._first_decision(tracked, now)
 
-    def _first_decision(self, tracked: _Tracked) -> Decision:
-        decision = self._decide(tracked, Reason.NEW)
+    def _first_decision(self, tracked: _Tracked, now: float) -> Decision:
+        described = self._take_described(tracked)
+        decision = self._decide(tracked, Reason.NEW, described.description if described else None)
         if tracked.review.ended:
-            # over before it was told at all, so told once, with nothing to follow
-            del self._reviews[tracked.review.id]
+            # over before it was told at all, so told once, with only what GenAI adds to follow
+            self._retire(tracked, now)
         return decision
 
     def _update(self, tracked: _Tracked) -> Decision | None:
@@ -283,17 +497,32 @@ class ReviewTracker:
 
     def _ending(self, tracked: _Tracked, now: float) -> Decision | Wait | None:
         if not self.settings.final_update:
-            del self._reviews[tracked.review.id]
-            return None
+            self._retire(tracked, now)
+            return self._described_since(tracked)
         if self.settings.final_delay > 0:
             tracked.waiting = Reason.FINAL
             return Wait(tracked.review.id, now + self.settings.final_delay, Reason.FINAL)
-        del self._reviews[tracked.review.id]
+        self._retire(tracked, now)
         return self._decide(tracked, Reason.FINAL)
 
-    def _decide(self, tracked: _Tracked, reason: Reason) -> Decision:
+    def _retire(self, tracked: _Tracked, now: float) -> None:
+        """Done with, but for what GenAI adds after, when that's wanted"""
+        del self._reviews[tracked.review.id]
+        if self.settings.genai:
+            self._ended[tracked.review.id] = (tracked, now + self.settings.genai_wait)
+
+    def _decide(self, tracked: _Tracked, reason: Reason, description: Description | str | None = None) -> Decision:
         review = tracked.review
-        decision = Decision(review, reason, tracked.sent, silent=tracked.sent > 0 and self.settings.alert_once)
+        text = description.text if isinstance(description, Description) else description
+        decision = Decision(
+            review,
+            reason,
+            tracked.sent,
+            silent=tracked.sent > 0 and self.settings.alert_once,
+            description=text,
+            described_id=description.object_id if isinstance(description, Description) else None,
+            tag_id=tracked.tag_id,
+        )
         tracked.sent += 1
         tracked.objects = set(review.objects)
         tracked.zones = set(review.zones)
@@ -308,3 +537,7 @@ class ReviewTracker:
     def _forget_stale(self, now: float) -> None:
         for review_id in [r for r, tracked in self._reviews.items() if now - tracked.first_seen > STALE_AFTER]:
             del self._reviews[review_id]
+        for review_id in [r for r, (_, until) in self._ended.items() if now > until]:
+            del self._ended[review_id]
+        for object_id in [o for o, described in self._described.items() if now > described.until]:
+            del self._described[object_id]

@@ -37,6 +37,30 @@ CONF_TIMEOUT: Final[str] = "timeout"
 CONF_ALERT_ONCE: Final[str] = "alert_once"
 CONF_UPDATE_SUB_LABEL: Final[str] = "update_sub_label"
 SEVERITIES: Final[tuple[str, ...]] = ("alert", "detection")
+# what Frigate's generative AI adds, the review summaries and object descriptions, named as the tracker's settings
+CONF_SUMMARIES: Final[str] = "summaries"
+CONF_MIN_THREAT_LEVEL: Final[str] = "min_threat_level"
+CONF_DESCRIPTIONS: Final[str] = "descriptions"
+CONF_UNREVIEWED_DESCRIPTIONS: Final[str] = "unreviewed_descriptions"
+CONF_GENAI_WAIT: Final[str] = "genai_wait"
+# Supernotify's priorities, most urgent first
+PRIORITIES: Final[tuple[str, ...]] = ("critical", "high", "medium", "low", "minimum")
+# the priority of each of Frigate's threat levels, normal, suspicious and critical, by their setting
+CONF_THREAT_PRIORITIES: Final[tuple[str, ...]] = ("priority_normal", "priority_suspicious", "priority_critical")
+THREAT_PRIORITY_DEFAULTS: Final[tuple[str, ...]] = ("medium", "high", "critical")
+
+# a rule, a subentry of the discovery entry, that changes how any notification whose message it matches is sent
+SUBENTRY_RULE: Final[str] = "rule"
+CONF_MATCH: Final[str] = "match"
+CONF_PATTERN: Final[str] = "pattern"
+CONF_PRIORITY: Final[str] = "priority"
+CONF_SILENCE: Final[str] = "silence"
+CONF_SCENARIOS: Final[str] = "scenarios"
+CONF_REMOVE: Final[str] = "remove"
+MATCH_STARTS_WITH: Final[str] = "starts_with"
+MATCH_CONTAINS: Final[str] = "contains"
+MATCH_REGEX: Final[str] = "regex"
+MATCHES: Final[tuple[str, ...]] = (MATCH_STARTS_WITH, MATCH_CONTAINS, MATCH_REGEX)
 
 # as the `target` and `custom_target` of supernotify.notify
 CONF_TARGET: Final[str] = "target"

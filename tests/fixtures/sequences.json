@@ -1,0 +1,326 @@
+{
+  "1793901333.310511-f8uxqc": [
+    {
+      "topic": "reviews",
+      "payload": {
+        "type": "new",
+        "before": {
+          "id": "1793901333.310511-f8uxqc",
+          "camera": "courtyard",
+          "start_time": 1793901333.310511,
+          "severity": "alert",
+          "thumb_path": "/media/frigate/clips/review/thumb-courtyard-1793901333.310511-f8uxqc.webp",
+          "end_time": null,
+          "data": {
+            "detections": [
+              "1793901333.125216-vzjxnx"
+            ],
+            "objects": [
+              "person"
+            ],
+            "verified_objects": [],
+            "sub_labels": [],
+            "zones": [],
+            "audio": [],
+            "thumb_time": 1793901333.577588,
+            "metadata": null
+          }
+        },
+        "after": {
+          "id": "1793901333.310511-f8uxqc",
+          "camera": "courtyard",
+          "start_time": 1793901333.310511,
+          "severity": "alert",
+          "thumb_path": "/media/frigate/clips/review/thumb-courtyard-1793901333.310511-f8uxqc.webp",
+          "end_time": null,
+          "data": {
+            "detections": [
+              "1793901333.125216-vzjxnx"
+            ],
+            "objects": [
+              "person"
+            ],
+            "verified_objects": [],
+            "sub_labels": [],
+            "zones": [],
+            "audio": [],
+            "thumb_time": 1793901333.577588,
+            "metadata": null
+          }
+        }
+      }
+    },
+    {
+      "topic": "reviews",
+      "payload": {
+        "type": "end",
+        "before": {
+          "id": "1793901333.310511-f8uxqc",
+          "camera": "courtyard",
+          "start_time": 1793901333.310511,
+          "severity": "alert",
+          "thumb_path": "/media/frigate/clips/review/thumb-courtyard-1793901333.310511-f8uxqc.webp",
+          "end_time": null,
+          "data": {
+            "detections": [
+              "1793901393.453982-wc1ieg",
+              "1793901333.125216-vzjxnx"
+            ],
+            "objects": [
+              "person"
+            ],
+            "verified_objects": [],
+            "sub_labels": [],
+            "zones": [
+              "Barn_Door",
+              "Back_Door"
+            ],
+            "audio": [
+              "speech"
+            ],
+            "thumb_time": 1793901333.577588,
+            "metadata": null
+          }
+        },
+        "after": {
+          "id": "1793901333.310511-f8uxqc",
+          "camera": "courtyard",
+          "start_time": 1793901333.310511,
+          "end_time": 1793901431.40926,
+          "severity": "alert",
+          "thumb_path": "/media/frigate/clips/review/thumb-courtyard-1793901333.310511-f8uxqc.webp",
+          "data": {
+            "detections": [
+              "1793901393.453982-wc1ieg",
+              "1793901333.125216-vzjxnx"
+            ],
+            "objects": [
+              "person"
+            ],
+            "verified_objects": [],
+            "sub_labels": [],
+            "zones": [
+              "Barn_Door",
+              "Back_Door"
+            ],
+            "audio": [
+              "speech"
+            ],
+            "thumb_time": 1793901333.577588,
+            "metadata": null
+          }
+        }
+      }
+    },
+    {
+      "topic": "tracked_object_update",
+      "payload": {
+        "type": "description",
+        "id": "1793901333.125216-vzjxnx",
+        "camera": "courtyard",
+        "description": "MEDIUM RISK. A person in green is crouching and moving fast near the open barn door. Their identity is unclear at night near the kilns/oil tank, warranting an immediate check."
+      }
+    }
+  ],
+  "1792229361.648526-d03264": [
+    {
+      "topic": "reviews",
+      "payload": {
+        "type": "new",
+        "before": {
+          "id": "1792229361.648526-d03264",
+          "camera": "courtyard",
+          "start_time": 1792229361.648526,
+          "severity": "alert",
+          "thumb_path": "/media/frigate/clips/review/thumb-courtyard-1792229361.648526-d03264.webp",
+          "end_time": null,
+          "data": {
+            "detections": [
+              "1792229361.415125-7gp4tf"
+            ],
+            "objects": [
+              "person"
+            ],
+            "verified_objects": [],
+            "sub_labels": [],
+            "zones": [],
+            "audio": [],
+            "thumb_time": 1792229361.83589,
+            "metadata": null
+          }
+        },
+        "after": {
+          "id": "1792229361.648526-d03264",
+          "camera": "courtyard",
+          "start_time": 1792229361.648526,
+          "severity": "alert",
+          "thumb_path": "/media/frigate/clips/review/thumb-courtyard-1792229361.648526-d03264.webp",
+          "end_time": null,
+          "data": {
+            "detections": [
+              "1792229361.415125-7gp4tf"
+            ],
+            "objects": [
+              "person"
+            ],
+            "verified_objects": [],
+            "sub_labels": [],
+            "zones": [],
+            "audio": [],
+            "thumb_time": 1792229361.83589,
+            "metadata": null
+          }
+        }
+      }
+    },
+    {
+      "topic": "reviews",
+      "payload": {
+        "type": "end",
+        "before": {
+          "id": "1792229361.648526-d03264",
+          "camera": "courtyard",
+          "start_time": 1792229361.648526,
+          "severity": "alert",
+          "thumb_path": "/media/frigate/clips/review/thumb-courtyard-1792229361.648526-d03264.webp",
+          "end_time": null,
+          "data": {
+            "detections": [
+              "1792229402.891207-gob3hn",
+              "1792229361.415125-7gp4tf"
+            ],
+            "objects": [
+              "person"
+            ],
+            "verified_objects": [],
+            "sub_labels": [],
+            "zones": [
+              "Barn_Door"
+            ],
+            "audio": [],
+            "thumb_time": 1792229361.83589,
+            "metadata": null
+          }
+        },
+        "after": {
+          "id": "1792229361.648526-d03264",
+          "camera": "courtyard",
+          "start_time": 1792229361.648526,
+          "end_time": 1792229409.910672,
+          "severity": "alert",
+          "thumb_path": "/media/frigate/clips/review/thumb-courtyard-1792229361.648526-d03264.webp",
+          "data": {
+            "detections": [
+              "1792229402.891207-gob3hn",
+              "1792229361.415125-7gp4tf"
+            ],
+            "objects": [
+              "person"
+            ],
+            "verified_objects": [],
+            "sub_labels": [],
+            "zones": [
+              "Barn_Door"
+            ],
+            "audio": [],
+            "thumb_time": 1792229361.83589,
+            "metadata": null
+          }
+        }
+      }
+    },
+    {
+      "topic": "tracked_object_update",
+      "payload": {
+        "type": "description",
+        "id": "1792229361.415125-7gp4tf",
+        "camera": "courtyard",
+        "description": "NO RISK. A woman, likely Wendy, is walking toward a building door in the courtyard. She is moving purposefully, consistent with a resident's routine and posing no threat."
+      }
+    },
+    {
+      "topic": "tracked_object_update",
+      "payload": {
+        "type": "description",
+        "id": "1792229402.891207-gob3hn",
+        "camera": "courtyard",
+        "description": "NO RISK. Resident Wendy is walking in the courtyard carrying a seed tray. She is likely feeding birds or gardening. As an authorized occupant, she poses no security threat."
+      }
+    },
+    {
+      "topic": "reviews",
+      "payload": {
+        "type": "genai",
+        "before": {
+          "id": "1792229361.648526-d03264",
+          "camera": "courtyard",
+          "start_time": 1792229356.8223114,
+          "end_time": 1792229414.7368865,
+          "severity": "alert",
+          "thumb_path": "/media/frigate/clips/review/thumb-courtyard-1792229361.648526-d03264.webp",
+          "data": {
+            "detections": [
+              "1792229402.891207-gob3hn",
+              "1792229361.415125-7gp4tf"
+            ],
+            "objects": [
+              "person"
+            ],
+            "verified_objects": [],
+            "sub_labels": [],
+            "zones": [
+              "Barn_Door"
+            ],
+            "audio": [],
+            "thumb_time": 1792229361.83589,
+            "metadata": null
+          }
+        },
+        "after": {
+          "id": "1792229361.648526-d03264",
+          "camera": "courtyard",
+          "start_time": 1792229356.8223114,
+          "end_time": 1792229414.7368865,
+          "severity": "alert",
+          "thumb_path": "/media/frigate/clips/review/thumb-courtyard-1792229361.648526-d03264.webp",
+          "data": {
+            "detections": [
+              "1792229402.891207-gob3hn",
+              "1792229361.415125-7gp4tf"
+            ],
+            "objects": [
+              "person"
+            ],
+            "verified_objects": [],
+            "sub_labels": [],
+            "zones": [
+              "Barn_Door"
+            ],
+            "audio": [],
+            "thumb_time": 1792229361.83589,
+            "metadata": {
+              "confidence": 0.95,
+              "observations": [
+                "A person is standing by a green door on the right side of the courtyard.",
+                "The person walks from the door towards the center of the gravel area.",
+                "The person approaches the large barn door on the left side of the courtyard.",
+                "The person stoops down near the base of the barn door to pick up a small object.",
+                "The person opens the barn door and enters the building.",
+                "After a few moments, the person exits the barn carrying a small, rectangular item.",
+                "The person walks back across the gravel courtyard towards the right side of the frame."
+              ],
+              "other_concerns": [
+                "visitors entering barn"
+              ],
+              "potential_threat_level": 1,
+              "scene": "At approximately 10:29 AM, a person is observed standing near a green residential door on the right side of the courtyard. The individual walks across the gravel toward a large barn structure on the left. As they approach the barn, they bend down to retrieve a small item from the ground. The person then opens the barn door and disappears inside for about twenty seconds. Eventually, they reappear, exiting the barn while carrying a small rectangular box or package. They then proceed to walk back across the courtyard, returning toward the right side of the property where they were first seen.",
+              "shortSummary": "A person walks across the courtyard, enters a barn, and exits carrying a small box-like item.",
+              "time": "Saturday, 10:29 AM",
+              "title": "A person entering a barn in the courtyard"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

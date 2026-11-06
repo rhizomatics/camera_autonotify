@@ -78,6 +78,30 @@
                             "update_sub_label": "Send an update when Frigate recognises a face or a number plate."
                         }
                     },
+                    "genai": {
+                        "name": "GenAI",
+                        "description": "What Frigate's generative AI adds, its summary of a review and its descriptions of what's in it, each taking the place of the review's notification.",
+                        "data": {
+                            "summaries": "Review summaries",
+                            "min_threat_level": "Lowest threat level",
+                            "priority_normal": "Normal priority",
+                            "priority_suspicious": "Suspicious priority",
+                            "priority_critical": "Critical priority",
+                            "descriptions": "Object descriptions",
+                            "unreviewed_descriptions": "Descriptions without a review",
+                            "genai_wait": "Wait for GenAI"
+                        },
+                        "data_description": {
+                            "summaries": "Update the notification with Frigate's title and summary once the review is over, while the GenAI tokens last.",
+                            "min_threat_level": "Leave out summaries below this threat level: 0 normal, 1 suspicious, 2 critical.",
+                            "priority_normal": "The priority of a summary at threat level 0.",
+                            "priority_suspicious": "The priority of a summary at threat level 1.",
+                            "priority_critical": "The priority of a summary at threat level 2.",
+                            "descriptions": "Update the notification with Frigate's description of each object in the review.",
+                            "unreviewed_descriptions": "Also notify descriptions of objects Frigate didn't make a review of, such as those outside the zones an alert needs.",
+                            "genai_wait": "How long after a review ends to keep it for what GenAI adds, and a description for its review."
+                        }
+                    },
                     "notify": {
                         "name": "Notification targets",
                         "description": "Who and what is notified. Leave everything empty for the usual choice.",
@@ -103,6 +127,80 @@
             "options": {
                 "alert": "Alerts",
                 "detection": "Detections"
+            }
+        },
+        "priority": {
+            "options": {
+                "critical": "Critical",
+                "high": "High",
+                "medium": "Medium",
+                "low": "Low",
+                "minimum": "Minimum"
+            }
+        },
+        "match": {
+            "options": {
+                "starts_with": "Starts with",
+                "contains": "Contains",
+                "regex": "Regular expression"
+            }
+        }
+    },
+    "config_subentries": {
+        "rule": {
+            "entry_type": "Rule",
+            "initiate_flow": {
+                "user": "Add rule"
+            },
+            "step": {
+                "user": {
+                    "title": "Notification rule",
+                    "description": "Changes how any notification is sent when its message matches, from a camera, a zone or Frigate's generative AI. Every rule that matches applies: silence wins, then the most urgent priority, and their scenarios are combined.",
+                    "data": {
+                        "name": "Name",
+                        "match": "Match",
+                        "pattern": "Text",
+                        "priority": "Priority",
+                        "silence": "Silence",
+                        "remove": "Remove the text matched",
+                        "scenarios": "Supernotify scenarios"
+                    },
+                    "data_description": {
+                        "match": "How the text is looked for in the message, always ignoring case.",
+                        "pattern": "What to look for, such as HIGH RISK, or a regular expression such as ^(no|low) risk\\b.",
+                        "priority": "Send at this priority. Leave empty to keep the notification's own.",
+                        "silence": "Don't send the notification at all.",
+                        "remove": "Take the text matched out of the message, such as a risk level at its start.",
+                        "scenarios": "Apply these Supernotify scenarios to the notification."
+                    }
+                },
+                "reconfigure": {
+                    "title": "Change rule",
+                    "description": "Changes how any notification is sent when its message matches, from a camera, a zone or Frigate's generative AI. Every rule that matches applies: silence wins, then the most urgent priority, and their scenarios are combined.",
+                    "data": {
+                        "name": "Name",
+                        "match": "Match",
+                        "pattern": "Text",
+                        "priority": "Priority",
+                        "silence": "Silence",
+                        "remove": "Remove the text matched",
+                        "scenarios": "Supernotify scenarios"
+                    },
+                    "data_description": {
+                        "match": "How the text is looked for in the message, always ignoring case.",
+                        "pattern": "What to look for, such as HIGH RISK, or a regular expression such as ^(no|low) risk\\b.",
+                        "priority": "Send at this priority. Leave empty to keep the notification's own.",
+                        "silence": "Don't send the notification at all.",
+                        "remove": "Take the text matched out of the message, such as a risk level at its start.",
+                        "scenarios": "Apply these Supernotify scenarios to the notification."
+                    }
+                }
+            },
+            "error": {
+                "invalid_pattern": "This isn't a regular expression that can be used."
+            },
+            "abort": {
+                "reconfigure_successful": "The rule is changed."
             }
         }
     }

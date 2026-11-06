@@ -1,5 +1,6 @@
-"""Reviews from Frigate over MQTT, one subscription for each topic prefix, shared by the entries that need it, and
-each entry's watcher, which times what its tracker holds back and sends what it decides"""
+"""Reviews and object descriptions from Frigate over MQTT, one subscription to each for each topic prefix, shared by
+the entries that need them, and each entry's watcher, which times what its tracker holds back and sends what it
+decides"""
 
 from __future__ import annotations
 
@@ -26,6 +27,8 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 REVIEWS_TOPIC = "{prefix}/reviews"
+# where Frigate sends what it adds to a tracked object, of which only GenAI descriptions are wanted
+OBJECT_UPDATES_TOPIC = "{prefix}/tracked_object_update"
 DATA_HUBS = "hubs"
 
 
@@ -56,6 +59,15 @@ class ReviewWatcher:
         self._act(outcome)
 
     @callback
+    def async_object_update(self, payload: str | bytes | bytearray) -> None:
+        try:
+            outcome = self.tracker.on_description(payload, time.time())
+        except ValueError, KeyError, TypeError:
+            _LOGGER.warning("CAMERA_AUTONOTIFY Object update not understood: %s", payload)
+            return
+        self._act(outcome)
+
+    @callback
     def async_stop(self) -> None:
         for cancel in self._timers.values():
             cancel()
@@ -71,12 +83,12 @@ class ReviewWatcher:
         elif isinstance(outcome, Decision):
             self.entry.async_create_background_task(
                 self.hass,
-                self.notifier.async_notify(outcome, self._context(outcome.review.id)),
-                f"{DOMAIN} notify {outcome.review.id}",
+                self.notifier.async_notify(outcome, self._context(outcome.key)),
+                f"{DOMAIN} notify {outcome.key}",
             )
-        # done with, once the tracker is
-        for review_id in set(self._contexts) - set(self.tracker.tracked):
-            del self._contexts[review_id]
+        # done with, once the tracker is, or an object's description notified by itself, once its time is up
+        for key in set(self._contexts) - set(self.tracker.tracked) - set(self.tracker.described):
+            del self._contexts[key]
 
     def _wait(self, wait: Wait) -> None:
         if cancel := self._timers.pop(wait.review_id, None):
@@ -99,7 +111,7 @@ class ReviewWatcher:
 
 @dataclass
 class _Hub:
-    unsubscribe: CALLBACK_TYPE
+    unsubscribe: list[CALLBACK_TYPE]
     watchers: list[ReviewWatcher] = field(default_factory=list)
 
 
@@ -115,16 +127,25 @@ async def async_watch(hass: HomeAssistant, prefix: str, watcher: ReviewWatcher) 
     if hub is None:
 
         @callback
-        def received(message: ReceiveMessage) -> None:
+        def review(message: ReceiveMessage) -> None:
             for each in list(hubs[prefix].watchers):
                 each.async_review(message.payload)
 
-        unsubscribe = await mqtt.async_subscribe(hass, REVIEWS_TOPIC.format(prefix=prefix), received)
+        @callback
+        def object_update(message: ReceiveMessage) -> None:
+            for each in list(hubs[prefix].watchers):
+                each.async_object_update(message.payload)
+
+        unsubscribe = [
+            await mqtt.async_subscribe(hass, REVIEWS_TOPIC.format(prefix=prefix), review),
+            await mqtt.async_subscribe(hass, OBJECT_UPDATES_TOPIC.format(prefix=prefix), object_update),
+        ]
         # another entry may have subscribed while this one was waiting
         if (hub := hubs.get(prefix)) is None:
             hub = hubs[prefix] = _Hub(unsubscribe)
         else:
-            unsubscribe()
+            for each in unsubscribe:
+                each()
     hub.watchers.append(watcher)
 
     @callback
@@ -133,7 +154,8 @@ async def async_watch(hass: HomeAssistant, prefix: str, watcher: ReviewWatcher) 
         if watcher in hub.watchers:
             hub.watchers.remove(watcher)
         if not hub.watchers and hubs.get(prefix) is hub:
-            hub.unsubscribe()
+            for each in hub.unsubscribe:
+                each()
             del hubs[prefix]
 
     return stop

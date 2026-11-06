@@ -45,7 +45,9 @@ async def test_updates_tied_to_first(hass: HomeAssistant, fake_mqtt: FakeMQTT):
 
     fake_mqtt.publish(TOPIC, message("end", review("courtyard")))
     await hass.async_block_till_done()
-    assert entry_titled(hass, "Courtyard").runtime_data.reviews == []
+    # ended, and kept only for what GenAI adds to it
+    assert len(calls) == 2
+    assert entry_titled(hass, "Courtyard").runtime_data.reviews == [review("courtyard")["id"]]
 
 
 async def test_initial_delay_timed(hass: HomeAssistant, fake_mqtt: FakeMQTT):

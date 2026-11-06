@@ -19,6 +19,8 @@ from custom_components.camera_autonotify.tracker import (
 # real reviews, from the Frigate API, as the `after` of an MQTT message
 REVIEWS: list[dict[str, Any]] = json.loads((Path(__file__).parent / "fixtures" / "reviews.json").read_text())
 T0 = 1_800_000_000.0
+# for what's forgotten once a review ends, with nothing GenAI might add to keep it for
+NO_GENAI: dict[str, Any] = {"summaries": False, "descriptions": False}
 
 
 def review(camera: str = "courtyard", **changes: Any) -> dict[str, Any]:
@@ -251,7 +253,7 @@ def test_initial_delay_sends_review_as_it_then_is():
 
 
 def test_ended_while_held_back_told_once():
-    tracker = camera_tracker(initial_delay=5, final_update=True)
+    tracker = camera_tracker(initial_delay=5, final_update=True, **NO_GENAI)
     after = review()
     tracker.on_message(message("new", after), T0)
     assert tracker.on_message(message("end", after), T0 + 2) is None
@@ -262,7 +264,7 @@ def test_ended_while_held_back_told_once():
 
 
 def test_review_only_seen_ended_told_once():
-    tracker = camera_tracker(final_update=True)
+    tracker = camera_tracker(final_update=True, **NO_GENAI)
     decision = tracker.on_message(message("end", review()), T0)
     assert isinstance(decision, Decision)
     assert decision.reason is Reason.NEW
@@ -276,7 +278,7 @@ def test_unwanted_end_not_tracked():
 
 
 def test_end_forgotten_without_final_update():
-    tracker = camera_tracker()
+    tracker = camera_tracker(**NO_GENAI)
     after = review()
     tracker.on_message(message("new", after), T0)
     assert tracker.on_message(message("end", after), T0 + 30) is None
@@ -284,7 +286,7 @@ def test_end_forgotten_without_final_update():
 
 
 def test_final_update():
-    tracker = camera_tracker(final_update=True)
+    tracker = camera_tracker(final_update=True, **NO_GENAI)
     after = review()
     tracker.on_message(message("new", after), T0)
     decision = tracker.on_message(message("end", after), T0 + 30)
@@ -295,7 +297,7 @@ def test_final_update():
 
 
 def test_final_update_delayed():
-    tracker = camera_tracker(final_update=True, final_delay=10)
+    tracker = camera_tracker(final_update=True, final_delay=10, **NO_GENAI)
     after = review()
     tracker.on_message(message("new", after), T0)
     assert tracker.on_message(message("end", after), T0 + 30) == Wait(after["id"], T0 + 40, Reason.FINAL)

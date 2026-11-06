@@ -2,10 +2,18 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import fields
 from typing import Any
 
-from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult, OptionsFlowWithReload
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow,
+    ConfigFlowResult,
+    ConfigSubentryFlow,
+    OptionsFlowWithReload,
+    SubentryFlowResult,
+)
 from homeassistant.const import CONF_DEVICE_ID, CONF_NAME, CONF_TYPE, UnitOfTime
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import section
@@ -16,6 +24,7 @@ from homeassistant.helpers.selector import (
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
+    SelectOptionDict,
     Selector,
     SelectSelector,
     SelectSelectorConfig,
@@ -32,45 +41,67 @@ from .const import (
     CONF_COOLDOWN,
     CONF_CUSTOM_TARGET,
     CONF_DELIVERIES,
+    CONF_DESCRIPTIONS,
     CONF_DISCOVER_ZONES,
     CONF_FINAL_DELAY,
     CONF_FINAL_UPDATE,
+    CONF_GENAI_WAIT,
     CONF_INITIAL_DELAY,
     CONF_LABELS,
+    CONF_MATCH,
+    CONF_MIN_THREAT_LEVEL,
+    CONF_PATTERN,
+    CONF_PRIORITY,
+    CONF_REMOVE,
+    CONF_SCENARIOS,
     CONF_SEVERITIES,
+    CONF_SILENCE,
     CONF_SOURCE,
     CONF_SOURCE_ENTRY_ID,
     CONF_SOURCE_NAME,
+    CONF_SUMMARIES,
     CONF_TARGET,
     CONF_TARGETS,
+    CONF_THREAT_PRIORITIES,
     CONF_TIMEOUT,
+    CONF_UNREVIEWED_DESCRIPTIONS,
     CONF_UPDATE_SUB_LABEL,
     CONF_ZONE_MULTI,
     CONF_ZONE_ORDER,
     CONF_ZONES,
     DISCOVERY_TITLE,
     DOMAIN,
+    MATCH_CONTAINS,
+    MATCHES,
+    PRIORITIES,
     PROXY_EXPIRES,
     PROXY_OFF,
     SEVERITIES,
+    SUBENTRY_RULE,
     SUPERNOTIFY_MISSING,
     SUPERNOTIFY_PRESENT,
+    THREAT_PRIORITY_DEFAULTS,
     TYPE_DISCOVERY,
     TYPE_ZONE,
 )
 from .discovery import find_cameras
-from .frigate import camera_choices, frigate_config, proxy_problems, zone_labels
-from .supernotify_api import deliveries_by_transport, supernotify_available
+from .frigate import camera_choices, frigate_config, genai_features, proxy_problems, zone_labels
+from .rules import compile_pattern
+from .supernotify_api import deliveries_by_transport, scenario_names, supernotify_available
 from .tracker import Settings
 
 STEP_DISCOVERY = "discovery"
 STEP_SETTINGS = "settings"
 SECTION_TIMING = "timing"
+SECTION_GENAI = "genai"
 SECTION_NOTIFY = "notify"
+SECTIONS = (SECTION_TIMING, SECTION_GENAI, SECTION_NOTIFY)
 # a setting left as it comes isn't stored, so it follows any better default of a later version
 DEFAULTS: dict[str, Any] = {
     f.name: sorted(value) if isinstance(value := getattr(Settings(), f.name), frozenset) else value for f in fields(Settings)
-}
+} | dict(zip(CONF_THREAT_PRIORITIES, THREAT_PRIORITY_DEFAULTS, strict=True))
+# what a rule holds, its name being the subentry's title
+RULE_DATA = (CONF_MATCH, CONF_PATTERN, CONF_PRIORITY, CONF_SILENCE, CONF_SCENARIOS, CONF_REMOVE)
 # what a camera or zone's entry holds, as it's found
 ENTRY_DATA = (CONF_DEVICE_ID, CONF_TYPE, CONF_SOURCE, CONF_SOURCE_ENTRY_ID, CONF_SOURCE_NAME)
 
@@ -113,9 +144,39 @@ def _choose(options: list[str], translation_key: str | None = None) -> Selector:
     return SelectSelector(config)
 
 
-async def settings_schema(hass: HomeAssistant, labels: list[str], zones: list[str] | None) -> vol.Schema:
-    """The blueprint's filters, then its timing and who is told, out of the way until wanted. Zones only for a
-    camera, since a zone's entry is the zone"""
+def _priority() -> Selector:
+    return SelectSelector(
+        SelectSelectorConfig(options=list(PRIORITIES), mode=SelectSelectorMode.DROPDOWN, translation_key=CONF_PRIORITY)
+    )
+
+
+def genai_schema(summaries: bool, descriptions: bool, camera: bool) -> dict[vol.Marker, Any]:
+    """What Frigate's generative AI adds, as far as Frigate makes it for the camera, or zone"""
+    genai: dict[vol.Marker, Any] = {}
+    if summaries:
+        genai[vol.Required(CONF_SUMMARIES, default=DEFAULTS[CONF_SUMMARIES])] = BooleanSelector()
+        genai[vol.Required(CONF_MIN_THREAT_LEVEL, default=DEFAULTS[CONF_MIN_THREAT_LEVEL])] = NumberSelector(
+            NumberSelectorConfig(min=0, max=2, step=1, mode=NumberSelectorMode.SLIDER)
+        )
+        for key in CONF_THREAT_PRIORITIES:
+            genai[vol.Required(key, default=DEFAULTS[key])] = _priority()
+    if descriptions:
+        genai[vol.Required(CONF_DESCRIPTIONS, default=DEFAULTS[CONF_DESCRIPTIONS])] = BooleanSelector()
+        if camera:
+            # a description has no zone, so a zone only has those of its reviews
+            genai[vol.Required(CONF_UNREVIEWED_DESCRIPTIONS, default=DEFAULTS[CONF_UNREVIEWED_DESCRIPTIONS])] = (
+                BooleanSelector()
+            )
+    if genai:
+        genai[vol.Required(CONF_GENAI_WAIT, default=DEFAULTS[CONF_GENAI_WAIT])] = _seconds(600)
+    return genai
+
+
+async def settings_schema(
+    hass: HomeAssistant, labels: list[str], zones: list[str] | None, genai: dict[vol.Marker, Any] | None = None
+) -> vol.Schema:
+    """The blueprint's filters, then its timing, what GenAI adds and who is told, out of the way until wanted. Zones
+    only for a camera, since a zone's entry is the zone"""
     fields_: dict[vol.Marker, Any] = {
         vol.Required(CONF_SEVERITIES, default=DEFAULTS[CONF_SEVERITIES]): _choose(list(SEVERITIES), CONF_SEVERITIES),
         vol.Optional(CONF_LABELS): _choose(labels),
@@ -143,6 +204,8 @@ async def settings_schema(hass: HomeAssistant, labels: list[str], zones: list[st
     else:
         notify[vol.Optional(CONF_TARGETS)] = EntitySelector(EntitySelectorConfig(domain="notify", multiple=True))
     fields_[vol.Required(SECTION_TIMING)] = section(vol.Schema(timing), {"collapsed": True})
+    if genai:
+        fields_[vol.Required(SECTION_GENAI)] = section(vol.Schema(genai), {"collapsed": True})
     fields_[vol.Required(SECTION_NOTIFY)] = section(vol.Schema(notify), {"collapsed": True})
     return vol.Schema(fields_)
 
@@ -162,7 +225,7 @@ def flattened(user_input: dict[str, Any]) -> dict[str, Any]:
     """The settings of a form, with those in sections alongside the rest"""
     settings: dict[str, Any] = {}
     for name, value in user_input.items():
-        settings.update(value if isinstance(value, dict) and name in (SECTION_TIMING, SECTION_NOTIFY) else {name: value})
+        settings.update(value if isinstance(value, dict) and name in SECTIONS else {name: value})
     return settings
 
 
@@ -177,6 +240,14 @@ class CameraAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(config_entry: ConfigEntry) -> CameraAutoNotifyOptionsFlow:
         return CameraAutoNotifyOptionsFlow()
+
+    @classmethod
+    @callback
+    def async_get_supported_subentry_types(cls, config_entry: ConfigEntry) -> dict[str, type[ConfigSubentryFlow]]:
+        """Rules, for every notification, on the discovery entry, the one entry that isn't a camera's or zone's"""
+        if config_entry.data.get(CONF_TYPE) == TYPE_DISCOVERY:
+            return {SUBENTRY_RULE: RuleSubentryFlow}
+        return {}
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Automatic discovery, the cameras themselves set up as they're found"""
@@ -258,11 +329,14 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
             return self.async_create_entry(data=settings)
         data = self.config_entry.data
         config = frigate_config(self.hass, data[CONF_SOURCE_ENTRY_ID])
-        if data.get(CONF_TYPE) == TYPE_ZONE:
+        if is_zone := data.get(CONF_TYPE) == TYPE_ZONE:
             labels, zones = zone_labels(config, data[CONF_SOURCE_NAME]), None
+            summaries, descriptions = genai_features(config, zone=data[CONF_SOURCE_NAME])
         else:
             labels, zones = camera_choices(config, data[CONF_SOURCE_NAME])
-        schema = await settings_schema(self.hass, labels, zones)
+            summaries, descriptions = genai_features(config, camera=data[CONF_SOURCE_NAME])
+        genai = genai_schema(summaries, descriptions, camera=not is_zone)
+        schema = await settings_schema(self.hass, labels, zones, genai)
         return self.async_show_form(
             step_id=STEP_SETTINGS,
             data_schema=self.add_suggested_values_to_schema(schema, sectioned(schema, dict(self.config_entry.options))),
@@ -271,4 +345,60 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
                 "supernotify": supernotify_status(self.hass),
                 "proxy": proxy_status(self.hass, data[CONF_SOURCE_ENTRY_ID]),
             },
+        )
+
+
+async def rule_schema(hass: HomeAssistant) -> vol.Schema:
+    fields_: dict[vol.Marker, Any] = {
+        vol.Required(CONF_NAME): TextSelector(),
+        vol.Required(CONF_MATCH, default=MATCH_CONTAINS): SelectSelector(
+            SelectSelectorConfig(options=list(MATCHES), mode=SelectSelectorMode.LIST, translation_key=CONF_MATCH)
+        ),
+        vol.Required(CONF_PATTERN): TextSelector(),
+        vol.Optional(CONF_PRIORITY): _priority(),
+        vol.Required(CONF_SILENCE, default=False): BooleanSelector(),
+        vol.Required(CONF_REMOVE, default=False): BooleanSelector(),
+    }
+    if supernotify_available(hass):
+        scenarios = [SelectOptionDict(value=name, label=name) for name in await scenario_names(hass)]
+        fields_[vol.Optional(CONF_SCENARIOS)] = SelectSelector(
+            SelectSelectorConfig(options=scenarios, multiple=True, custom_value=True, mode=SelectSelectorMode.DROPDOWN)
+        )
+    return vol.Schema(fields_)
+
+
+class RuleSubentryFlow(ConfigSubentryFlow):
+    """A rule, matching the message of any notification, to change its priority, silence it, apply Supernotify
+    scenarios, or take out the text matched"""
+
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
+        return await self._rule("user", user_input)
+
+    async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
+        return await self._rule("reconfigure", user_input)
+
+    async def _rule(self, step_id: str, user_input: dict[str, Any] | None) -> SubentryFlowResult:
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            try:
+                compile_pattern(user_input[CONF_MATCH], user_input[CONF_PATTERN])
+            except re.error:
+                errors[CONF_PATTERN] = "invalid_pattern"
+            else:
+                title = str(user_input[CONF_NAME]).strip() or str(user_input[CONF_PATTERN])
+                data = {key: user_input[key] for key in RULE_DATA if user_input.get(key) not in (None, [], "")}
+                if step_id == "user":
+                    return self.async_create_entry(title=title, data=data)
+                return self.async_update_and_abort(
+                    self._get_entry(), self._get_reconfigure_subentry(), title=title, data=data
+                )
+            suggested = user_input
+        elif step_id == "reconfigure":
+            subentry = self._get_reconfigure_subentry()
+            suggested = {CONF_NAME: subentry.title, **subentry.data}
+        else:
+            suggested = {}
+        schema = await rule_schema(self.hass)
+        return self.async_show_form(
+            step_id=step_id, data_schema=self.add_suggested_values_to_schema(schema, suggested), errors=errors
         )

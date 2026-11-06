@@ -8,6 +8,7 @@ from homeassistant.core import Context, HomeAssistant, ServiceCall
 from homeassistant.core_config import async_process_ha_core_config
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
+from homeassistant.config_entries import ConfigSubentryData
 from pytest_homeassistant_custom_component.common import MockConfigEntry, async_mock_service
 
 from custom_components.camera_autonotify.const import (
@@ -18,11 +19,13 @@ from custom_components.camera_autonotify.const import (
     CONF_TARGET,
     CONF_TARGETS,
     DOMAIN,
+    SUBENTRY_RULE,
     TYPE_CAMERA,
+    TYPE_DISCOVERY,
     TYPE_ZONE,
 )
-from custom_components.camera_autonotify.notifier import Notifier
-from custom_components.camera_autonotify.tracker import Decision, Reason, Review
+from custom_components.camera_autonotify.notifier import Notifier, notification_rules
+from custom_components.camera_autonotify.tracker import Decision, Reason, Review, Summary
 
 from .conftest import FRIGATE_ENTRY_ID, add_frigate, mock_supernotify
 
@@ -197,3 +200,138 @@ async def test_without_supernotify_failure_logged(hass: HomeAssistant, caplog: p
     hass.services.async_register("notify", "send_message", fail)
     await notifier(hass).async_notify(decision(), Context())
     assert "Notification failed for Courtyard" in caplog.text
+
+
+def summarised(level: int, concerns: tuple[str, ...] = (), previous: int = 1, silent: bool = True) -> Decision:
+    review = Review(
+        REVIEW_ID,
+        "courtyard",
+        "alert",
+        ("person",),
+        (),
+        ("Barn_Door",),
+        (DETECTION,),
+        ended=True,
+        summary=Summary("A person entering a barn", "A person walks to the barn.", level, concerns),
+    )
+    return Decision(review, Reason.SUMMARY, previous, silent)
+
+
+def described(text: str, severity: str = "alert", silent: bool = True, tag_id: str | None = None) -> Decision:
+    review = Review(REVIEW_ID, "courtyard", severity, ("person",), (), (), (DETECTION,), ended=True)
+    return Decision(review, Reason.DESCRIPTION, 1, silent, description=text, described_id="object-1", tag_id=tag_id)
+
+
+def add_rules(hass: HomeAssistant, *rules: dict[str, Any]) -> None:
+    """The discovery entry, with a subentry for each rule"""
+    MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_TYPE: TYPE_DISCOVERY},
+        subentries_data=[
+            ConfigSubentryData(
+                data={k: v for k, v in rule.items() if k != "name"},
+                subentry_type=SUBENTRY_RULE,
+                title=rule["name"],
+                unique_id=None,
+            )
+            for rule in rules
+        ],
+    ).add_to_hass(hass)
+
+
+@pytest.mark.parametrize(
+    ("level", "priority"),
+    # silent updates sound again once a summary is suspicious or worse
+    [(0, "low"), (1, "high"), (2, "critical")],
+)
+async def test_summary(hass: HomeAssistant, level: int, priority: str):
+    data = notifier(hass).supernotify_data(summarised(level, ("visitors entering barn",)))
+    assert data["title"] == "A person entering a barn"
+    assert data["message"] == "A person walks to the barn. (visitors entering barn)"
+    assert data["priority"] == priority
+    assert data["extra_data"]["mobile_push_notification_tag"] == f"frigate_{REVIEW_ID}"
+
+
+async def test_summary_priorities_chosen(hass: HomeAssistant):
+    options = {"priority_normal": "minimum", "priority_suspicious": "critical"}
+    assert notifier(hass, options=options).supernotify_data(summarised(1))["priority"] == "critical"
+    # sounding, without alert once
+    assert notifier(hass, options=options).supernotify_data(summarised(0, silent=False))["priority"] == "minimum"
+    assert notifier(hass).supernotify_data(summarised(0, silent=False))["priority"] == "medium"
+    # a threat level beyond those known taken as the highest
+    assert notifier(hass).supernotify_data(summarised(5))["priority"] == "critical"
+
+
+async def test_summary_raised_by_rule_only(hass: HomeAssistant):
+    add_rules(
+        hass,
+        {"name": "barn", "match": "contains", "pattern": "barn", "priority": "critical"},
+        {"name": "person", "match": "contains", "pattern": "person", "priority": "minimum"},
+    )
+    assert notifier(hass).supernotify_data(summarised(1))["priority"] == "critical"
+
+
+async def test_summary_not_lowered_by_rule(hass: HomeAssistant):
+    add_rules(hass, {"name": "person", "match": "contains", "pattern": "person", "priority": "minimum"})
+    assert notifier(hass).supernotify_data(summarised(1))["priority"] == "high"
+
+
+async def test_description_ruled(hass: HomeAssistant):
+    add_rules(
+        hass,
+        {"name": "High risk", "match": "regex", "pattern": r"^high risk\W*", "priority": "critical", "remove": True},
+        {"name": "Scenario", "match": "contains", "pattern": "hoodies", "scenarios": ["high_alert", "noisy"]},
+    )
+    data = notifier(hass).supernotify_data(described("HIGH RISK. Two men in hoodies are in the courtyard."))
+    assert data["title"] == "Courtyard"
+    assert data["message"] == "Two men in hoodies are in the courtyard."
+    # raised above the alert's own, so it sounds despite alert once
+    assert data["priority"] == "critical"
+    assert data["apply_scenarios"] == ["high_alert", "noisy"]
+
+
+async def test_description_unruled_stays_silent(hass: HomeAssistant):
+    data = notifier(hass).supernotify_data(described("A person is walking"))
+    assert data["message"] == "A person is walking"
+    assert data["priority"] == "low"
+    assert "apply_scenarios" not in data
+
+
+async def test_description_rule_below_own_priority(hass: HomeAssistant):
+    """A rule sets the priority of a description, even below the review's own"""
+    add_rules(hass, {"name": "Birds", "match": "starts_with", "pattern": "bird identified", "priority": "minimum"})
+    data = notifier(hass).supernotify_data(described("BIRD IDENTIFIED blackbird", silent=False))
+    assert data["priority"] == "minimum"
+
+
+async def test_description_by_itself_tagged_by_object(hass: HomeAssistant, external_url: None):
+    add_frigate(hass)
+    data = notifier(hass).supernotify_data(described("A person", tag_id="object-1"))
+    assert data["extra_data"]["mobile_push_notification_tag"] == "frigate_object-1"
+    # the snapshot of the object described
+    assert data["media"]["snapshot_url"] == f"{BASE}/api/frigate/notifications/object-1/snapshot.jpg"
+
+
+async def test_silenced(hass: HomeAssistant):
+    add_rules(hass, {"name": "No risk", "match": "regex", "pattern": r"^(no|low) risk\b", "silence": True})
+    calls = mock_supernotify(hass)
+    await notifier(hass).async_notify(described("NO RISK. Wendy in the barn."), Context())
+    await notifier(hass).async_notify(described("LOW RISK. A van."), Context())
+    assert calls == []
+    await notifier(hass).async_notify(described("MEDIUM RISK. A van."), Context())
+    assert len(calls) == 1
+
+
+async def test_silenced_without_supernotify(hass: HomeAssistant):
+    add_rules(hass, {"name": "No risk", "match": "starts_with", "pattern": "no risk", "silence": True})
+    calls = async_mock_service(hass, "notify", "send_message")
+    options = {CONF_TARGETS: ["notify.phone"]}
+    first = Decision(Review(REVIEW_ID, "courtyard", "alert", (), (), (), (), ended=False), Reason.NEW, 0, False, "NO RISK")
+    await notifier(hass, options=options).async_notify(first, Context())
+    assert calls == []
+
+
+async def test_rules_of_disabled_discovery_not_used(hass: HomeAssistant):
+    add_rules(hass, {"name": "bad", "match": "regex", "pattern": "(", "silence": True})
+    assert notification_rules(hass) == []
+    assert notifier(hass).ruled(described("Anything")).silence is False

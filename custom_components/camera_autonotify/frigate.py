@@ -117,3 +117,22 @@ def zone_labels(config: dict[str, Any] | None, zone: str) -> list[str]:
     return sorted({
         label for camera in cameras if zone in {slugify(z) for z in camera.get("zones") or {}} for label in _labels(camera)
     })
+
+
+def _genai(camera: dict[str, Any]) -> tuple[bool, bool]:
+    return (
+        bool(((camera.get("review") or {}).get("genai") or {}).get("enabled")),
+        bool(((camera.get("objects") or {}).get("genai") or {}).get("enabled")),
+    )
+
+
+def genai_features(config: dict[str, Any] | None, camera: str | None = None, zone: str | None = None) -> tuple[bool, bool]:
+    """Whether Frigate makes review summaries, and object descriptions, for a camera, or for any camera a zone is on,
+    the zone as slugified for its device"""
+    cameras = (config or {}).get("cameras") or {}
+    if camera is not None:
+        chosen = [cameras.get(camera) or {}]
+    else:
+        chosen = [settings for settings in cameras.values() if zone in {slugify(z) for z in settings.get("zones") or {}}]
+    found = [_genai(settings) for settings in chosen]
+    return any(summaries for summaries, _ in found), any(descriptions for _, descriptions in found)
