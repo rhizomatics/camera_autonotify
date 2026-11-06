@@ -50,6 +50,8 @@ from .const import (
     CONF_ZONES,
     DISCOVERY_TITLE,
     DOMAIN,
+    PROXY_EXPIRES,
+    PROXY_OFF,
     SEVERITIES,
     SUPERNOTIFY_MISSING,
     SUPERNOTIFY_PRESENT,
@@ -57,7 +59,7 @@ from .const import (
     TYPE_ZONE,
 )
 from .discovery import find_cameras
-from .frigate import camera_choices, frigate_config, zone_labels
+from .frigate import camera_choices, frigate_config, proxy_problems, zone_labels
 from .supernotify_api import deliveries_by_transport, supernotify_available
 from .tracker import Settings
 
@@ -75,6 +77,16 @@ ENTRY_DATA = (CONF_DEVICE_ID, CONF_TYPE, CONF_SOURCE, CONF_SOURCE_ENTRY_ID, CONF
 
 def supernotify_status(hass: HomeAssistant) -> str:
     return SUPERNOTIFY_PRESENT if supernotify_available(hass) else SUPERNOTIFY_MISSING
+
+
+def proxy_status(hass: HomeAssistant, source_entry_id: str | None = None) -> str:
+    """A warning for each Frigate server, or the one given, whose notification proxy fails some notifications, set
+    apart from the text before it, or nothing"""
+    warnings = [
+        PROXY_EXPIRES.format(server=server, seconds=seconds) if seconds else PROXY_OFF.format(server=server)
+        for server, seconds in proxy_problems(hass, source_entry_id)
+    ]
+    return "".join(f"\n\n{warning}" for warning in warnings)
 
 
 def discovery_schema(auto_discover: bool = True, discover_zones: bool = False) -> vol.Schema:
@@ -181,7 +193,11 @@ class CameraAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="user",
             data_schema=discovery_schema(),
-            description_placeholders={"found": found_text, "supernotify": supernotify_status(self.hass)},
+            description_placeholders={
+                "found": found_text,
+                "supernotify": supernotify_status(self.hass),
+                "proxy": proxy_status(self.hass),
+            },
         )
 
     async def async_step_import(self, import_data: dict[str, Any]) -> ConfigFlowResult:
@@ -209,7 +225,11 @@ class CameraAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
         self._set_confirm_only()
         return self.async_show_form(
             step_id="confirm",
-            description_placeholders={"name": self._found[CONF_NAME], "supernotify": supernotify_status(self.hass)},
+            description_placeholders={
+                "name": self._found[CONF_NAME],
+                "supernotify": supernotify_status(self.hass),
+                "proxy": proxy_status(self.hass, self._found.get(CONF_SOURCE_ENTRY_ID)),
+            },
         )
 
 
@@ -246,5 +266,9 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
         return self.async_show_form(
             step_id=STEP_SETTINGS,
             data_schema=self.add_suggested_values_to_schema(schema, sectioned(schema, dict(self.config_entry.options))),
-            description_placeholders={"name": self.config_entry.title, "supernotify": supernotify_status(self.hass)},
+            description_placeholders={
+                "name": self.config_entry.title,
+                "supernotify": supernotify_status(self.hass),
+                "proxy": proxy_status(self.hass, data[CONF_SOURCE_ENTRY_ID]),
+            },
         )

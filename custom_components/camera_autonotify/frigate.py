@@ -15,7 +15,11 @@ DEFAULT_TOPIC_PREFIX = "frigate"
 # the Frigate integration keeps each server's config, as Frigate itself reports it, under its entry id
 FRIGATE_CONFIG = "config"
 # served without a login, so a phone can fetch it, for as long as the Frigate entry allows
-NOTIFICATIONS_PATH = "/api/frigate/notifications"
+FRIGATE_API_PATH = "/api/frigate"
+NOTIFICATIONS = "notifications"
+# the Frigate entry's options for its notification proxy, on, and never expiring, unless changed
+PROXY_ENABLE = "notification_proxy_enable"
+PROXY_EXPIRE_AFTER = "notification_proxy_expire_after_seconds"
 
 
 @callback
@@ -38,17 +42,50 @@ def base_url(hass: HomeAssistant) -> str | None:
         return None
 
 
-def snapshot_url(base: str, detection_id: str) -> str:
-    return f"{base}{NOTIFICATIONS_PATH}/{detection_id}/snapshot.jpg"
+def instance_id(config: dict[str, Any] | None) -> str | None:
+    """How the Frigate integration tells its servers apart in a proxy link, the server's MQTT client id"""
+    return ((config or {}).get("mqtt") or {}).get("client_id") or None
 
 
-def hls_url(base: str, detection_id: str, camera: str) -> str:
+@callback
+def notifications_url(hass: HomeAssistant, source_entry_id: str) -> str | None:
+    """Where a Frigate server's notification proxy is, with the server's instance id only when there's more than
+    one server, since without it the Frigate integration serves the first"""
+    base = base_url(hass)
+    if base is None:
+        return None
+    instance = instance_id(frigate_config(hass, source_entry_id))
+    if instance and len(hass.config_entries.async_entries(FRIGATE_DOMAIN)) > 1:
+        return f"{base}{FRIGATE_API_PATH}/{instance}/{NOTIFICATIONS}"
+    return f"{base}{FRIGATE_API_PATH}/{NOTIFICATIONS}"
+
+
+def snapshot_url(notifications: str, detection_id: str) -> str:
+    return f"{notifications}/{detection_id}/snapshot.jpg"
+
+
+def hls_url(notifications: str, detection_id: str, camera: str) -> str:
     """The clip as HLS, which iOS plays when tapped, where an attached `clip.mp4` fails to show at all"""
-    return f"{base}{NOTIFICATIONS_PATH}/{detection_id}/{camera}/master.m3u8"
+    return f"{notifications}/{detection_id}/{camera}/master.m3u8"
 
 
-def review_thumbnail_url(base: str, review_id: str, camera: str) -> str:
-    return f"{base}{NOTIFICATIONS_PATH}/{review_id}/{camera}/review_thumbnail.webp"
+def review_thumbnail_url(notifications: str, review_id: str, camera: str) -> str:
+    return f"{notifications}/{review_id}/{camera}/review_thumbnail.webp"
+
+
+@callback
+def proxy_problems(hass: HomeAssistant, source_entry_id: str | None = None) -> list[tuple[str, int]]:
+    """The Frigate servers, or the one given, whose notification proxy is off, given as `0`, or whose links expire,
+    given as the seconds they last, by title"""
+    problems: list[tuple[str, int]] = []
+    for entry in hass.config_entries.async_entries(FRIGATE_DOMAIN):
+        if source_entry_id is not None and entry.entry_id != source_entry_id:
+            continue
+        if not entry.options.get(PROXY_ENABLE, True):
+            problems.append((entry.title, 0))
+        elif expire := int(entry.options.get(PROXY_EXPIRE_AFTER) or 0):
+            problems.append((entry.title, expire))
+    return problems
 
 
 @callback

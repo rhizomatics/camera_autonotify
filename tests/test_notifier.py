@@ -108,6 +108,14 @@ async def test_message(hass: HomeAssistant, kind: str, zones: tuple[str, ...], r
     assert notifier(hass, kind).message(decision(reason=reason, zones=zones)) == message
 
 
+async def test_links_to_its_own_server(hass: HomeAssistant, external_url: None):
+    add_frigate(hass, client_id="house")
+    add_frigate(hass, cameras={}, entry_id="02FRIGATE", client_id="barn")
+    data = notifier(hass).supernotify_data(decision())
+    assert data["media"]["snapshot_url"] == f"{BASE}/api/frigate/house/notifications/{DETECTION}/snapshot.jpg"
+    assert data["actions"][0]["uri"] == f"{BASE}/api/frigate/house/notifications/{DETECTION}/courtyard/master.m3u8"
+
+
 async def test_no_links_without_a_url(hass: HomeAssistant):
     add_frigate(hass)
     data = notifier(hass).supernotify_data(decision())

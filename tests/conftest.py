@@ -104,15 +104,21 @@ class FakeFrigate:
 def add_frigate(
     hass: HomeAssistant,
     cameras: dict[str, list[str]] | None = None,
+    entry_id: str = FRIGATE_ENTRY_ID,
+    options: dict[str, Any] | None = None,
+    client_id: str = "frigate",
+    title: str = "frigate:5000",
 ) -> FakeFrigate:
     """A Frigate server registered as the Frigate integration does it, a device for the server, one for each camera
     with its camera entity, and one for each zone with only its occupancy sensors"""
     cameras = {"driveway": ["Turning_Circle", "Pend"], "courtyard": ["Barn_Door", "Pend"]} if cameras is None else cameras
-    entry = MockConfigEntry(domain="frigate", entry_id=FRIGATE_ENTRY_ID, data={"url": "http://frigate:5000"})
+    entry = MockConfigEntry(
+        domain="frigate", entry_id=entry_id, title=title, data={"url": "http://frigate:5000"}, options=options or {}
+    )
     entry.add_to_hass(hass)
     hass.data.setdefault("frigate", {})[entry.entry_id] = {
         "config": {
-            "mqtt": {"topic_prefix": "frigate"},
+            "mqtt": {"topic_prefix": "frigate", "client_id": client_id},
             "cameras": {
                 name: {
                     "zones": {zone: {} for zone in zones},

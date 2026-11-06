@@ -1,4 +1,4 @@
-# Implementation Plan
+# RFC 0001 - Initial Design
 
 Plan for building [Supernotify RFC 0006 - Frigate Auto Notifier](https://supernotify.rhizomatics.org.uk/latest/developer/rfcs/0006-frigate_auto_notifier/)
 as the `camera_autonotify` custom component, following the shape and tooling of
@@ -291,7 +291,17 @@ camera's or zone's entry has a `ReviewWatcher`:
 - **Release**: `0.3.0`, already tagged, rather than `0.1.0`. The changelog describes it as the first pre-release.
 - **Feedback**: through the repository's issues, since it has no discussions. A thread in the Supernotify discussions
   is still to be made.
-- **Not built**: the warning for a Frigate entry with its notification proxy off, listed as a known limit instead.
+- **Not built at first**: the warning for a Frigate entry with its notification proxy off, listed as a known limit
+  instead. Built since, see below.
+
+### Built since (2026-11-06)
+
+- **Proxy warning**: the user, confirm and settings screens warn when the Frigate server's notification proxy is off,
+  or when its `notification_proxy_expire_after_seconds` is set, since older notifications then lose their links.
+- **Instance ID**: the Frigate integration tells its servers apart in proxy links by the MQTT `client_id`, as
+  `/api/frigate/{client_id}/notifications/...`, and serves its default entry without one. Links name the server
+  only when there's more than one, so a single server's links are as before.
+- **Fixtures**: a real `detection` review added to `reviews.json`.
 
 ## Supernotify candidates
 

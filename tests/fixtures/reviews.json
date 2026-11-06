@@ -181,5 +181,48 @@
       "metadata": null
     },
     "has_been_reviewed": false
+  },
+  {
+    "id": "1793951545.403033-0aov5f",
+    "camera": "driveway",
+    "start_time": 1793951541.8596666,
+    "end_time": 1793951584.3800635,
+    "severity": "detection",
+    "thumb_path": "/media/frigate/clips/review/thumb-driveway-1793951545.403033-0aov5f.webp",
+    "data": {
+      "detections": [
+        "1793951544.567526-wjsuk1",
+        "1793951577.193395-7i3got",
+        "1793951562.523401-0ra2fh",
+        "1793951558.544028-z6dwel"
+      ],
+      "objects": [
+        "bird"
+      ],
+      "verified_objects": [],
+      "sub_labels": [],
+      "zones": [
+        "Turning_Circle"
+      ],
+      "audio": [],
+      "thumb_time": 1793951545.578938,
+      "metadata": {
+        "observations": [
+          "At the start of the sequence, a bird is visible on the lower left edge of the gravel turning circle.",
+          "The bird hops around the same small area for the first several seconds.",
+          "The bird continues to move across the gravel, appearing to forage for food.",
+          "For most of the duration, the bird remains in the lower left section of the frame.",
+          "The bird is still present on the edge of the turning circle when the activity ends."
+        ],
+        "scene": "The sequence begins at 07:52 AM on a Friday, showing a quiet morning in the driveway's turning circle. A small bird is the only subject present, appearing on the gravel in the lower left of the frame. Over the course of forty-three seconds, the bird stays within this localized area, exhibiting typical foraging behavior such as hopping and pecking at the ground. There are no humans or vehicles observed, and the bird does not approach any buildings or vehicles. The activity is consistent with natural wildlife behavior in a residential yard. The scene remains peaceful throughout, ending with the bird still active on the gravel.",
+        "title": "Bird foraging in the turning circle",
+        "shortSummary": "A single bird is observed foraging on the gravel at the edge of the turning circle during the early morning hours.",
+        "confidence": 1.0,
+        "potential_threat_level": 0,
+        "other_concerns": null,
+        "time": "Friday, 07:52 AM"
+      }
+    },
+    "has_been_reviewed": false
   }
 ]

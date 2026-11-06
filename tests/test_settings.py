@@ -148,3 +148,10 @@ def test_settings_from_options():
     assert settings.labels == frozenset({"car"})
     assert settings.zones == ("Pend",)
     assert settings.cooldown == 0
+
+
+async def test_settings_warn_of_expiring_proxy(hass: HomeAssistant):
+    add_frigate(hass, title="House", options={"notification_proxy_expire_after_seconds": 120})
+    await set_up_discovery(hass)
+    result = await open_settings(hass)
+    assert "for House stop working 120 seconds" in result["description_placeholders"]["proxy"]

@@ -153,16 +153,12 @@ cameras are set up, or you'll be told twice.
 ## Known Limits
 
 - Frigate only, so far, and English only
-- GenAI review summaries, licence plate notifications of their own, Live Activities and editable message text aren't
-  part of this release
-- The snapshot and clip links need Frigate's notification proxy, which the Frigate integration has on unless
-  switched off. With it off, notifications have no image and open nothing when tapped
-- Links use Home Assistant's external URL, or its internal one if there's none, so away from home a phone only shows
-  the snapshot where the external URL is reachable, such as through Home Assistant Cloud
-- Without Supernotify, only the first notification of each review is sent, with no image, since there's nothing an
-  update could take the place of
-- Reviews are followed in memory, so one under way when Home Assistant restarts is treated as new if Frigate updates
-  it afterwards
+- GenAI review summaries, licence plate notifications of their own, Live Activities and editable message text aren't part of this release
+- The snapshot and clip links need Frigate's notification proxy, which the Frigate integration has on unless switched off. With it off, notifications have no image and open nothing when tapped, and with an expiry set, older notifications lose them. The setup and settings screens warn of either
+- With more than one Frigate server, links name the server by its MQTT `client_id`, as the Frigate integration expects, so each server needs its own
+- Links use Home Assistant's external URL, or its internal one if there's none, so away from home a phone only shows the snapshot where the external URL is reachable, such as through Home Assistant Cloud
+- Without Supernotify, only the first notification of each review is sent, with no image, since there's nothing an update could take the place of
+- Reviews are followed in memory, so one under way when Home Assistant restarts is treated as new if Frigate updates it afterwards
 
 ## Development
 

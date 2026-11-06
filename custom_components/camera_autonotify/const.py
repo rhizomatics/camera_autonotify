@@ -54,6 +54,16 @@ SUPERNOTIFY_MISSING: Final[str] = (
     "**Supernotify is not installed.** Only a plain text notification can be sent, to every phone with the Home "
     "Assistant app, with no snapshot or links. Install Supernotify from HACS for the full experience."
 )
+# a Frigate server whose notification proxy can't serve the snapshot and clip of every notification, named by its title
+PROXY_OFF: Final[str] = (
+    "**Frigate's notification proxy is switched off for {server}.** Notifications will have no snapshot, and tapping "
+    "one won't play the clip. Switch the notification proxy back on in the Frigate integration's options."
+)
+PROXY_EXPIRES: Final[str] = (
+    "Frigate's notification links for {server} stop working {seconds} seconds after each detection, so older "
+    "notifications lose their snapshot and clip. Set the notification proxy's expiry to 0 in the Frigate "
+    "integration's options to keep them."
+)
 # what a notification says, the title being the camera's or zone's name
 MESSAGE_SEEN: Final[str] = "{label} detected"
 MESSAGE_IN_ZONES: Final[str] = "{label} detected in {zones}"

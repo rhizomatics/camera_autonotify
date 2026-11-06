@@ -8,7 +8,7 @@
         "step": {
             "user": {
                 "title": "Frigate notifications",
-                "description": "Notifications for Frigate camera reviews, sent through Supernotify.\n\n{supernotify}\n\n{found}",
+                "description": "Notifications for Frigate camera reviews, sent through Supernotify.\n\n{supernotify}{proxy}\n\n{found}",
                 "data": {
                     "auto_discover": "Set up cameras automatically",
                     "discover_zones": "Find zones too"
@@ -20,7 +20,7 @@
             },
             "confirm": {
                 "title": "Notifications for {name}",
-                "description": "Get notified when Frigate sees something at {name}?\n\n{supernotify}"
+                "description": "Get notified when Frigate sees something at {name}?\n\n{supernotify}{proxy}"
             }
         }
     },
@@ -40,7 +40,7 @@
             },
             "settings": {
                 "title": "Notifications for {name}",
-                "description": "Everything here is optional.\n\n{supernotify}",
+                "description": "Everything here is optional.\n\n{supernotify}{proxy}",
                 "data": {
                     "severities": "Severity",
                     "labels": "Objects",

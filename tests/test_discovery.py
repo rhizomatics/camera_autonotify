@@ -112,6 +112,8 @@ async def test_offered_without_automatic_discovery(hass: HomeAssistant):
 
     flow = next(f for f in flows if f["context"]["unique_id"] == frigate.cameras["driveway"])
     assert flow["step_id"] == "confirm"
+    shown = await hass.config_entries.flow.async_configure(flow["flow_id"])
+    assert (shown.get("description_placeholders") or {}).get("proxy") == ""
     result = await hass.config_entries.flow.async_configure(flow["flow_id"], {})
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == "Driveway"
@@ -147,3 +149,11 @@ async def test_device_linked_to_camera(hass: HomeAssistant):
     assert camera is not None
     assert devices[0].identifiers == camera.identifiers
     assert devices[0].manufacturer == "Frigate"
+
+
+async def test_offered_with_proxy_warning(hass: HomeAssistant):
+    add_frigate(hass, {"driveway": []}, title="House", options={"notification_proxy_enable": False})
+    await set_up_discovery(hass, auto_discover=False)
+    (flow,) = hass.config_entries.flow.async_progress_by_handler(DOMAIN)
+    shown = await hass.config_entries.flow.async_configure(flow["flow_id"])
+    assert "switched off for House" in (shown.get("description_placeholders") or {}).get("proxy", "")

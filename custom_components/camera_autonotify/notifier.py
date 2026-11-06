@@ -23,7 +23,7 @@ from .const import (
     SUPERNOTIFY_DOMAIN,
     TYPE_ZONE,
 )
-from .frigate import base_url, camera_entity_id, hls_url, snapshot_url
+from .frigate import camera_entity_id, hls_url, notifications_url, snapshot_url
 from .supernotify_api import supernotify_available
 
 if TYPE_CHECKING:
@@ -91,12 +91,12 @@ class Notifier:
         if camera := camera_entity_id(self.hass, self.source_entry_id, review.camera):
             # for Supernotify's camera snooze, the snapshot still being the image
             media["camera_entity_id"] = camera
-        base = base_url(self.hass)
-        if base and decision.detection_id:
-            snapshot = snapshot_url(base, decision.detection_id)
+        notifications = notifications_url(self.hass, self.source_entry_id)
+        if notifications and decision.detection_id:
+            snapshot = snapshot_url(notifications, decision.detection_id)
             media["snapshot_url"] = snapshot
             data["actions"] = [
-                {"level": "notification", "uri": hls_url(base, decision.detection_id, review.camera)},
+                {"level": "notification", "uri": hls_url(notifications, decision.detection_id, review.camera)},
                 {"action": "URI", "title": ACTION_VIEW_SNAPSHOT, "uri": snapshot},
             ]
         if media:

@@ -53,6 +53,20 @@ def test_reviews_read_from_payload():
     assert car_and_person.label == "Car and Person"
 
 
+def test_real_detection():
+    """A detection, not an alert, notified only when detections are chosen, with its first detection's snapshot"""
+    after = next(r for r in REVIEWS if r["severity"] == "detection")
+    going_on = message("new", after | {"end_time": None})
+    driveway = ReviewTracker(Settings(), camera="driveway")
+    assert driveway.on_message(going_on, T0) is None
+    driveway = ReviewTracker(Settings(severities=frozenset({"alert", "detection"})), camera="driveway")
+    decision = driveway.on_message(going_on, T0)
+    assert isinstance(decision, Decision)
+    assert decision.review.label == "Bird"
+    assert decision.review.zones == ("Turning_Circle",)
+    assert decision.detection_id == after["data"]["detections"][0]
+
+
 def test_label_with_sub_labels_and_audio():
     parsed = Review.from_payload(review(objects=["person"], sub_labels=[["Jeff", 0.9]], audio=["dog_bark"]))
     assert parsed.objects == ("person", "dog_bark")

@@ -9,6 +9,8 @@ from custom_components.camera_autonotify.const import (
     CONF_AUTO_DISCOVER,
     CONF_DISCOVER_ZONES,
     DOMAIN,
+    PROXY_EXPIRES,
+    PROXY_OFF,
     SUPERNOTIFY_MISSING,
     SUPERNOTIFY_PRESENT,
     TYPE_DISCOVERY,
@@ -24,6 +26,7 @@ async def test_discovery_entry_created(hass: HomeAssistant):
     assert result["description_placeholders"] == {
         "supernotify": SUPERNOTIFY_MISSING,
         "found": "No Frigate cameras found yet.",
+        "proxy": "",
     }
 
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
@@ -61,3 +64,12 @@ async def test_deliveries_by_transport(hass: HomeAssistant):
         "mobile_push": ["mobile_push", "phones"],
         "email": ["email"],
     }
+
+
+async def test_proxy_warnings(hass: HomeAssistant):
+    add_frigate(hass, title="House", options={"notification_proxy_enable": False})
+    add_frigate(hass, cameras={}, entry_id="02FRIGATE", title="Barn", options={"notification_proxy_expire_after_seconds": 60})
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
+    assert (result.get("description_placeholders") or {}).get("proxy") == (
+        f"\n\n{PROXY_OFF.format(server='House')}\n\n{PROXY_EXPIRES.format(server='Barn', seconds=60)}"
+    )
