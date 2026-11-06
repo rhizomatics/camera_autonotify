@@ -83,6 +83,7 @@ of them optional.
 | Section              | What it does                                                                           |
 | -------------------- | -------------------------------------------------------------------------------------- |
 | Timing               | *Cooldown*, 30 seconds, is the time after a notification before another is sent for something new, though updates of one already sent aren't held back. *Initial delay*, none, holds back the first notification for a better snapshot. *Notify when over*, off, sends one more once Frigate has finished, after *Delay when over*. *Stop updates after*, 10 minutes, ends the updates however long a review goes on. *Sound only the first*, on, has updates replace the first notification silently. *Notify recognised faces and plates*, on, sends an update when Frigate recognises a face or number plate |
+| GenAI                | Shown once Frigate has review summaries or object descriptions on for the camera. *Review summaries*, on, *Object descriptions*, on, and *Descriptions without a review*, off, choose what's used. *Lowest threat level*, 0, leaves out summaries below it, and the priority of each threat level is `medium`, `high` and `critical` to begin with. *Wait for GenAI*, 2 minutes, is how long an ended review is kept for what GenAI adds. See [GenAI Notifications](https://camera-autonotify.rhizomatics.org.uk/genai/) |
 | Notification targets | With Supernotify, *Targets* is the same choice of entities, devices, areas, floors and labels as any Supernotify notification, *Custom targets* is for those outside Home Assistant, such as e-mail addresses or phone numbers, and *Deliveries* limits notifications to those chosen. Leave them empty for Supernotify to choose. Without Supernotify, *Targets* is a choice of notify entities, and left empty means every phone with the Home Assistant app |
 
 ## What Gets Sent
@@ -99,6 +100,8 @@ Door" for a camera, or "Car detected on Driveway" for a zone.
 | A review that didn't match, then does, such as a detection raised to an alert | The same, as a first notification | The same |
 | Something new is seen in the review, or a new zone entered, or a face or plate recognised | An update, taking the place of the last notification for that review, silently unless *Sound only the first* is off | Nothing |
 | The review ends, with *Notify when over* on | A last update, ending "now ended" | Nothing |
+| Frigate describes an object in the review | An update with the description, after [rules](https://camera-autonotify.rhizomatics.org.uk/genai/#rules) | Nothing |
+| Frigate summarises the review | An update with its title and summary, at its threat level's priority | Nothing |
 
 With Supernotify, each notification:
 
@@ -106,6 +109,9 @@ With Supernotify, each notification:
 - has a *View snapshot* button
 - is grouped with the others of the same camera
 - passes the camera entity, so Supernotify's camera snooze works
+
+Rules, added under *Automatic discovery*, can change the priority of any notification by what it says, silence
+it, or apply Supernotify scenarios. See [GenAI Notifications](https://camera-autonotify.rhizomatics.org.uk/genai/#rules).
 
 Priority, critical alerts, sounds, who is told, snoozing, the archive and scenarios are all Supernotify's, so set
 them up there once rather than per camera.

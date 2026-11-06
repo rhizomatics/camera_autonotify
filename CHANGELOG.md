@@ -4,6 +4,10 @@
 - Warning on the setup and settings screens when a Frigate server's notification proxy is off, or its links expire
 - Snapshot and clip links name the Frigate server by its instance id when there's more than one server
 - More real Frigate reviews as test fixtures
+- Frigate's GenAI review summaries update the review's notification, with the priority of their threat level
+- Frigate's GenAI object descriptions update the notification of the review they're part of, whichever comes first
+- Rules, for any notification, to set its priority, silence it, apply Supernotify scenarios or remove text, by what its message says
+- A docs page on GenAI notifications, with a suggested prompt and rules
 
 ## 0.3.1
 - Documentation update

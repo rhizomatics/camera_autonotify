@@ -419,7 +419,7 @@ class ReviewTracker:
             for tracked in [*self._reviews.values(), *(ended for ended, _ in self._ended.values())]
             if tracked.review.camera == description.camera and description.object_id in tracked.review.detections
         ]
-        return max(candidates, key=lambda tracked: tracked.first_seen, default=None)
+        return max(candidates, key=lambda tracked: tracked.first_seen) if candidates else None
 
     def _take_described(self, tracked: _Tracked) -> _Described | None:
         """A description of one of the review's objects that came before the review knew of it"""

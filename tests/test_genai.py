@@ -17,9 +17,7 @@ from custom_components.camera_autonotify.tracker import (
 )
 
 # real sequences, from Frigate's MQTT messages as archived, each by its review id
-SEQUENCES: dict[str, list[dict[str, Any]]] = json.loads(
-    (Path(__file__).parent / "fixtures" / "sequences.json").read_text()
-)
+SEQUENCES: dict[str, list[dict[str, Any]]] = json.loads((Path(__file__).parent / "fixtures" / "sequences.json").read_text())
 # a person at night, an object described with no summary to follow, the tokens having run out
 NIGHT = "1793901333.310511-f8uxqc"
 # a person entering the barn, two objects described and a summary at threat level 1
@@ -29,9 +27,7 @@ T0 = 1_800_000_000.0
 
 def payloads(review_id: str, topic: str, kind: str | None = None) -> list[dict[str, Any]]:
     return [
-        m["payload"]
-        for m in SEQUENCES[review_id]
-        if m["topic"] == topic and (kind is None or m["payload"]["type"] == kind)
+        m["payload"] for m in SEQUENCES[review_id] if m["topic"] == topic and (kind is None or m["payload"]["type"] == kind)
     ]
 
 

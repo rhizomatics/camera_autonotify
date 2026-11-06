@@ -1,5 +1,7 @@
 # RFC 0002 - Frigate GenAI Notifications
 
+**Status**: built in 0.4.0, 2026-11-06
+
 ## Summary
 
 Notify from what Frigate's generative AI says about what it saw, using Frigate's own structured output where there

@@ -157,7 +157,14 @@ async def test_rule_changed(hass: HomeAssistant):
     assert result["step_id"] == "reconfigure"
     result = await hass.config_entries.subentries.async_configure(
         result["flow_id"],
-        {"name": "Birds", "match": "starts_with", "pattern": "bird identified", "priority": "minimum", "silence": False, "remove": True},
+        {
+            "name": "Birds",
+            "match": "starts_with",
+            "pattern": "bird identified",
+            "priority": "minimum",
+            "silence": False,
+            "remove": True,
+        },
     )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"

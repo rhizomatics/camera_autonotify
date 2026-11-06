@@ -13,10 +13,12 @@ from custom_components.camera_autonotify.diagnostics import async_get_config_ent
 
 from .conftest import FakeMQTT, add_frigate, mock_supernotify
 from .test_discovery import set_up_discovery
+from .test_genai import BARN, SEQUENCES
 from .test_settings import entry_titled
 from .test_tracker import message, review
 
 TOPIC = "frigate/reviews"
+OBJECT_UPDATES = "frigate/tracked_object_update"
 
 
 async def test_review_notified(hass: HomeAssistant, fake_mqtt: FakeMQTT):
@@ -155,3 +157,44 @@ async def test_diagnostics(hass: HomeAssistant, fake_mqtt: FakeMQTT):
     assert diagnostics["reviews"] == [review("courtyard")["id"]]
     discovery = next(e for e in hass.config_entries.async_entries(DOMAIN) if e.title == "Automatic discovery")
     assert (await async_get_config_entry_diagnostics(hass, discovery))["reviews"] == []
+
+
+async def test_genai_told_through_review_notification(hass: HomeAssistant, fake_mqtt: FakeMQTT):
+    """A real review, its objects' descriptions and its summary, as Frigate sent them"""
+    add_frigate(hass)
+    calls = mock_supernotify(hass)
+    await set_up_discovery(hass)
+    assert len(fake_mqtt.subscriptions[OBJECT_UPDATES]) == 1
+    for each in SEQUENCES[BARN]:
+        fake_mqtt.publish(f"frigate/{each['topic']}", each["payload"])
+        await hass.async_block_till_done()
+    assert [(call.data["priority"], call.data["extra_data"]["mobile_push_notification_tag"]) for call in calls] == [
+        ("high", f"frigate_{BARN}"),
+        ("low", f"frigate_{BARN}"),
+        ("low", f"frigate_{BARN}"),
+        # suspicious, so it sounds
+        ("high", f"frigate_{BARN}"),
+    ]
+    assert calls[1].data["message"].startswith("NO RISK")
+    assert calls[3].data["title"] == "A person entering a barn in the courtyard"
+    assert all(call.context.parent_id == calls[0].context.id for call in calls[1:])
+
+
+async def test_object_update_not_understood(hass: HomeAssistant, fake_mqtt: FakeMQTT, caplog: pytest.LogCaptureFixture):
+    add_frigate(hass)
+    calls = mock_supernotify(hass)
+    await set_up_discovery(hass)
+    fake_mqtt.publish(OBJECT_UPDATES, "not json")
+    fake_mqtt.publish(OBJECT_UPDATES, {"type": "face", "id": "x", "camera": "courtyard"})
+    await hass.async_block_till_done()
+    assert calls == []
+    assert "Object update not understood" in caplog.text
+
+
+async def test_unload_stops_object_updates(hass: HomeAssistant, fake_mqtt: FakeMQTT):
+    add_frigate(hass)
+    await set_up_discovery(hass)
+    for each in hass.config_entries.async_entries(DOMAIN):
+        await hass.config_entries.async_unload(each.entry_id)
+    await hass.async_block_till_done()
+    assert fake_mqtt.subscriptions[OBJECT_UPDATES] == []

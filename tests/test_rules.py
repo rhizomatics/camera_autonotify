@@ -30,7 +30,9 @@ def rules(*data: dict[str, Any]) -> list[Rule]:
         # as Frigate wrote them, `RISK.`, `RISK:` and `RISK` with a space
         (
             "MEDIUM RISK. A person in green is crouching and moving fast near the open barn door.",
-            Outcome("A person in green is crouching and moving fast near the open barn door.", "medium", matched=("Medium risk",)),
+            Outcome(
+                "A person in green is crouching and moving fast near the open barn door.", "medium", matched=("Medium risk",)
+            ),
         ),
         (
             "MEDIUM RISK: Unidentified car at the pend entrance at night.",

@@ -389,9 +389,7 @@ class RuleSubentryFlow(ConfigSubentryFlow):
                 data = {key: user_input[key] for key in RULE_DATA if user_input.get(key) not in (None, [], "")}
                 if step_id == "user":
                     return self.async_create_entry(title=title, data=data)
-                return self.async_update_and_abort(
-                    self._get_entry(), self._get_reconfigure_subentry(), title=title, data=data
-                )
+                return self.async_update_and_abort(self._get_entry(), self._get_reconfigure_subentry(), title=title, data=data)
             suggested = user_input
         elif step_id == "reconfigure":
             subentry = self._get_reconfigure_subentry()
