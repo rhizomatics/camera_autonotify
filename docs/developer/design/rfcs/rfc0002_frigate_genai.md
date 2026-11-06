@@ -300,7 +300,7 @@ actions:
         regex_findall_index(regex,ignorecase=True) | lower}} {% else %} medium
         {% endif %}
       media:
-        snapshot_url: http://10.111.10.111:8123/api/frigate/notifications/{{trigger.payload_json.id}}/thumbnail.jpg
+        snapshot_url: http://192.168.1.100:8123/api/frigate/notifications/{{trigger.payload_json.id}}/thumbnail.jpg
         camera_entity_id: camera.{{trigger.payload_json.camera}}
 mode: single
 ```
