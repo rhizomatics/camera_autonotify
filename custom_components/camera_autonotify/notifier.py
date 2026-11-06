@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import replace
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.const import ATTR_ENTITY_ID, CONF_TYPE
@@ -19,10 +20,8 @@ from .const import (
     CONF_TARGETS,
     CONF_THREAT_PRIORITIES,
     DOMAIN,
-    MESSAGE_ENDED,
-    MESSAGE_IN_ZONES,
-    MESSAGE_ON_CAMERA,
-    MESSAGE_SEEN,
+    HEADLINE,
+    HEADLINE_ENDED,
     SUBENTRY_RULE,
     SUPERNOTIFY_DOMAIN,
     THREAT_PRIORITY_DEFAULTS,
@@ -81,30 +80,39 @@ class Notifier:
         self.is_zone: bool = entry.data.get(CONF_TYPE) == TYPE_ZONE
         self.source_entry_id: str = entry.data[CONF_SOURCE_ENTRY_ID]
 
+    def headline(self, decision: Decision) -> str:
+        """What was seen and where, `Person detected at Barn Door`, the zone's own name for a zone, or else the
+        zones the review entered, or the camera's name when none"""
+        review = decision.review
+        if self.is_zone or not review.zones:
+            where = self.name
+        else:
+            where = ", ".join(_friendly(zone) for zone in review.zones)
+        headline = HEADLINE.format(label=review.label, where=where)
+        return HEADLINE_ENDED.format(headline=headline) if decision.is_final else headline
+
     def title(self, decision: Decision) -> str:
         summary = decision.summary
-        return summary.title if summary is not None and summary.title else self.name
+        return summary.title if summary is not None and summary.title else self.headline(decision)
 
     def message(self, decision: Decision) -> str:
-        """What the notification says, before rules"""
-        review = decision.review
+        """What the notification says under its title, before rules, with nothing more to say than the headline
+        without a summary or description"""
         if (summary := decision.summary) is not None:
             message = summary.short_summary or summary.title
             if summary.other_concerns:
                 message = f"{message} ({', '.join(summary.other_concerns)})"
             return message
-        if decision.description:
-            return decision.description
-        if self.is_zone:
-            message = MESSAGE_ON_CAMERA.format(label=review.label, camera=_friendly(review.camera))
-        elif review.zones:
-            message = MESSAGE_IN_ZONES.format(label=review.label, zones=", ".join(_friendly(z) for z in review.zones))
-        else:
-            message = MESSAGE_SEEN.format(label=review.label)
-        return MESSAGE_ENDED.format(message=message) if decision.is_final else message
+        return decision.description or ""
 
-    def ruled(self, decision: Decision) -> Outcome:
-        return apply_rules(notification_rules(self.hass), self.message(decision))
+    def ruled(self, decision: Decision) -> tuple[str, Outcome]:
+        """The title, and the outcome of the rules for the message, or for the headline when that's all there is,
+        so a rule can still match what was seen"""
+        rules = notification_rules(self.hass)
+        if message := self.message(decision):
+            return self.title(decision), apply_rules(rules, message)
+        outcome = apply_rules(rules, self.headline(decision))
+        return outcome.message, replace(outcome, message="")
 
     def priority(self, decision: Decision, outcome: Outcome) -> str:
         """By the review's severity, or a summary's threat level, raised by a rule, and only sounding again for an
@@ -124,13 +132,13 @@ class Notifier:
             return PRIORITY_SILENT
         return priority
 
-    def supernotify_data(self, decision: Decision, outcome: Outcome | None = None) -> dict[str, Any]:
+    def supernotify_data(self, decision: Decision, ruled: tuple[str, Outcome] | None = None) -> dict[str, Any]:
         """The `supernotify.notify` call: the snapshot, tapped for the clip as HLS, and never `clip_url`, which iOS
         fails to show, even the image"""
         review = decision.review
-        outcome = outcome or self.ruled(decision)
+        title, outcome = ruled or self.ruled(decision)
         data: dict[str, Any] = {
-            "title": self.title(decision),
+            "title": title,
             "message": outcome.message,
             "priority": self.priority(decision, outcome),
             "extra_data": {
@@ -164,21 +172,21 @@ class Notifier:
         return data
 
     async def async_notify(self, decision: Decision, context: Context) -> None:
-        outcome = self.ruled(decision)
+        title, outcome = self.ruled(decision)
         if outcome.silence:
             _LOGGER.debug("CAMERA_AUTONOTIFY Silenced for %s by %s", self.name, ", ".join(outcome.matched))
             return
         if not supernotify_available(self.hass):
-            await self._send_message(decision, outcome, context)
+            await self._send_message(decision, title, outcome.message, context)
             return
         try:
             await self.hass.services.async_call(
-                SUPERNOTIFY_DOMAIN, "notify", self.supernotify_data(decision, outcome), blocking=True, context=context
+                SUPERNOTIFY_DOMAIN, "notify", self.supernotify_data(decision, (title, outcome)), blocking=True, context=context
             )
         except HomeAssistantError:
             _LOGGER.exception("CAMERA_AUTONOTIFY Supernotify notification failed for %s", self.name)
 
-    async def _send_message(self, decision: Decision, outcome: Outcome, context: Context) -> None:
+    async def _send_message(self, decision: Decision, title: str, message: str, context: Context) -> None:
         """Plain text only, with no snapshot or link, Supernotify being what's needed for those"""
         if decision.is_update:
             # each would be a new notification, with nothing to take the place of the last
@@ -196,7 +204,7 @@ class Notifier:
             await self.hass.services.async_call(
                 "notify",
                 "send_message",
-                {ATTR_ENTITY_ID: targets, "title": self.title(decision), "message": outcome.message},
+                {ATTR_ENTITY_ID: targets, "title": title, "message": message},
                 blocking=True,
                 context=context,
             )

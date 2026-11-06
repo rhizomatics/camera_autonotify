@@ -89,8 +89,6 @@ PROXY_EXPIRES: Final[str] = (
     "integration's options to keep them."
 )
 # what a notification says, the title being the camera's or zone's name
-MESSAGE_SEEN: Final[str] = "{label} detected"
-MESSAGE_IN_ZONES: Final[str] = "{label} detected in {zones}"
-MESSAGE_ON_CAMERA: Final[str] = "{label} detected on {camera}"
-MESSAGE_ENDED: Final[str] = "{message}, now ended"
+HEADLINE: Final[str] = "{label} detected at {where}"
+HEADLINE_ENDED: Final[str] = "{headline}, now ended"
 ACTION_VIEW_SNAPSHOT: Final[str] = "View snapshot"

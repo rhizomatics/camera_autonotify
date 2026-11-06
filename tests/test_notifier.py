@@ -71,8 +71,8 @@ async def test_new_alert(hass: HomeAssistant, external_url: None):
     await notifier(hass).async_notify(decision(), Context())
     assert len(calls) == 1
     assert calls[0].data == {
-        "title": "Courtyard",
-        "message": "Person detected in Barn Door",
+        "title": "Person detected at Barn Door",
+        "message": "",
         "priority": "high",
         "extra_data": {"mobile_push_notification_tag": f"frigate_{REVIEW_ID}", "group": "frigate_courtyard"},
         "media": {
@@ -99,16 +99,18 @@ async def test_priority(hass: HomeAssistant, severity: str, silent: bool, priori
 
 
 @pytest.mark.parametrize(
-    ("kind", "zones", "reason", "message"),
+    ("kind", "zones", "reason", "title"),
     [
-        (TYPE_CAMERA, (), Reason.NEW, "Person detected"),
-        (TYPE_CAMERA, ("Barn_Door", "Back_Door"), Reason.NEW, "Person detected in Barn Door, Back Door"),
-        (TYPE_CAMERA, ("Barn_Door",), Reason.FINAL, "Person detected in Barn Door, now ended"),
-        (TYPE_ZONE, ("Pend",), Reason.NEW, "Person detected on Courtyard"),
+        (TYPE_CAMERA, (), Reason.NEW, "Person detected at Courtyard"),
+        (TYPE_CAMERA, ("Barn_Door", "Back_Door"), Reason.NEW, "Person detected at Barn Door, Back Door"),
+        (TYPE_CAMERA, ("Barn_Door",), Reason.FINAL, "Person detected at Barn Door, now ended"),
+        (TYPE_ZONE, ("Pend",), Reason.NEW, "Person detected at Courtyard"),
     ],
 )
-async def test_message(hass: HomeAssistant, kind: str, zones: tuple[str, ...], reason: Reason, message: str):
-    assert notifier(hass, kind).message(decision(reason=reason, zones=zones)) == message
+async def test_title(hass: HomeAssistant, kind: str, zones: tuple[str, ...], reason: Reason, title: str):
+    built = notifier(hass, kind)
+    assert built.title(decision(reason=reason, zones=zones)) == title
+    assert built.message(decision(reason=reason, zones=zones)) == ""
 
 
 async def test_links_to_its_own_server(hass: HomeAssistant, external_url: None):
@@ -167,7 +169,7 @@ async def test_without_supernotify_every_phone_told(hass: HomeAssistant):
     calls = async_mock_service(hass, "notify", "send_message")
     await notifier(hass).async_notify(decision(), Context())
     assert len(calls) == 1
-    assert calls[0].data == {"entity_id": [phone], "title": "Courtyard", "message": "Person detected in Barn Door"}
+    assert calls[0].data == {"entity_id": [phone], "title": "Person detected at Barn Door", "message": ""}
 
 
 async def test_without_supernotify_targets_chosen(hass: HomeAssistant):
@@ -283,11 +285,31 @@ async def test_description_ruled(hass: HomeAssistant):
         {"name": "Scenario", "match": "contains", "pattern": "hoodies", "scenarios": ["high_alert", "noisy"]},
     )
     data = notifier(hass).supernotify_data(described("HIGH RISK. Two men in hoodies are in the courtyard."))
-    assert data["title"] == "Courtyard"
+    assert data["title"] == "Person detected at Courtyard"
     assert data["message"] == "Two men in hoodies are in the courtyard."
     # raised above the alert's own, so it sounds despite alert once
     assert data["priority"] == "critical"
     assert data["apply_scenarios"] == ["high_alert", "noisy"]
+
+
+async def test_headline_ruled_without_message(hass: HomeAssistant):
+    """With no message, rules read the title"""
+    add_rules(
+        hass,
+        {"name": "Barn", "match": "contains", "pattern": "barn", "priority": "critical"},
+        {"name": "Detected", "match": "regex", "pattern": r"\s+detected\b", "remove": True},
+    )
+    data = notifier(hass).supernotify_data(decision(severity="detection"))
+    assert data["title"] == "Person at Barn Door"
+    assert data["message"] == ""
+    assert data["priority"] == "critical"
+
+
+async def test_headline_silenced(hass: HomeAssistant):
+    add_rules(hass, {"name": "Barn", "match": "contains", "pattern": "barn door", "silence": True})
+    calls = mock_supernotify(hass)
+    await notifier(hass).async_notify(decision(), Context())
+    assert calls == []
 
 
 async def test_description_unruled_stays_silent(hass: HomeAssistant):
@@ -334,4 +356,4 @@ async def test_silenced_without_supernotify(hass: HomeAssistant):
 async def test_unusable_rule_left_out(hass: HomeAssistant):
     add_rules(hass, {"name": "bad", "match": "regex", "pattern": "(", "silence": True})
     assert notification_rules(hass) == []
-    assert notifier(hass).ruled(described("Anything")).silence is False
+    assert notifier(hass).ruled(described("Anything"))[1].silence is False

@@ -7,22 +7,18 @@
 Notifications for what your security cameras see in Home Assistant, sent through
 [Supernotify](https://supernotify.rhizomatics.org.uk), with no blueprint, automations or YAML.
 
-It starts with [Frigate](https://frigate.video): every camera is found and set up by itself, and each Frigate
-review is sent as a notification with its snapshot, tapped to play the clip. Other camera integrations are to follow.
+It starts with [Frigate](https://frigate.video): every camera is found and set up by itself, and each Frigate review is sent as a notification with its snapshot, tapped to play the clip. Other camera integrations are to follow.
 
-**Pre-release** - this is a first release for feedback. Please say how it goes, or report
-anything wrong, in the [issues](https://github.com/rhizomatics/camera_autonotify/issues).
+**Early Release** - this is an early release, with more planned in the future, and feedback welcome. Please say how it goes, or report anything wrong, in the [issues](https://github.com/rhizomatics/camera_autonotify/issues).
 
 ## What You Need
 
 - Home Assistant 2026.5 or later
-- The [Frigate integration](https://docs.frigate.video/integrations/home-assistant/), with MQTT set up in Home
-  Assistant, using the same broker as Frigate
-- Home Assistant's external URL, or its internal one, set in *Settings*, *System*, *Network*, for the snapshot and
-  clip links
+- The [Frigate integration](https://docs.frigate.video/integrations/home-assistant/), with MQTT set up in Home Assistant, using the same broker as Frigate
+- Home Assistant's external URL, or its internal one, set in *Settings*, *System*, *Network*, for the snapshot and clip links
 - [Supernotify](https://supernotify.rhizomatics.org.uk), installed from HACS, for anything beyond a plain notification
-  - Optional, however without Supernotify there is only a plain text notification, with no snapshot or links, sent
-    to every phone with the Home Assistant app unless you choose other notify entities
+  - Optional, however without Supernotify there is only a plain text notification, with no snapshot or links, sent to every phone with the Home Assistant app unless you choose other notify entities
+  - The latest version is recommended, and at least v2.17.1, since a notification can have a title and no message, which earlier versions don't announce properly on Alexa
 
 ## Install
 
@@ -32,45 +28,32 @@ anything wrong, in the [issues](https://github.com/rhizomatics/camera_autonotify
 2. In *Settings*, *Devices & services*, choose *Add integration* and pick *Camera AutoNotify*
 3. Leave *Set up cameras automatically* on, and submit
 
-That's all. Every Frigate camera is set up straight away, and so is any you add to Frigate later. Each is listed on
-the integration's page, alongside *Automatic discovery*, and notifies Frigate's alerts with no further settings.
+That's all. Every Frigate camera is set up straight away, and so is any you add to Frigate later. Each is listed on the integration's page, alongside *Automatic discovery*, and notifies Frigate's alerts with no further settings.
 
-To stop the notifications for a camera, disable it rather than delete it, since a deleted camera is found and set up
-again.
+To stop the notifications for a camera, disable it rather than delete it, since a deleted camera is found and set up again.
 
 ### Removing
 
-1. In *Settings*, *Devices & services*, open *Camera AutoNotify* and delete *Automatic discovery* first, so the
-   cameras aren't found and set up again, then delete each camera and zone
+1. In *Settings*, *Devices & services*, open *Camera AutoNotify* and delete *Automatic discovery* first, so the cameras aren't found and set up again, then delete each camera and zone
 2. Remove *Camera AutoNotify* in Marketplace and restart Home Assistant
 
-It adds no automations, scripts or YAML of its own, and changes nothing in Frigate, so there is nothing else to clear
-up. If you moved from the Frigate blueprint, re-enable its automations to go back to it.
+It adds no automations, scripts or YAML of its own, and changes nothing in Frigate, so there is nothing else to clear up. If you moved from the Frigate blueprint, re-enable its automations to go back to it.
 
 ### Choosing Cameras Yourself
 
-Turn *Set up cameras automatically* off, on the first screen or later from the settings of *Automatic discovery*,
-and cameras are instead offered as *Discovered* on the *Devices & services* page, beside Frigate's own. Choose *Add*
-to set one up, or *Ignore* on any you don't want.
+Turn *Set up cameras automatically* off, on the first screen or later from the settings of *Automatic discovery*, and cameras are instead offered as *Discovered* on the *Devices & services* page, beside Frigate's own. Choose *Add* to set one up, or *Ignore* on any you don't want.
 
 ### Zones
 
-Frigate gives each of its zones a device too. Turn on *Find zones too* in the settings of *Automatic discovery* and
-each zone is found like a camera, for notifications about that zone alone. A zone in the view of more than one
-camera, such as a drive seen from the gate and from the house, notifies for reviews from any of them. It's off by
-default, since a zone is mostly covered by its camera's own notifications, and a camera's settings can already
-limit it to some of its zones.
+Frigate gives each of its zones a device too. Turn on *Find zones too* in the settings of *Automatic discovery* and each zone is found like a camera, for notifications about that zone alone. A zone in the view of more than one camera, such as a drive seen from the gate and from the house, notifies for reviews from any of them. It's off by default, since a zone is mostly covered by its camera's own notifications, and a camera's settings can already limit it to some of its zones.
 
 ### The Camera's Device
 
-From Home Assistant 2026.8, each camera or zone gets a device of its own, sharing the identifiers of the device
-Frigate gave it, so each shows the other under *Linked devices*, and Camera AutoNotify shows as one more integration
-on that device. Earlier releases go without it, and notifications are the same either way.
+From Home Assistant 2026.8, each camera or zone gets a device of its own, sharing the identifiers of the device Frigate gave it, so each shows the other under *Linked devices*, and Camera AutoNotify shows as one more integration on that device. Earlier releases go without it, and notifications are the same either way.
 
 ## Settings
 
-Nothing needs changing for notifications to work. Each camera or zone on the integration's page has settings, all
-of them optional.
+Nothing needs changing for notifications to work. Each camera or zone on the integration's page has settings, all of them optional.
 
 | Setting        | Default     | What it does                                                                         |
 | -------------- | ----------- | ------------------------------------------------------------------------------------ |
@@ -88,18 +71,16 @@ of them optional.
 
 ## What Gets Sent
 
-Nothing is polled. Frigate publishes each review over MQTT as it starts, changes and ends, and a notification goes
-out as soon as one matches the settings, held back only by the *Timing* settings.
+Nothing is polled. Frigate publishes each review over MQTT as it starts, changes and ends, and a notification goes out as soon as one matches the settings, held back only by the *Timing* settings.
 
-The title is the camera's or zone's name, and the message what was seen and where, such as "Person detected in Barn
-Door" for a camera, or "Car detected on Driveway" for a zone.
+The title says what was seen and where, such as "Person detected at Barn Door", by the zones the review entered for a camera, or the camera's name when none, and the zone's name for a zone. There's no more to the message until Frigate's GenAI describes or summarises the review.
 
 | When                                     | With Supernotify                                                   | Without                |
 | ---------------------------------------- | ------------------------------------------------------------------ | ---------------------- |
 | A review starts that matches the settings | A notification with the snapshot, `high` priority for an alert and `medium` for a detection | A plain text notification |
 | A review that didn't match, then does, such as a detection raised to an alert | The same, as a first notification | The same |
 | Something new is seen in the review, or a new zone entered, or a face or plate recognised | An update, taking the place of the last notification for that review, silently unless *Sound only the first* is off | Nothing |
-| The review ends, with *Notify when over* on | A last update, ending "now ended" | Nothing |
+| The review ends, with *Notify when over* on | A last update, its title ending "now ended" | Nothing |
 | Frigate describes an object in the review | An update with the description, after [rules](https://camera-autonotify.rhizomatics.org.uk/genai/#rules) | Nothing |
 | Frigate summarises the review | An update with its title and summary, at its threat level's priority | Nothing |
 
@@ -110,28 +91,19 @@ With Supernotify, each notification:
 - is grouped with the others of the same camera
 - passes the camera entity, so Supernotify's camera snooze works
 
-Rules, added under *Automatic discovery*, can change the priority of any notification by what it says, silence
-it, or apply Supernotify scenarios. See [GenAI Notifications](https://camera-autonotify.rhizomatics.org.uk/genai/#rules).
+Rules, added under *Automatic discovery*, can change the priority of any notification by what it says, silence it, or apply Supernotify scenarios. See [GenAI Notifications](https://camera-autonotify.rhizomatics.org.uk/genai/#rules).
 
-Priority, critical alerts, sounds, who is told, snoozing, the archive and scenarios are all Supernotify's, so set
-them up there once rather than per camera.
+Priority, critical alerts, sounds, who is told, snoozing, the archive and scenarios are all Supernotify's, so set them up there once rather than per camera.
 
 ### Video on iPhones
 
-The clip is never attached to the notification. Attached as `clip.mp4`, an iPhone shows the snapshot only some of
-the time, and a Frigate clip is often too large for it to play from the notification. Attached as the HLS playlist,
-it shows no image at all. So every notification has the snapshot as its image, and opening it plays the clip, on
-iPhones and Android phones alike. This replaces the
-[Apple push fix](https://supernotify.rhizomatics.org.uk/latest/recipes/fix_frigate_apple_push/), which isn't needed
-here.
+The clip is never attached to the notification. Attached as `clip.mp4`, an iPhone shows the snapshot only some of the time, and a Frigate clip is often too large for it to play from the notification. Attached as the HLS playlist, it shows no image at all. So every notification has the snapshot as its image, and opening it plays the clip, on iPhones and Android phones alike. This replaces the
+[Apple push fix](https://supernotify.rhizomatics.org.uk/latest/recipes/fix_frigate_apple_push/), which isn't needed here.
 
 ## Moving From the Frigate Blueprint
 
 Camera AutoNotify replaces the
-[Frigate Notifications blueprint](https://github.com/SgtBatten/HA_blueprints/tree/main/Frigate_Camera_Notifications)
-for review notifications. Every camera is set up for you, so there's nothing to copy across camera by camera, though
-any filters changed from the blueprint's defaults need setting again. Disable the blueprint's automations once the
-cameras are set up, or you'll be told twice.
+[Frigate Notifications blueprint](https://github.com/SgtBatten/HA_blueprints/tree/main/Frigate_Camera_Notifications) for review notifications. Every camera is set up for you, so there's nothing to copy across camera by camera, though any filters changed from the blueprint's defaults need setting again. Disable the blueprint's automations once the cameras are set up, or you'll be told twice.
 
 | Blueprint input | Where it is now |
 | --------------- | --------------- |

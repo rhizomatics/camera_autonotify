@@ -31,8 +31,8 @@ async def test_review_notified(hass: HomeAssistant, fake_mqtt: FakeMQTT):
     fake_mqtt.publish(TOPIC, message("new", review("courtyard", zones=["Barn_Door"])))
     await hass.async_block_till_done()
     assert len(calls) == 1
-    assert calls[0].data["title"] == "Courtyard"
-    assert calls[0].data["message"] == "Person detected in Barn Door"
+    assert calls[0].data["title"] == "Person detected at Barn Door"
+    assert calls[0].data["message"] == ""
 
 
 async def test_updates_tied_to_first(hass: HomeAssistant, fake_mqtt: FakeMQTT):
@@ -68,7 +68,7 @@ async def test_initial_delay_timed(hass: HomeAssistant, fake_mqtt: FakeMQTT):
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=6))
     await hass.async_block_till_done()
     assert len(calls) == 1
-    assert calls[0].data["message"] == "Person and Car detected in Barn Door"
+    assert calls[0].data["title"] == "Person and Car detected at Barn Door"
 
 
 async def test_unload_stops_everything(hass: HomeAssistant, fake_mqtt: FakeMQTT):
@@ -110,8 +110,7 @@ async def test_zone_hears_every_camera(hass: HomeAssistant, fake_mqtt: FakeMQTT)
     # the driveway camera, and the pend zone it's in, and not the courtyard camera
     fake_mqtt.publish(TOPIC, message("new", review("driveway", zones=["Driveway", "Pend"])))
     await hass.async_block_till_done()
-    assert sorted(call.data["title"] for call in calls) == ["Driveway", "Pend"]
-    assert next(call for call in calls if call.data["title"] == "Pend").data["message"] == "Car detected on Driveway"
+    assert sorted(call.data["title"] for call in calls) == ["Car detected at Driveway, Pend", "Car detected at Pend"]
 
 
 async def test_review_not_understood(hass: HomeAssistant, fake_mqtt: FakeMQTT, caplog: pytest.LogCaptureFixture):

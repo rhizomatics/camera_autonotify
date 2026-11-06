@@ -68,8 +68,8 @@ behavior, and potential intent of the {label}, rather than just describing its a
 
 ## Rules
 
-Rules change how any notification is sent, by what its message says, whether it's a review's own message, a summary
-or a description. They're added under *Automatic discovery*, on the integration's page, with *Add rule*.
+Rules change how any notification is sent, by what its message says, whether it's a summary or a description, or the
+title, such as "Person detected at Barn Door", of a notification with nothing more to say. They're added under *Automatic discovery*, on the integration's page, with *Add rule*.
 
 Each rule looks for some text in the message, ignoring case, by *Starts with*, *Contains* or a *Regular expression*,
 and can then do any of these:
