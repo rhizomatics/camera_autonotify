@@ -163,7 +163,7 @@ def test_description_before_review_said_with_it():
 
 def test_description_before_review_said_once_ended():
     tracker = courtyard()
-    first, second = descriptions(BARN)
+    _, second = descriptions(BARN)
     tracker.on_message(review_message(BARN, "new"), T0)
     tracker.on_description(second, T0 + 1)
     decision = tracker.on_message(review_message(BARN, "end"), T0 + 2)

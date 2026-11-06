@@ -17,7 +17,7 @@ from custom_components.camera_autonotify.const import (
     CONF_ZONES,
     DOMAIN,
 )
-from custom_components.camera_autonotify.frigate import camera_choices, zone_labels
+from custom_components.camera_autonotify.frigate import camera_choices, genai_features, zone_labels
 from custom_components.camera_autonotify.tracker import Settings
 
 from .conftest import add_frigate, mock_supernotify
@@ -155,3 +155,78 @@ async def test_settings_warn_of_expiring_proxy(hass: HomeAssistant):
     await set_up_discovery(hass)
     result = await open_settings(hass)
     assert "for House stop working 120 seconds" in result["description_placeholders"]["proxy"]
+
+
+async def test_genai_settings_only_where_frigate_has_it(hass: HomeAssistant):
+    add_frigate(hass)
+    await set_up_discovery(hass)
+    assert not any(name.startswith("genai.") for name in fields_of(await open_settings(hass)))
+
+
+async def test_genai_settings(hass: HomeAssistant):
+    add_frigate(hass, genai=True)
+    await set_up_discovery(hass, discover_zones=True)
+    shown = [name for name in fields_of(await open_settings(hass)) if name.startswith("genai.")]
+    assert shown == [
+        "genai.summaries",
+        "genai.min_threat_level",
+        "genai.priority_normal",
+        "genai.priority_suspicious",
+        "genai.priority_critical",
+        "genai.descriptions",
+        "genai.unreviewed_descriptions",
+        "genai.genai_wait",
+    ]
+    # a zone can't tell which descriptions are of it, without a review
+    zone = [name for name in fields_of(await open_settings(hass, "Pend")) if name.startswith("genai.")]
+    assert "genai.unreviewed_descriptions" not in zone
+    assert "genai.summaries" in zone
+
+
+async def test_genai_settings_stored(hass: HomeAssistant):
+    add_frigate(hass, genai=True)
+    await set_up_discovery(hass)
+    entry = entry_titled(hass, "Courtyard")
+    result = await open_settings(hass)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {
+            "timing": {},
+            "notify": {},
+            "genai": {
+                "summaries": True,
+                "min_threat_level": 1.0,
+                "priority_normal": "medium",
+                "priority_suspicious": "critical",
+                "priority_critical": "critical",
+                "descriptions": True,
+                "unreviewed_descriptions": True,
+                "genai_wait": 120,
+            },
+        },
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    await hass.async_block_till_done()
+    assert dict(entry.options) == {
+        "min_threat_level": 1.0,
+        "priority_suspicious": "critical",
+        "unreviewed_descriptions": True,
+    }
+    settings = Settings.from_options(entry.options)
+    assert settings.min_threat_level == 1
+    assert settings.unreviewed_descriptions
+
+
+def test_genai_features():
+    config = {
+        "cameras": {
+            "a": {"review": {"genai": {"enabled": True}}, "zones": {"Pend": {}}},
+            "b": {"objects": {"genai": {"enabled": True}}, "zones": {"Pend": {}, "Gate": {}}},
+        }
+    }
+    assert genai_features(config, camera="a") == (True, False)
+    assert genai_features(config, camera="b") == (False, True)
+    assert genai_features(config, camera="c") == (False, False)
+    assert genai_features(config, zone="pend") == (True, True)
+    assert genai_features(config, zone="gate") == (False, True)
+    assert genai_features(None, camera="a") == (False, False)

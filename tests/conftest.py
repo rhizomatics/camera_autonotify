@@ -86,7 +86,7 @@ def mock_supernotify(hass: HomeAssistant) -> list[ServiceCall]:
         hass,
         "supernotify",
         "enquire_configuration",
-        response={"delivery": {"phones": {"transport": "mobile_push"}}},
+        response={"delivery": {"phones": {"transport": "mobile_push"}}, "scenarios": ["noisy", "high_alert"]},
         supports_response=SupportsResponse.ONLY,
     )
     return async_mock_service(hass, "supernotify", "notify")

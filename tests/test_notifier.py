@@ -3,12 +3,12 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
+from homeassistant.config_entries import ConfigSubentryData
 from homeassistant.const import CONF_DEVICE_ID, CONF_TYPE
 from homeassistant.core import Context, HomeAssistant, ServiceCall
 from homeassistant.core_config import async_process_ha_core_config
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
-from homeassistant.config_entries import ConfigSubentryData
 from pytest_homeassistant_custom_component.common import MockConfigEntry, async_mock_service
 
 from custom_components.camera_autonotify.const import (
@@ -331,7 +331,7 @@ async def test_silenced_without_supernotify(hass: HomeAssistant):
     assert calls == []
 
 
-async def test_rules_of_disabled_discovery_not_used(hass: HomeAssistant):
+async def test_unusable_rule_left_out(hass: HomeAssistant):
     add_rules(hass, {"name": "bad", "match": "regex", "pattern": "(", "silence": True})
     assert notification_rules(hass) == []
     assert notifier(hass).ruled(described("Anything")).silence is False
