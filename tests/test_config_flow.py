@@ -4,7 +4,6 @@ from homeassistant import config_entries
 from homeassistant.const import CONF_TYPE
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.camera_autonotify.config_flow import CameraAutoNotifyConfigFlow, RuleSubentryFlow
 from custom_components.camera_autonotify.const import (
@@ -20,6 +19,7 @@ from custom_components.camera_autonotify.const import (
 )
 from custom_components.camera_autonotify.notifier import notification_rules
 from custom_components.camera_autonotify.supernotify_api import deliveries_by_transport
+from tests.ha_testing import MockConfigEntry
 
 from .conftest import add_frigate, mock_supernotify
 

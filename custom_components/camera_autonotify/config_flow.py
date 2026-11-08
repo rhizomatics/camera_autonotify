@@ -293,7 +293,6 @@ class CameraAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
             return self.async_create_entry(
                 title=self._found[CONF_NAME], data={k: v for k, v in self._found.items() if k in ENTRY_DATA}
             )
-        self._set_confirm_only()
         return self.async_show_form(
             step_id="confirm",
             description_placeholders={
