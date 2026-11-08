@@ -13,7 +13,8 @@ from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.util import slugify
-from pytest_homeassistant_custom_component.common import (
+
+from tests.ha_testing import (
     MockConfigEntry,
     MockModule,
     async_mock_service,

@@ -9,7 +9,6 @@ from homeassistant.core import Context, HomeAssistant, ServiceCall
 from homeassistant.core_config import async_process_ha_core_config
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
-from pytest_homeassistant_custom_component.common import MockConfigEntry, async_mock_service
 
 from custom_components.camera_autonotify.const import (
     CONF_CUSTOM_TARGET,
@@ -26,6 +25,7 @@ from custom_components.camera_autonotify.const import (
 )
 from custom_components.camera_autonotify.notifier import Notifier, notification_rules
 from custom_components.camera_autonotify.tracker import Decision, Reason, Review, Summary
+from tests.ha_testing import MockConfigEntry, async_mock_service
 
 from .conftest import FRIGATE_ENTRY_ID, add_frigate, mock_supernotify
 
