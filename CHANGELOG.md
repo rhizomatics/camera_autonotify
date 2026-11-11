@@ -3,6 +3,8 @@
 ## 0.6.0
 ## ✨ Enhancements
 - *Powered by* for each camera, the PoE port, smart plug or schedule it's powered by, so it's only notified as offline while that's on, with *Time to start up*, 3 minutes, before it's checked once it comes on
+## 📝 Other changes
+- Integration categories in the manifest, *Security & safety: Cameras* and *Messaging & notifications*
 
 ## 0.5.0
 ## ✨ Enhancements
@@ -11,7 +13,6 @@
 - Both read from the stats the Frigate integration already polls, so they add nothing to Frigate's load
 ## 📝 Other changes
 - *Automatic discovery* is now *Global Settings*, renamed as it's set up
-- Integration categories in the manifest, *Security & safety: Cameras* and *Messaging & notifications*
 ## 📚 Documentation
 - RFC0003 published for integrating [anpr2mqtt](https://anpr2mqtt.rhizomatics.org.uk)
 
