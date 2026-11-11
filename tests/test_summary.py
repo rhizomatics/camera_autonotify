@@ -383,3 +383,28 @@ def test_concerning():
     assert not concerning({"data": {"metadata": {"potential_threat_level": "unsure"}}})
     assert not concerning({"data": {}})
     assert concerning({"data": {"metadata": {"potential_threat_level": 2}}})
+
+
+@pytest.mark.parametrize(
+    ("email", "chosen"),
+    [(["html_email", "email"], ["email"]), (["plain_email", "html_email"], ["html_email"])],
+)
+async def test_summary_by_one_email_delivery(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, email: list[str], chosen: list[str]
+):
+    """Only one of the e-mail deliveries, so it's not sent twice, Supernotify's own `email` if it's there"""
+    loaded_frigate(hass)
+    calls = mock_supernotify(hass)
+    implicit: dict[str, Any] = {"mobile_push": ["mobile_push"], "email": email}
+    async_mock_service(
+        hass, "supernotify", "enquire_implicit_deliveries", response=implicit, supports_response=SupportsResponse.ONLY
+    )
+    entry = await set_up(hass)
+    await at(hass, freezer, "2026-11-11 00:05:00")
+    assert calls[0].data["delivery"] == chosen
+    # and shown as such to begin with
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["data_schema"] is not None
+    summary = next(field for key, field in result["data_schema"].schema.items() if str(key) == "summary")
+    suggested = {str(key): (key.description or {}).get("suggested_value") for key in summary.schema.schema}
+    assert suggested[CONF_SUMMARY_DELIVERIES] == chosen

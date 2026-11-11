@@ -78,7 +78,7 @@ The integration also notifies when a Frigate server stops responding, and when a
 
 ### GenAI Summaries
 
-Where Frigate makes GenAI review summaries, a summary of the day before is also sent each day, written by Frigate's GenAI from that day's reviews. It can instead be sent every few hours, and only when GenAI saw something suspicious in those hours. It needs Supernotify, and goes by e-mail, or whichever Supernotify deliveries you choose instead, such as Telegram, being too long for a phone's notification or a voice assistant. It's set in the *GenAI summary* section of *Global Settings*. A GenAI free tier, such as Gemini's, can run out of tokens during the day, leaving a summary short or missing. See [Summaries](https://camera-autonotify.rhizomatics.org.uk/genai/#summaries).
+Where Frigate makes GenAI review summaries, a summary of the day before is also sent each day, written by Frigate's GenAI from that day's reviews. It can instead be sent every few hours, and only when GenAI saw something suspicious in those hours. It needs Supernotify, and goes by e-mail, or whichever Supernotify deliveries you choose instead, such as Telegram, being too long for a phone's notification or a voice assistant. It's set in the *GenAI summary* section of *Global Settings*. Each summary is written by Frigate's GenAI provider, so is subject to its charges and limits. See [Summaries](https://camera-autonotify.rhizomatics.org.uk/genai/#summaries).
 
 ## What Gets Sent
 

@@ -35,7 +35,7 @@ threat level* leaves out summaries below the one chosen.
 With *Sound only the first* on, a summary at level 0 replaces the notification silently, while a summary at level 1
 or 2 sounds, since it says something more urgent than the review did.
 
-Summaries stop when the model's tokens run out, so a review may not get one. Its notification then stays as it was,
+A review may not get a summary, if Frigate's GenAI doesn't make one for it. Its notification then stays as it was,
 or as its descriptions left it.
 
 ## Object Descriptions
@@ -83,22 +83,22 @@ It's in the *GenAI summary* section of *Global Settings*:
 | How often | Once a day | Every 1, 2, 3, 4, 6, 8 or 12 hours, or once a day. Each summary covers the hours since the one before, up to the hour it's sent in |
 | Starting at | 00:05 | When the first of the day is sent, and the others every so many hours from it |
 | Only when there's a concern | Off | Only send it when GenAI gave one of the reviews in those hours a threat level of suspicious or critical, or noted other concerns |
-| Deliveries | Supernotify's e-mail deliveries | Choose others to send it by instead, such as Telegram. Left empty, it goes by e-mail, and isn't sent at all if Supernotify has no e-mail delivery |
+| Deliveries | Supernotify's e-mail delivery | Choose others to send it by instead, such as Telegram. Left empty, it goes by Supernotify's e-mail delivery, the one called `email` if there's more than one, such as one for HTML too, so it's only sent once, and isn't sent at all if Supernotify has none |
 
-Whether there's a concern is read from the reviews Frigate already has, before the summary is asked for, so no
-tokens are spent on a summary that isn't wanted. Each summary goes at `medium` priority, and rules apply to it as to
+Whether there's a concern is read from the threat level and other concerns Frigate's GenAI already gave each review,
+and only if there is one is Frigate asked for the summary. Each summary goes at `medium` priority, and rules apply to it as to
 any other notification. Frigate needs to be 0.17 or later.
 
 ### Two Ways to Use It
 
 **A daily account, always sent.** Leave *How often* at once a day and *Only when there's a concern* off, and choose
-an e-mail delivery. Every morning there's a report of the day before, worrying or not, to read when convenient. With
-a free tier, set *Starting at* to after its allowance is renewed, such as 08:30, and each summary covers 08:00 to
-08:00.
+an e-mail delivery. Every morning there's a report of the day before, worrying or not, to read when convenient.
+Choose a later *Starting at* to have it arrive later in the morning, such as 08:30, and each summary then covers
+08:00 to 08:00.
 
 | How often | Starting at | Only when there's a concern | Deliveries |
 |-----------|-------------|-----------------------------|------------|
-| Once a day | 00:05, or 08:30 on a free tier | Off | `email` |
+| Once a day | 00:05 | Off | `email` |
 
 **A regular check that only speaks up when needed.** Set *How often* to every 4 hours, say, and switch on *Only when
 there's a concern*, with a delivery that's seen sooner than e-mail, such as Telegram. Most of the time nothing is
@@ -119,12 +119,17 @@ delivery the review notifications don't go to.
     notify entity that adds each message to a file. Supernotify supports notify entities directly, so make a delivery
     for it, and choose that delivery in *Deliveries*, with the e-mail delivery too if both are wanted.
 
-!!! warning "Free tiers run out"
-    A GenAI provider's free tier, such as Gemini's, has a daily allowance of tokens. Once that's used up, Frigate
-    stops summarising reviews for the rest of the day, so a summary covers only those it summarised, and none can be
-    written at all until the allowance is renewed, which for Gemini is at midnight Pacific time, 08:00 in the UK. A
-    summary Frigate can't write is logged as a warning, and nothing is sent. A summary every hour or two spends more
-    of the allowance, though *Only when there's a concern* spends none when there's nothing to say.
+!!! note "Your GenAI provider"
+    Every summary is written by the GenAI provider Frigate is set up with, as each review's own summary is, so it's
+    subject to whatever that provider charges or limits, and a summary every hour or two asks for more of them than
+    one a day. See Frigate's [GenAI configuration](https://docs.frigate.video/configuration/genai/genai_config) and [review summaries](https://docs.frigate.video/configuration/genai/genai_review). A summary Frigate can't
+    write is logged as a warning, and nothing is sent. If summaries are missing, see Frigate's
+    [How do I debug GenAI issues?](https://docs.frigate.video/configuration/genai/genai_config#how-do-i-debug-genai-issues).
+
+!!! tip "Summaries in your own language"
+    Frigate writes its summaries in English unless its `review.genai.preferred_language` is set, such as to
+    `Spanish`, which applies both to each review's summary and to these summaries of the hours before. See Frigate's
+    [Preferred Language](https://docs.frigate.video/configuration/genai/genai_review/#preferred-language).
 
 ### Moving From an Automation
 

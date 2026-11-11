@@ -47,8 +47,13 @@ async def deliveries_by_transport(hass: HomeAssistant, context: Context | None =
 
 
 async def email_deliveries(hass: HomeAssistant, context: Context | None = None) -> list[str]:
-    """The deliveries Supernotify sends e-mail by, for what's too long for a phone or a voice assistant"""
-    return sorted((await deliveries_by_transport(hass, context)).get(EMAIL_TRANSPORT) or [])
+    """One delivery Supernotify sends e-mail by, for what's too long for a phone or a voice assistant, the one it
+    calls `email` if it has it, since there may be others, such as for HTML, that would send it again, or nothing
+    when there's none"""
+    names = sorted((await deliveries_by_transport(hass, context)).get(EMAIL_TRANSPORT) or [])
+    if not names:
+        return []
+    return [EMAIL_TRANSPORT if EMAIL_TRANSPORT in names else names[0]]
 
 
 async def scenario_names(hass: HomeAssistant, context: Context | None = None) -> list[str]:

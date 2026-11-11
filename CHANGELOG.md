@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.1
+# 📚 Documentation
+- Correct wording on Frigate use of GenAI and token limits
+- Include links to the Frigate GenAI troubleshooting FAQ and language selection
+- Only select 1 `email` delivery by default in Supernotify if there are several
+
 ## 0.7.0
 ## ✨ Enhancements
 - *GenAI summary* in *Global Settings*, a summary written by Frigate's GenAI of the reviews of the hours before, sent once a day, or every few hours, automatically where Frigate makes review summaries, and optionally only when GenAI saw something of concern in those hours. Through Supernotify only, by e-mail unless other deliveries are chosen, such as Telegram

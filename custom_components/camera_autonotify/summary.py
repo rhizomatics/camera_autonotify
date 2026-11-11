@@ -5,11 +5,11 @@ settings
 Sent automatically when Frigate makes review summaries for any of a server's cameras, or a review summary has come
 over MQTT in the hours summarised, or else always or never, as chosen. It can be kept for when there's something to
 worry about, sent only when one of the reviews in those hours was given a threat level, or other concerns, by GenAI,
-which is checked before asking for the summary, so no tokens are spent on one that isn't wanted. A summary Frigate
-can't make, such as when a free tier's tokens for the day have run out, is logged and nothing sent.
+which is checked before asking for the summary, so Frigate isn't asked for one that wouldn't be sent. A summary
+Frigate can't make is logged and nothing sent.
 
-Too long for a phone's notification or a voice assistant, so only sent through Supernotify, by its e-mail deliveries
-unless others are chosen, such as Telegram, and not at all when there are none.
+Too long for a phone's notification or a voice assistant, so only sent through Supernotify, by one of its e-mail
+deliveries unless others are chosen, such as Telegram, and not at all when it has none.
 """
 
 from __future__ import annotations
@@ -187,8 +187,7 @@ class Summaries:
             try:
                 response = await client.async_review_summarize(start.timestamp(), end.timestamp())
             except Exception as error:
-                # FrigateApiClientError, for a timeout, a refusal, or Frigate failing to make it, as when a free tier's
-                # tokens have run out for the day
+                # FrigateApiClientError, for a timeout, a refusal, or Frigate or its GenAI provider failing to make it
                 _LOGGER.warning("CAMERA_AUTONOTIFY Frigate %s couldn't summarise %s: %s", server.title, said, error)
                 continue
             if (text := summary_text(response)) is None:
