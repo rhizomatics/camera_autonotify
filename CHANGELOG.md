@@ -1,28 +1,35 @@
 # Changelog
 
 ## 0.5.0
+## ✨ Enhancements
 - Frigate health check, notifying when a Frigate server stops responding and again when it's back, checked once a period, with retries that back off exponentially before a failure is notified, set in *Global Settings*
 - *Notify when offline* for each camera, notifying when Frigate has no video from it and again when it's back, timed as the health check, unless the camera is disabled in Frigate
 - Both read from the stats the Frigate integration already polls, so they add nothing to Frigate's load
+## 📝 Other changes
 - *Automatic discovery* is now *Global Settings*, renamed as it's set up
 
 ## 0.4.0
+## ✨ Enhancements
 - Warning on the setup and settings screens when a Frigate server's notification proxy is off, or its links expire
 - Snapshot and clip links name the Frigate server by its instance id when there's more than one server
 - More real Frigate reviews as test fixtures
 - Frigate's GenAI review summaries update the review's notification, with the priority of their threat level
 - Frigate's GenAI object descriptions update the notification of the review they're part of, whichever comes first
 - Rules, for any notification, to set its priority, silence it, apply Supernotify scenarios or remove text, by what its message says
+## 📚 Documentation
 - A docs page on GenAI notifications, with a suggested prompt and rules
 
 ## 0.3.1
-- Documentation update
+## 📚 Documentation
+- Web documentation site improvements
+## 📝 Other changes
 - Tests work now on older less compatible HA 2026.4 releases
 
 ## 0.3.0
 
 First pre-release, for feedback.
 
+## ✨ Enhancements
 - Frigate cameras found and set up by themselves, or offered as discovered with automatic discovery off, each linked to its Frigate device
 - Frigate zones as well, optionally
 - The Frigate blueprint's filters and timing as settings: severity, objects, zones, every zone, zones in order, cooldown, initial delay, notify when over, delay when over, stop updates after, sound only the first, and recognised faces and plates
