@@ -41,7 +41,7 @@ plugins:
   - search
   - autorefs
   - pagetree
-  - optimize
+  # no optimize plugin: PNGs are compressed as they're committed, by the optimize-png hook, so the build needs no pngquant
   - meta-descriptions
   - tags
   - htmlproofer:
