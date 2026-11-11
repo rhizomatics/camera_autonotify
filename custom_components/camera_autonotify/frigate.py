@@ -9,7 +9,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.util import slugify
 
-from .const import FRIGATE_DOMAIN
+from .const import DOMAIN, FRIGATE_DOMAIN
 
 DEFAULT_TOPIC_PREFIX = "frigate"
 # the Frigate integration keeps each server's config, as Frigate itself reports it, under its entry id
@@ -23,6 +23,8 @@ NOTIFICATIONS = "notifications"
 # the Frigate entry's options for its notification proxy, on, and never expiring, unless changed
 PROXY_ENABLE = "notification_proxy_enable"
 PROXY_EXPIRE_AFTER = "notification_proxy_expire_after_seconds"
+# when a review summary last came over MQTT, by topic prefix
+DATA_GENAI_SEEN = "genai_seen"
 
 
 @callback
@@ -37,6 +39,11 @@ class FrigateApiClient(Protocol):
     doesn't answer"""
 
     async def async_get_version(self) -> str: ...
+
+    # only from Frigate 0.17, and the Frigate integration's releases for it
+    async def async_review_summarize(self, start_time: float, end_time: float) -> dict[str, Any] | str: ...
+
+    async def async_get_reviews(self, after: float | None = None, before: float | None = None) -> list[dict[str, Any]]: ...
 
 
 @callback
@@ -181,3 +188,26 @@ def genai_features(config: dict[str, Any] | None, camera: str | None = None, zon
         chosen = [settings for settings in cameras.values() if zone in {slugify(z) for z in settings.get("zones") or {}}]
     found = [_genai(settings) for settings in chosen]
     return any(summaries for summaries, _ in found), any(descriptions for _, descriptions in found)
+
+
+def makes_summaries(config: dict[str, Any] | None) -> bool:
+    """Whether Frigate makes review summaries for any of its cameras"""
+    return any(summaries for summaries, _ in map(_genai, ((config or {}).get("cameras") or {}).values()))
+
+
+@callback
+def genai_reviews_seen(hass: HomeAssistant) -> dict[str, float]:
+    """When a review summary last came from each Frigate server over MQTT, as a timestamp, by its topic prefix, since
+    Home Assistant started"""
+    data: dict[str, Any] = hass.data.setdefault(DOMAIN, {})
+    return data.setdefault(DATA_GENAI_SEEN, {})
+
+
+def concerning(review: dict[str, Any]) -> bool:
+    """Whether GenAI's summary of a review saw a threat, or something else of concern"""
+    metadata = (review.get("data") or {}).get("metadata") or {}
+    try:
+        level = int(metadata.get("potential_threat_level") or 0)
+    except TypeError, ValueError:
+        level = 0
+    return level > 0 or bool(metadata.get("other_concerns"))

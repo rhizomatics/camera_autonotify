@@ -15,6 +15,7 @@ from .discovery import async_discover, async_start_discovery
 from .frigate import frigate_config, topic_prefix
 from .health import HealthMonitor, async_start_health_check
 from .hub import ReviewWatcher, async_watch
+from .summary import async_start_summaries
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -35,12 +36,13 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: CameraAutoNotifyConfigEntry) -> bool:
     entry.runtime_data = None
     if entry.data.get(CONF_TYPE) == TYPE_DISCOVERY:
-        # no reviews to watch, only to look again now that what's discovered may have been switched, and the health
-        # of each Frigate server
+        # no reviews to watch, only to look again now that what's discovered may have been switched, the health
+        # of each Frigate server, and its daily summary
         if entry.title == DISCOVERY_TITLE_BEFORE:
             hass.config_entries.async_update_entry(entry, title=DISCOVERY_TITLE)
         async_discover(hass)
         entry.runtime_data = async_start_health_check(hass, entry)
+        async_start_summaries(hass, entry)
         return True
     config = frigate_config(hass, entry.data[CONF_SOURCE_ENTRY_ID])
     if config is None:

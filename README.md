@@ -76,6 +76,10 @@ Nothing needs changing for notifications to work. Each camera or zone on the int
 
 The integration also notifies when a Frigate server stops responding, and when a camera stops sending Frigate video, once a few retries have failed, and again when it's back. Both are on to begin with, set in the *Frigate health check* section of *Global Settings*, and each camera's *Notify when offline*. Cameras switched off on purpose, by their PoE port, a smart plug or a schedule, can be kept quiet with *Powered by*. See [Health Check](https://camera-autonotify.rhizomatics.org.uk/health/).
 
+### GenAI Summaries
+
+Where Frigate makes GenAI review summaries, a summary of the day before is also sent each day, written by Frigate's GenAI from that day's reviews. It can instead be sent every few hours, and only when GenAI saw something suspicious in those hours. It needs Supernotify, and goes by e-mail, or whichever Supernotify deliveries you choose instead, such as Telegram, being too long for a phone's notification or a voice assistant. It's set in the *GenAI summary* section of *Global Settings*. A GenAI free tier, such as Gemini's, can run out of tokens during the day, leaving a summary short or missing. See [Summaries](https://camera-autonotify.rhizomatics.org.uk/genai/#summaries).
+
 ## What Gets Sent
 
 Nothing is polled. Frigate publishes each review over MQTT as it starts, changes and ends, and a notification goes out as soon as one matches the settings, held back only by the *Timing* settings.
@@ -101,6 +105,53 @@ With Supernotify, each notification:
 Rules, added under *Global Settings*, can change the priority of any notification by what it says, silence it, or apply Supernotify scenarios. See [GenAI Notifications](https://camera-autonotify.rhizomatics.org.uk/genai/#rules).
 
 Priority, critical alerts, sounds, who is told, snoozing, the archive and scenarios are all Supernotify's, so set them up there once rather than per camera.
+
+### Who's Home, and the Alarm
+
+How much a camera notification matters depends on who's home and whether the alarm is set: a person at the door is
+routine in the afternoon with everyone in, and urgent at night with the house armed. Camera AutoNotify sends every
+notification through Supernotify, so this can be decided there, once, for every camera, with no automations.
+
+- **Scenarios** in Supernotify apply when their conditions are met, checked as each notification is sent. A condition
+  can be any Home Assistant condition, so an `alarm_control_panel` state, a `person` being home or away, or
+  Supernotify's own `occupancy`, such as `ALL_AWAY` or `LONE_HOME`, and the time of day. A scenario can switch
+  deliveries on or off, such as announcing on speakers or sounding a chime only while armed, and raise the priority,
+  up to `critical` so it breaks through a phone's silent mode. See
+  [Scenarios](https://supernotify.rhizomatics.org.uk/latest/configuration/scenarios/) and
+  [Conditions](https://supernotify.rhizomatics.org.uk/latest/configuration/conditions/).
+- **People**: Supernotify knows who's home from their `person` entities, and a delivery can go only to those who are
+  home, or only to those who are away, so a speaker announcement is heard by whoever's in, and a phone notification
+  reaches whoever's out. See [People](https://supernotify.rhizomatics.org.uk/latest/configuration/people/).
+
+For example, the conditions of a scenario for when the alarm is set at night, from Supernotify's own docs, to which the deliveries and priority it changes are added:
+
+```yaml
+more_attention:
+  conditions:
+    condition: and
+    conditions:
+      - not:
+          - condition: state
+            entity_id: alarm_control_panel.home_alarm_control
+            state: disarmed
+      - condition: time
+        after: "21:30:00"
+        before: "06:30:00"
+```
+
+[Auto Arm](https://autoarm.rhizomatics.org.uk) keeps the alarm control panel's state right without anyone having to
+remember. It arms and disarms it from who's home, sunrise and sunset, and calendar events, with buttons, mobile
+actions and voice commands for changing it by hand, so the scenarios above follow along by themselves.
+
+It can also switch Frigate's own profile as the alarm state changes, from Frigate 0.18, so Frigate itself watches
+differently when the house is empty: more cameras or zones raising alerts, say, or indoor cameras recording only
+while `armed_away`. A Frigate profile named after an alarm state is used for it, or one named `armed` for any of the
+armed states, and Frigate goes back to its base config when disarmed. A profile chosen by hand in Frigate is left
+alone. See [Frigate Profile Switching](https://autoarm.rhizomatics.org.uk/configuration/frigate/).
+
+Together, with nothing per camera: everyone leaves, Auto Arm arms the house, Frigate switches to its `armed_away`
+profile and alerts on more, and Supernotify sends those alerts as `critical` to everyone's phone, while the same
+camera notifications stay quiet and routine when someone's home.
 
 ### Video on iPhones
 

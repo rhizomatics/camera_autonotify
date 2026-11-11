@@ -53,6 +53,28 @@
                             "health_retries": "How many more times a failed check is tried before Frigate is notified as not responding. 0 notifies the first failure.",
                             "health_backoff": "How long before trying a failed check again, doubling for each retry after that."
                         }
+                    },
+                    "summary": {
+                        "name": "GenAI summary",
+                        "description": "A summary of the hours before, written by Frigate's GenAI from their reviews, once a day to begin with, or more often to hear of anything worrying. It goes by e-mail, being too long for a phone's notification or a voice assistant. GenAI on a free tier, such as Gemini's, may run out of tokens during the day, so a summary may be missing or cover only part of its hours.",
+                        "data": {
+                            "summary_mode": "Send a summary",
+                            "summary_interval": "How often",
+                            "summary_time": "Starting at",
+                            "summary_concerns_only": "Only when there's a concern",
+                            "summary_deliveries": "Deliveries"
+                        },
+                        "data_description": {
+                            "summary_mode": "Automatic sends it when Frigate makes review summaries for any camera.",
+                            "summary_interval": "Each summary covers the hours since the one before, up to the hour it's sent in.",
+                            "summary_time": "When the first of the day is sent, and the others every so many hours from it. Once a day, choose a time after your GenAI provider's quota is renewed, such as after 08:00 in the UK for Gemini's free tier.",
+                            "summary_concerns_only": "Only send it when GenAI gave one of the reviews in those hours a threat level, or other concerns. This is checked before asking for the summary, so no tokens are spent when there's nothing to say.",
+                            "summary_deliveries": "Supernotify's e-mail deliveries to begin with, or choose others, such as Telegram. Left empty, it goes by e-mail, and isn't sent if Supernotify has no e-mail delivery."
+                        }
+                    },
+                    "summary_unavailable": {
+                        "name": "GenAI summary",
+                        "description": "A summary of the hours before, written by Frigate's GenAI from their reviews, once a day or more often. It's too long for a phone's notification or a voice assistant, so it needs Supernotify to send it, by e-mail or another delivery. Install Supernotify from HACS, with an e-mail delivery, to switch it on here."
                     }
                 }
             },
@@ -167,6 +189,25 @@
                 "starts_with": "Starts with",
                 "contains": "Contains",
                 "regex": "Regular expression"
+            }
+        },
+        "summary_mode": {
+            "options": {
+                "auto": "Automatic",
+                "on": "On",
+                "off": "Off"
+            }
+        },
+        "summary_interval": {
+            "options": {
+                "1": "Every hour",
+                "2": "Every 2 hours",
+                "3": "Every 3 hours",
+                "4": "Every 4 hours",
+                "6": "Every 6 hours",
+                "8": "Every 8 hours",
+                "12": "Every 12 hours",
+                "24": "Once a day"
             }
         }
     },

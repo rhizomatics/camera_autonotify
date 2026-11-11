@@ -19,6 +19,9 @@ async def _enquire(hass: HomeAssistant, action: str, context: Context) -> dict[s
     return dict(response) if response else {}
 
 
+EMAIL_TRANSPORT = "email"
+
+
 async def deliveries_by_transport(hass: HomeAssistant, context: Context | None = None) -> dict[str, list[str]]:
     """Delivery names for each transport, both those configured and those Supernotify set up itself"""
     # one context for both enquiries, where the caller has none of its own to pass on
@@ -41,6 +44,11 @@ async def deliveries_by_transport(hass: HomeAssistant, context: Context | None =
         if name not in names:
             names.append(name)
     return by_transport
+
+
+async def email_deliveries(hass: HomeAssistant, context: Context | None = None) -> list[str]:
+    """The deliveries Supernotify sends e-mail by, for what's too long for a phone or a voice assistant"""
+    return sorted((await deliveries_by_transport(hass, context)).get(EMAIL_TRANSPORT) or [])
 
 
 async def scenario_names(hass: HomeAssistant, context: Context | None = None) -> list[str]:

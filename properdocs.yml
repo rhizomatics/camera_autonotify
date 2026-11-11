@@ -64,7 +64,7 @@ plugins:
       sections:
         Start here:
           - index.md: What it does, requirements, installation, settings, what gets sent, known limits and issues
-          - genai.md: Notifications from Frigate's GenAI review summaries and object descriptions, and rules on any notification's message
+          - genai.md: Notifications from Frigate's GenAI review summaries and object descriptions, summaries of the day or of anything suspicious, and rules on any notification's message
           - health.md: Notifications when a Frigate server stops responding or a camera stops sending video, retries, and cameras switched off on purpose
         Optional:
           - changelog.md: Release history

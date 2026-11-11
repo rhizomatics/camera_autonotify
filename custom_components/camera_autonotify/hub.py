@@ -4,6 +4,7 @@ decides"""
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 from dataclasses import dataclass, field
@@ -15,8 +16,9 @@ from homeassistant.core import CALLBACK_TYPE, Context, HomeAssistant, callback
 from homeassistant.helpers.event import async_call_later
 
 from .const import CONF_SOURCE_NAME, DOMAIN, TYPE_ZONE
+from .frigate import genai_reviews_seen
 from .notifier import Notifier
-from .tracker import Decision, ReviewTracker, Settings, Wait
+from .tracker import TYPE_GENAI, Decision, ReviewTracker, Settings, Wait
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -115,6 +117,18 @@ class _Hub:
     watchers: list[ReviewWatcher] = field(default_factory=list)
 
 
+def _is_summary(payload: str | bytes | bytearray) -> bool:
+    """Whether a review message is GenAI's summary of the review, read only when it might be"""
+    text = payload.decode(errors="replace") if isinstance(payload, (bytes, bytearray)) else payload
+    if TYPE_GENAI not in text:
+        return False
+    try:
+        message = json.loads(text)
+    except ValueError:
+        return False
+    return isinstance(message, dict) and message.get("type") == TYPE_GENAI
+
+
 def _hubs(hass: HomeAssistant) -> dict[str, _Hub]:
     data: dict[str, Any] = hass.data.setdefault(DOMAIN, {})
     return data.setdefault(DATA_HUBS, {})
@@ -128,6 +142,9 @@ async def async_watch(hass: HomeAssistant, prefix: str, watcher: ReviewWatcher) 
 
         @callback
         def review(message: ReceiveMessage) -> None:
+            if _is_summary(message.payload):
+                # so the daily summary is sent, even where Frigate's config doesn't say it makes them
+                genai_reviews_seen(hass)[prefix] = time.time()
             for each in list(hubs[prefix].watchers):
                 each.async_review(message.payload)
 

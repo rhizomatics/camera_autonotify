@@ -65,6 +65,23 @@ CONF_POWER_GRACE: Final[str] = "power_grace"
 POWER_DOMAINS: Final[tuple[str, ...]] = ("switch", "binary_sensor", "input_boolean", "schedule")
 DEFAULT_POWER_GRACE: Final[int] = 180
 
+# a summary of the hours before, made by Frigate's GenAI from their reviews, a setting of the discovery entry: sent
+# automatically when Frigate makes review summaries, or always, or never, every so many hours from a time of day, to
+# the deliveries chosen, and if chosen, only when a review in those hours raised a concern
+CONF_SUMMARY_MODE: Final[str] = "summary_mode"
+CONF_SUMMARY_TIME: Final[str] = "summary_time"
+CONF_SUMMARY_INTERVAL: Final[str] = "summary_interval"
+CONF_SUMMARY_CONCERNS: Final[str] = "summary_concerns_only"
+CONF_SUMMARY_DELIVERIES: Final[str] = "summary_deliveries"
+SUMMARY_AUTO: Final[str] = "auto"
+SUMMARY_ON: Final[str] = "on"
+SUMMARY_OFF: Final[str] = "off"
+SUMMARY_MODES: Final[tuple[str, ...]] = (SUMMARY_AUTO, SUMMARY_ON, SUMMARY_OFF)
+DEFAULT_SUMMARY_TIME: Final[str] = "00:05:00"
+# hours between summaries, each dividing a day, so they fall at the same times every day
+SUMMARY_INTERVALS: Final[tuple[int, ...]] = (1, 2, 3, 4, 6, 8, 12, 24)
+DEFAULT_SUMMARY_INTERVAL: Final[int] = 24
+
 # a rule, a subentry of the discovery entry, that changes how any notification whose message it matches is sent
 SUBENTRY_RULE: Final[str] = "rule"
 CONF_MATCH: Final[str] = "match"
@@ -120,3 +137,6 @@ CAMERA_DOWN_TITLE: Final[str] = "{camera} camera is offline"
 CAMERA_DOWN: Final[str] = "Frigate has had no video from {camera} since {since}."
 CAMERA_UP_TITLE: Final[str] = "{camera} camera is back"
 CAMERA_UP: Final[str] = "Frigate has video from {camera} again, after {duration}."
+# a summary, named by the hours it covers, and by the server's title when there's more than one
+SUMMARY_TITLE: Final[str] = "Frigate summary for {period}"
+SUMMARY_SERVER_TITLE: Final[str] = "Frigate summary for {period} from {server}"

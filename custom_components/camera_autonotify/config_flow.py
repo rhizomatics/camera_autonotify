@@ -32,6 +32,7 @@ from homeassistant.helpers.selector import (
     TargetSelector,
     TextSelector,
     TextSelectorConfig,
+    TimeSelector,
 )
 
 from .compat import vol
@@ -67,6 +68,11 @@ from .const import (
     CONF_SOURCE_NAME,
     CONF_STATUS_CHECK,
     CONF_SUMMARIES,
+    CONF_SUMMARY_CONCERNS,
+    CONF_SUMMARY_DELIVERIES,
+    CONF_SUMMARY_INTERVAL,
+    CONF_SUMMARY_MODE,
+    CONF_SUMMARY_TIME,
     CONF_TARGET,
     CONF_TARGETS,
     CONF_THREAT_PRIORITIES,
@@ -77,6 +83,8 @@ from .const import (
     CONF_ZONE_ORDER,
     CONF_ZONES,
     DEFAULT_POWER_GRACE,
+    DEFAULT_SUMMARY_INTERVAL,
+    DEFAULT_SUMMARY_TIME,
     DISCOVERY_TITLE,
     DOMAIN,
     MATCH_CONTAINS,
@@ -87,6 +95,9 @@ from .const import (
     PROXY_OFF,
     SEVERITIES,
     SUBENTRY_RULE,
+    SUMMARY_AUTO,
+    SUMMARY_INTERVALS,
+    SUMMARY_MODES,
     SUPERNOTIFY_MISSING,
     SUPERNOTIFY_PRESENT,
     THREAT_PRIORITY_DEFAULTS,
@@ -97,7 +108,7 @@ from .discovery import find_cameras
 from .frigate import camera_choices, frigate_config, genai_features, proxy_problems, zone_labels
 from .health import HealthSettings
 from .rules import compile_pattern
-from .supernotify_api import deliveries_by_transport, scenario_names, supernotify_available
+from .supernotify_api import deliveries_by_transport, email_deliveries, scenario_names, supernotify_available
 from .tracker import Settings
 
 STEP_DISCOVERY = "discovery"
@@ -106,12 +117,22 @@ SECTION_TIMING = "timing"
 SECTION_GENAI = "genai"
 SECTION_NOTIFY = "notify"
 SECTION_HEALTH = "health"
-SECTIONS = (SECTION_TIMING, SECTION_GENAI, SECTION_NOTIFY, SECTION_HEALTH)
+SECTION_SUMMARY = "summary"
+# the daily summary without Supernotify, with nothing to set, only saying it needs Supernotify
+SECTION_SUMMARY_UNAVAILABLE = "summary_unavailable"
+SECTIONS = (SECTION_TIMING, SECTION_GENAI, SECTION_NOTIFY, SECTION_HEALTH, SECTION_SUMMARY, SECTION_SUMMARY_UNAVAILABLE)
 # a setting left as it comes isn't stored, so it follows any better default of a later version
 DEFAULTS: dict[str, Any] = (
     {f.name: sorted(value) if isinstance(value := getattr(Settings(), f.name), frozenset) else value for f in fields(Settings)}
     | dict(zip(CONF_THREAT_PRIORITIES, THREAT_PRIORITY_DEFAULTS, strict=True))
     | {CONF_STATUS_CHECK: True, CONF_POWER_GRACE: DEFAULT_POWER_GRACE}
+)
+SUMMARY_OPTIONS = (
+    CONF_SUMMARY_MODE,
+    CONF_SUMMARY_INTERVAL,
+    CONF_SUMMARY_TIME,
+    CONF_SUMMARY_CONCERNS,
+    CONF_SUMMARY_DELIVERIES,
 )
 # what a rule holds, its name being the subentry's title
 RULE_DATA = (CONF_MATCH, CONF_PATTERN, CONF_PRIORITY, CONF_SILENCE, CONF_SCENARIOS, CONF_REMOVE)
@@ -133,14 +154,24 @@ def proxy_status(hass: HomeAssistant, source_entry_id: str | None = None) -> str
     return "".join(f"\n\n{warning}" for warning in warnings)
 
 
-def discovery_schema(auto_discover: bool = True, discover_zones: bool = False, health: bool = False) -> vol.Schema:
-    """What's found, and once set up, the health check of each Frigate server, out of the way until wanted"""
+def discovery_schema(
+    auto_discover: bool = True,
+    discover_zones: bool = False,
+    health: bool = False,
+    deliveries: list[str] | None = None,
+) -> vol.Schema:
+    """What's found, and once set up, the health check of each Frigate server and the daily summary, out of the way
+    until wanted, the summary only to be set with Supernotify, whose deliveries are given"""
     fields_: dict[vol.Marker, Any] = {
         vol.Required(CONF_AUTO_DISCOVER, default=auto_discover): BooleanSelector(),
         vol.Required(CONF_DISCOVER_ZONES, default=discover_zones): BooleanSelector(),
     }
     if health:
         fields_[vol.Required(SECTION_HEALTH)] = section(vol.Schema(health_schema()), {"collapsed": True})
+        if deliveries is not None:
+            fields_[vol.Required(SECTION_SUMMARY)] = section(vol.Schema(summary_schema(deliveries)), {"collapsed": True})
+        else:
+            fields_[vol.Optional(SECTION_SUMMARY_UNAVAILABLE)] = section(vol.Schema({}), {"collapsed": True})
     return vol.Schema(fields_)
 
 
@@ -154,6 +185,34 @@ def health_schema() -> dict[vol.Marker, Any]:
         ),
         vol.Required(CONF_HEALTH_BACKOFF, default=default.backoff): _seconds(600, minimum=1),
     }
+
+
+def summary_schema(deliveries: list[str]) -> dict[vol.Marker, Any]:
+    return {
+        vol.Required(CONF_SUMMARY_MODE, default=SUMMARY_AUTO): SelectSelector(
+            SelectSelectorConfig(
+                options=list(SUMMARY_MODES), mode=SelectSelectorMode.DROPDOWN, translation_key=CONF_SUMMARY_MODE
+            )
+        ),
+        vol.Required(CONF_SUMMARY_INTERVAL, default=str(DEFAULT_SUMMARY_INTERVAL)): SelectSelector(
+            SelectSelectorConfig(
+                options=[str(hours) for hours in SUMMARY_INTERVALS],
+                mode=SelectSelectorMode.DROPDOWN,
+                translation_key=CONF_SUMMARY_INTERVAL,
+            )
+        ),
+        vol.Required(CONF_SUMMARY_TIME, default=DEFAULT_SUMMARY_TIME): TimeSelector(),
+        vol.Required(CONF_SUMMARY_CONCERNS, default=False): BooleanSelector(),
+        # left empty, Supernotify's e-mail deliveries, as shown to begin with
+        vol.Optional(CONF_SUMMARY_DELIVERIES): SelectSelector(SelectSelectorConfig(options=deliveries, multiple=True)),
+    }
+
+
+async def supernotify_deliveries(hass: HomeAssistant) -> list[str] | None:
+    """Every Supernotify delivery by name, or nothing without Supernotify"""
+    if not supernotify_available(hass):
+        return None
+    return sorted({name for names in (await deliveries_by_transport(hass)).values() for name in names})
 
 
 # as the base class, since type checkers can't all take one registered by a decorator as a type
@@ -234,7 +293,7 @@ async def settings_schema(
         # the same pair of target fields as supernotify.notify itself
         notify[vol.Optional(CONF_TARGET)] = TargetSelector()
         notify[vol.Optional(CONF_CUSTOM_TARGET)] = TextSelector(TextSelectorConfig(multiple=True))
-        deliveries = sorted({name for names in (await deliveries_by_transport(hass)).values() for name in names})
+        deliveries = await supernotify_deliveries(hass) or []
         notify[vol.Optional(CONF_DELIVERIES)] = SelectSelector(SelectSelectorConfig(options=deliveries, multiple=True))
     else:
         notify[vol.Optional(CONF_TARGETS)] = EntitySelector(EntitySelectorConfig(domain="notify", multiple=True))
@@ -346,11 +405,25 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
 
     async def async_step_discovery(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
-            return self.async_create_entry(data=flattened(user_input))
+            # the daily summary's settings kept while they can't be shown, without Supernotify
+            kept = (
+                {}
+                if SECTION_SUMMARY in user_input
+                else {key: value for key, value in self.config_entry.options.items() if key in SUMMARY_OPTIONS}
+            )
+            return self.async_create_entry(data=kept | flattened(user_input))
         options = self.config_entry.options
-        schema = discovery_schema(options.get(CONF_AUTO_DISCOVER, True), options.get(CONF_DISCOVER_ZONES, False), health=True)
+        schema = discovery_schema(
+            options.get(CONF_AUTO_DISCOVER, True),
+            options.get(CONF_DISCOVER_ZONES, False),
+            health=True,
+            deliveries=await supernotify_deliveries(self.hass),
+        )
+        shown = dict(options)
+        if not shown.get(CONF_SUMMARY_DELIVERIES) and supernotify_available(self.hass):
+            shown[CONF_SUMMARY_DELIVERIES] = await email_deliveries(self.hass)
         return self.async_show_form(
-            step_id=STEP_DISCOVERY, data_schema=self.add_suggested_values_to_schema(schema, sectioned(schema, dict(options)))
+            step_id=STEP_DISCOVERY, data_schema=self.add_suggested_values_to_schema(schema, sectioned(schema, shown))
         )
 
     async def async_step_settings(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
