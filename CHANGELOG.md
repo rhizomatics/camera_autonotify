@@ -4,6 +4,7 @@
 # 📚 Documentation
 - Correct wording on Frigate use of GenAI and token limits
 - Include links to the Frigate GenAI troubleshooting FAQ and language selection
+## 🐞 Fixes
 - Only select 1 `email` delivery by default in Supernotify if there are several
 
 ## 0.7.0
