@@ -84,3 +84,7 @@ actions:
 mode: single
 
 ```
+
+## Reference
+
+- https://anpr2mqtt.rhizomatics.org.uk

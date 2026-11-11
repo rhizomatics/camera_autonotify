@@ -28,24 +28,24 @@ It starts with [Frigate](https://frigate.video): every camera is found and set u
 2. In *Settings*, *Devices & services*, choose *Add integration* and pick *Camera AutoNotify*
 3. Leave *Set up cameras automatically* on, and submit
 
-That's all. Every Frigate camera is set up straight away, and so is any you add to Frigate later. Each is listed on the integration's page, alongside *Automatic discovery*, and notifies Frigate's alerts with no further settings.
+That's all. Every Frigate camera is set up straight away, and so is any you add to Frigate later. Each is listed on the integration's page, alongside *Global Settings*, and notifies Frigate's alerts with no further settings.
 
 To stop the notifications for a camera, disable it rather than delete it, since a deleted camera is found and set up again.
 
 ### Removing
 
-1. In *Settings*, *Devices & services*, open *Camera AutoNotify* and delete *Automatic discovery* first, so the cameras aren't found and set up again, then delete each camera and zone
+1. In *Settings*, *Devices & services*, open *Camera AutoNotify* and delete *Global Settings* first, so the cameras aren't found and set up again, then delete each camera and zone
 2. Remove *Camera AutoNotify* in Marketplace and restart Home Assistant
 
 It adds no automations, scripts or YAML of its own, and changes nothing in Frigate, so there is nothing else to clear up. If you moved from the Frigate blueprint, re-enable its automations to go back to it.
 
 ### Choosing Cameras Yourself
 
-Turn *Set up cameras automatically* off, on the first screen or later from the settings of *Automatic discovery*, and cameras are instead offered as *Discovered* on the *Devices & services* page, beside Frigate's own. Choose *Add* to set one up, or *Ignore* on any you don't want.
+Turn *Set up cameras automatically* off, on the first screen or later from *Global Settings*, and cameras are instead offered as *Discovered* on the *Devices & services* page, beside Frigate's own. Choose *Add* to set one up, or *Ignore* on any you don't want.
 
 ### Zones
 
-Frigate gives each of its zones a device too. Turn on *Find zones too* in the settings of *Automatic discovery* and each zone is found like a camera, for notifications about that zone alone. A zone in the view of more than one camera, such as a drive seen from the gate and from the house, notifies for reviews from any of them. It's off by default, since a zone is mostly covered by its camera's own notifications, and a camera's settings can already limit it to some of its zones.
+Frigate gives each of its zones a device too. Turn on *Find zones too* in *Global Settings* and each zone is found like a camera, for notifications about that zone alone. A zone in the view of more than one camera, such as a drive seen from the gate and from the house, notifies for reviews from any of them. It's off by default, since a zone is mostly covered by its camera's own notifications, and a camera's settings can already limit it to some of its zones.
 
 ### The Camera's Device
 
@@ -62,12 +62,35 @@ Nothing needs changing for notifications to work. Each camera or zone on the int
 | Zones          | Anywhere    | Only notify when one of these zones is entered. Cameras only                         |
 | Every zone     | Off         | Only notify once every zone chosen has been entered, rather than any of them         |
 | Zones in order | Off         | Only notify when the zones chosen are entered in the order listed, such as from the gate to the door |
+| Notify when offline | On     | Notify when Frigate has no video from the camera, and again when it's back. Cameras only. See [Frigate Health Check](#frigate-health-check) |
 
 | Section              | What it does                                                                           |
 | -------------------- | -------------------------------------------------------------------------------------- |
 | Timing               | *Cooldown*, 30 seconds, is the time after a notification before another is sent for something new, though updates of one already sent aren't held back. *Initial delay*, none, holds back the first notification for a better snapshot. *Notify when over*, off, sends one more once Frigate has finished, after *Delay when over*. *Stop updates after*, 10 minutes, ends the updates however long a review goes on. *Sound only the first*, on, has updates replace the first notification silently. *Notify recognised faces and plates*, on, sends an update when Frigate recognises a face or number plate |
 | GenAI                | Shown once Frigate has review summaries or object descriptions on for the camera. *Review summaries*, on, *Object descriptions*, on, and *Descriptions without a review*, off, choose what's used. *Lowest threat level*, 0, leaves out summaries below it, and the priority of each threat level is `medium`, `high` and `critical` to begin with. *Wait for GenAI*, 2 minutes, is how long an ended review is kept for what GenAI adds. See [GenAI Notifications](https://camera-autonotify.rhizomatics.org.uk/genai/) |
 | Notification targets | With Supernotify, *Targets* is the same choice of entities, devices, areas, floors and labels as any Supernotify notification, *Custom targets* is for those outside Home Assistant, such as e-mail addresses or phone numbers, and *Deliveries* limits notifications to those chosen. Leave them empty for Supernotify to choose. Without Supernotify, *Targets* is a choice of notify entities, and left empty means every phone with the Home Assistant app |
+
+### Frigate Health Check
+
+The integration also notifies when a Frigate server stops responding, and when a camera stops sending Frigate video. Neither adds anything to Frigate's load: both are read from what the Frigate integration already asks Frigate for every few seconds, its stats, and only where those aren't there to read is Frigate asked for its version, as its own container health check does.
+
+- **Frigate server**: *Frigate is not responding* once the Frigate integration can't get its stats, or can't connect to it at all
+- **Camera**: *Courtyard camera is offline* once Frigate has had no frames from the camera. A camera disabled in Frigate is taken as meant to be, and not notified, and nor are a server's cameras while the server itself isn't answering
+
+When a check fails it's tried again, after 10 seconds, then 20, then 40, each retry waiting twice as long as the one before, and only once every retry has failed is it notified, so a restart passes without a word. Once it's back, *Frigate is back* or *Courtyard camera is back* takes the place of that notification, saying how long it was gone.
+
+Both are on to begin with. The server check and the timing of both are in the *Frigate health check* section of *Global Settings*, and each camera has its own *Notify when offline*:
+
+| Setting                | Default    | What it does                                                                  |
+| ---------------------- | ---------- | ----------------------------------------------------------------------------- |
+| Check Frigate's health | On         | Switch off for no notifications about the Frigate server                      |
+| Check every            | 60 seconds | How often each Frigate server, and each camera, is checked                    |
+| Retries                | 3          | How many more times a failed check is tried before it's notified. 0 notifies the first failure |
+| First retry after      | 10 seconds | How long before the first retry, doubling for each after it                   |
+
+These notifications go at `high` priority, and `low` for the recovery. A server's go to whoever Supernotify chooses, or without Supernotify, every phone with the Home Assistant app, and a camera's to the same targets and deliveries as its other notifications. Rules apply to them as to any other, so they can change their priority or silence them, matching text such as *failed its health check*, *no video* or *again*.
+
+To quieten them for a while rather than switching them off, such as while Frigate is being worked on, use Supernotify's snoozing, from a mobile action, a dashboard button or an automation. A snooze lasts a set time, or a silence until it's lifted, and either can cover everything, only what isn't critical, a delivery or a priority, for everyone or one person. See [Snoozing](https://supernotify.rhizomatics.org.uk/latest/usage/snoozing/) in the Supernotify docs.
 
 ## What Gets Sent
 
@@ -91,7 +114,7 @@ With Supernotify, each notification:
 - is grouped with the others of the same camera
 - passes the camera entity, so Supernotify's camera snooze works
 
-Rules, added under *Automatic discovery*, can change the priority of any notification by what it says, silence it, or apply Supernotify scenarios. See [GenAI Notifications](https://camera-autonotify.rhizomatics.org.uk/genai/#rules).
+Rules, added under *Global Settings*, can change the priority of any notification by what it says, silence it, or apply Supernotify scenarios. See [GenAI Notifications](https://camera-autonotify.rhizomatics.org.uk/genai/#rules).
 
 Priority, critical alerts, sounds, who is told, snoozing, the archive and scenarios are all Supernotify's, so set them up there once rather than per camera.
 

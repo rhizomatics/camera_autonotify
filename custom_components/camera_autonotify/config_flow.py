@@ -46,6 +46,10 @@ from .const import (
     CONF_FINAL_DELAY,
     CONF_FINAL_UPDATE,
     CONF_GENAI_WAIT,
+    CONF_HEALTH_BACKOFF,
+    CONF_HEALTH_CHECK,
+    CONF_HEALTH_INTERVAL,
+    CONF_HEALTH_RETRIES,
     CONF_INITIAL_DELAY,
     CONF_LABELS,
     CONF_MATCH,
@@ -59,6 +63,7 @@ from .const import (
     CONF_SOURCE,
     CONF_SOURCE_ENTRY_ID,
     CONF_SOURCE_NAME,
+    CONF_STATUS_CHECK,
     CONF_SUMMARIES,
     CONF_TARGET,
     CONF_TARGETS,
@@ -86,6 +91,7 @@ from .const import (
 )
 from .discovery import find_cameras
 from .frigate import camera_choices, frigate_config, genai_features, proxy_problems, zone_labels
+from .health import HealthSettings
 from .rules import compile_pattern
 from .supernotify_api import deliveries_by_transport, scenario_names, supernotify_available
 from .tracker import Settings
@@ -95,11 +101,14 @@ STEP_SETTINGS = "settings"
 SECTION_TIMING = "timing"
 SECTION_GENAI = "genai"
 SECTION_NOTIFY = "notify"
-SECTIONS = (SECTION_TIMING, SECTION_GENAI, SECTION_NOTIFY)
+SECTION_HEALTH = "health"
+SECTIONS = (SECTION_TIMING, SECTION_GENAI, SECTION_NOTIFY, SECTION_HEALTH)
 # a setting left as it comes isn't stored, so it follows any better default of a later version
-DEFAULTS: dict[str, Any] = {
-    f.name: sorted(value) if isinstance(value := getattr(Settings(), f.name), frozenset) else value for f in fields(Settings)
-} | dict(zip(CONF_THREAT_PRIORITIES, THREAT_PRIORITY_DEFAULTS, strict=True))
+DEFAULTS: dict[str, Any] = (
+    {f.name: sorted(value) if isinstance(value := getattr(Settings(), f.name), frozenset) else value for f in fields(Settings)}
+    | dict(zip(CONF_THREAT_PRIORITIES, THREAT_PRIORITY_DEFAULTS, strict=True))
+    | {CONF_STATUS_CHECK: True}
+)
 # what a rule holds, its name being the subentry's title
 RULE_DATA = (CONF_MATCH, CONF_PATTERN, CONF_PRIORITY, CONF_SILENCE, CONF_SCENARIOS, CONF_REMOVE)
 # what a camera or zone's entry holds, as it's found
@@ -120,17 +129,35 @@ def proxy_status(hass: HomeAssistant, source_entry_id: str | None = None) -> str
     return "".join(f"\n\n{warning}" for warning in warnings)
 
 
-def discovery_schema(auto_discover: bool = True, discover_zones: bool = False) -> vol.Schema:
-    return vol.Schema({
+def discovery_schema(auto_discover: bool = True, discover_zones: bool = False, health: bool = False) -> vol.Schema:
+    """What's found, and once set up, the health check of each Frigate server, out of the way until wanted"""
+    fields_: dict[vol.Marker, Any] = {
         vol.Required(CONF_AUTO_DISCOVER, default=auto_discover): BooleanSelector(),
         vol.Required(CONF_DISCOVER_ZONES, default=discover_zones): BooleanSelector(),
-    })
+    }
+    if health:
+        fields_[vol.Required(SECTION_HEALTH)] = section(vol.Schema(health_schema()), {"collapsed": True})
+    return vol.Schema(fields_)
+
+
+def health_schema() -> dict[vol.Marker, Any]:
+    default = HealthSettings()
+    return {
+        vol.Required(CONF_HEALTH_CHECK, default=default.enabled): BooleanSelector(),
+        vol.Required(CONF_HEALTH_INTERVAL, default=default.interval): _seconds(3600, minimum=10),
+        vol.Required(CONF_HEALTH_RETRIES, default=default.retries): NumberSelector(
+            NumberSelectorConfig(min=0, max=10, step=1, mode=NumberSelectorMode.BOX)
+        ),
+        vol.Required(CONF_HEALTH_BACKOFF, default=default.backoff): _seconds(600, minimum=1),
+    }
 
 
 # as the base class, since type checkers can't all take one registered by a decorator as a type
-def _seconds(maximum: int) -> Selector:
+def _seconds(maximum: int, minimum: int = 0) -> Selector:
     return NumberSelector(
-        NumberSelectorConfig(min=0, max=maximum, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement=UnitOfTime.SECONDS)
+        NumberSelectorConfig(
+            min=minimum, max=maximum, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement=UnitOfTime.SECONDS
+        )
     )
 
 
@@ -185,6 +212,8 @@ async def settings_schema(
         fields_[vol.Optional(CONF_ZONES)] = _choose(zones)
         fields_[vol.Required(CONF_ZONE_MULTI, default=False)] = BooleanSelector()
         fields_[vol.Required(CONF_ZONE_ORDER, default=False)] = BooleanSelector()
+        # a camera's own, a zone having no video of its own
+        fields_[vol.Required(CONF_STATUS_CHECK, default=DEFAULTS[CONF_STATUS_CHECK])] = BooleanSelector()
     timing: dict[vol.Marker, Any] = {
         vol.Required(CONF_COOLDOWN, default=DEFAULTS[CONF_COOLDOWN]): _seconds(3600),
         vol.Required(CONF_INITIAL_DELAY, default=DEFAULTS[CONF_INITIAL_DELAY]): _seconds(60),
@@ -250,7 +279,7 @@ class CameraAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
         return {}
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        """Automatic discovery, the cameras themselves set up as they're found"""
+        """The global settings, chiefly automatic discovery, the cameras themselves set up as they're found"""
         await self.async_set_unique_id(TYPE_DISCOVERY)
         self._abort_if_unique_id_configured()
         if user_input is not None:
@@ -311,11 +340,11 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
 
     async def async_step_discovery(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
-            return self.async_create_entry(data=user_input)
+            return self.async_create_entry(data=flattened(user_input))
         options = self.config_entry.options
+        schema = discovery_schema(options.get(CONF_AUTO_DISCOVER, True), options.get(CONF_DISCOVER_ZONES, False), health=True)
         return self.async_show_form(
-            step_id=STEP_DISCOVERY,
-            data_schema=discovery_schema(options.get(CONF_AUTO_DISCOVER, True), options.get(CONF_DISCOVER_ZONES, False)),
+            step_id=STEP_DISCOVERY, data_schema=self.add_suggested_values_to_schema(schema, sectioned(schema, dict(options)))
         )
 
     async def async_step_settings(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:

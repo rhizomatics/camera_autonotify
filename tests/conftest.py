@@ -57,8 +57,21 @@ class FakeMQTT:
 
     def publish(self, topic: str, payload: dict[str, Any] | str) -> None:
         message = SimpleNamespace(topic=topic, payload=payload if isinstance(payload, str) else json.dumps(payload))
-        for received in list(self.subscriptions.get(topic, [])):
-            received(message)
+        for subscribed, receivers in list(self.subscriptions.items()):
+            if _matches(subscribed, topic):
+                for received in list(receivers):
+                    received(message)
+
+
+def _matches(subscribed: str, topic: str) -> bool:
+    """As MQTT matches a topic to a subscription, `+` for any one level and `#` for the rest"""
+    wanted, levels = subscribed.split("/"), topic.split("/")
+    for index, part in enumerate(wanted):
+        if part == "#":
+            return True
+        if index >= len(levels) or part not in ("+", levels[index]):
+            return False
+    return len(wanted) == len(levels)
 
 
 @pytest.fixture(autouse=True)

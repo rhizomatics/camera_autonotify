@@ -98,7 +98,9 @@ async def test_zones_found_once_switched_on(hass: HomeAssistant):
     discovery = next(e for e in hass.config_entries.async_entries(DOMAIN) if e.data[CONF_TYPE] == TYPE_DISCOVERY)
     result = await hass.config_entries.options.async_init(discovery.entry_id)
     assert result["step_id"] == "discovery"
-    await hass.config_entries.options.async_configure(result["flow_id"], {CONF_AUTO_DISCOVER: True, CONF_DISCOVER_ZONES: True})
+    await hass.config_entries.options.async_configure(
+        result["flow_id"], {CONF_AUTO_DISCOVER: True, CONF_DISCOVER_ZONES: True, "health": {}}
+    )
     await hass.async_block_till_done()
     assert len(watched(hass)) == 5
 

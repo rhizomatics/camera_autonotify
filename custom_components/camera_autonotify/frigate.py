@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Protocol
 
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
@@ -14,6 +14,9 @@ from .const import FRIGATE_DOMAIN
 DEFAULT_TOPIC_PREFIX = "frigate"
 # the Frigate integration keeps each server's config, as Frigate itself reports it, under its entry id
 FRIGATE_CONFIG = "config"
+FRIGATE_CLIENT = "client"
+# what polls the server's stats every few seconds, and so knows whether it answers, and has the video of each camera
+FRIGATE_COORDINATOR = "coordinator"
 # served without a login, so a phone can fetch it, for as long as the Frigate entry allows
 FRIGATE_API_PATH = "/api/frigate"
 NOTIFICATIONS = "notifications"
@@ -27,6 +30,48 @@ def frigate_config(hass: HomeAssistant, source_entry_id: str) -> dict[str, Any] 
     """The config of a Frigate server, once its entry is set up"""
     data = hass.data.get(FRIGATE_DOMAIN, {}).get(source_entry_id)
     return data.get(FRIGATE_CONFIG) if isinstance(data, dict) else None
+
+
+class FrigateApiClient(Protocol):
+    """The part of the Frigate integration's API client used, raising its `FrigateApiClientError` when the server
+    doesn't answer"""
+
+    async def async_get_version(self) -> str: ...
+
+
+@callback
+def frigate_client(hass: HomeAssistant, source_entry_id: str) -> FrigateApiClient | None:
+    """The Frigate integration's API client for a server, once its entry is set up, with its URL and login"""
+    data = hass.data.get(FRIGATE_DOMAIN, {}).get(source_entry_id)
+    return data.get(FRIGATE_CLIENT) if isinstance(data, dict) else None
+
+
+class FrigateCoordinator(Protocol):
+    """The part of the Frigate integration's coordinator used, `data` being Frigate's own `/api/stats`"""
+
+    last_update_success: bool
+    data: dict[str, Any] | None
+
+
+@callback
+def frigate_coordinator(hass: HomeAssistant, source_entry_id: str) -> FrigateCoordinator | None:
+    """The Frigate integration's coordinator for a server, once its entry is set up"""
+    data = hass.data.get(FRIGATE_DOMAIN, {}).get(source_entry_id)
+    coordinator = data.get(FRIGATE_COORDINATOR) if isinstance(data, dict) else None
+    return coordinator if hasattr(coordinator, "last_update_success") else None
+
+
+def camera_has_video(stats: dict[str, Any] | None, camera: str) -> bool | None:
+    """Whether Frigate is getting frames from a camera, by its stats, or nothing when they don't have the camera"""
+    found = ((stats or {}).get("cameras") or {}).get(camera)
+    if not isinstance(found, dict) or found.get("camera_fps") is None:
+        return None
+    return float(found["camera_fps"]) > 0
+
+
+def camera_enabled(config: dict[str, Any] | None, camera: str) -> bool:
+    """Whether a camera is enabled in Frigate's config, as the Frigate integration last read it"""
+    return bool((((config or {}).get("cameras") or {}).get(camera) or {}).get("enabled", True))
 
 
 def topic_prefix(config: dict[str, Any] | None) -> str:

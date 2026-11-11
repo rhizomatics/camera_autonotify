@@ -95,6 +95,13 @@ allow-star-arg-any = true
 [tool.ruff.format]
 preview = true
 
+# only one of the two test helper packages is installed at a time
+[[tool.ty.overrides]]
+include = ["tests/ha_testing.py"]
+
+[tool.ty.overrides.rules]
+import-not-found = "ignore"
+
 [tool.codespell]
 ignore-words-list = "hass"
 skip = "*.json,./.*,./htmlcov,./junit,cov.xml,coverage.xml,uv.lock"

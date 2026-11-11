@@ -27,7 +27,7 @@
     "options": {
         "step": {
             "discovery": {
-                "title": "Automatic discovery",
+                "title": "Global Settings",
                 "description": "Cameras and zones already set up are left as they are.",
                 "data": {
                     "auto_discover": "Set up cameras automatically",
@@ -36,6 +36,24 @@
                 "data_description": {
                     "auto_discover": "Add every Frigate camera as it's found. Switch off to be offered each one instead",
                     "discover_zones": "Offer each Frigate zone like a camera, for notifications about that zone alone"
+                },
+                "sections": {
+                    "health": {
+                        "name": "Frigate health check",
+                        "description": "Notify when a Frigate server stops responding, and again when it's back. The timing is also used for each camera's own check of its video.",
+                        "data": {
+                            "health_check": "Check Frigate's health",
+                            "health_interval": "Check every",
+                            "health_retries": "Retries",
+                            "health_backoff": "First retry after"
+                        },
+                        "data_description": {
+                            "health_check": "Notify when a Frigate server isn't answering the Frigate integration, which asks it for its stats every few seconds anyway.",
+                            "health_interval": "How often each Frigate server is checked.",
+                            "health_retries": "How many more times a failed check is tried before Frigate is notified as not responding. 0 notifies the first failure.",
+                            "health_backoff": "How long before trying a failed check again, doubling for each retry after that."
+                        }
+                    }
                 }
             },
             "settings": {
@@ -46,14 +64,16 @@
                     "labels": "Objects",
                     "zones": "Zones",
                     "zone_multi": "Every zone",
-                    "zone_order": "Zones in order"
+                    "zone_order": "Zones in order",
+                    "status_check": "Notify when offline"
                 },
                 "data_description": {
                     "severities": "Which of Frigate's reviews to notify. Alerts are what Frigate is set to treat as important, detections are everything else it tracks.",
                     "labels": "Only notify when one of these is seen or heard. Leave empty for anything.",
                     "zones": "Only notify when one of these zones is entered. Leave empty for anywhere.",
                     "zone_multi": "Only notify once every zone chosen has been entered, rather than any of them.",
-                    "zone_order": "Only notify when the zones chosen are entered in the order listed, such as from the gate to the door."
+                    "zone_order": "Only notify when the zones chosen are entered in the order listed, such as from the gate to the door.",
+                    "status_check": "Notify when Frigate has no video from this camera, and again when it's back. Not while the camera is disabled in Frigate. Timed as the Frigate health check in Global Settings."
                 },
                 "sections": {
                     "timing": {

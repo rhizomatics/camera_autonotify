@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0
+- Frigate health check, notifying when a Frigate server stops responding and again when it's back, checked once a period, with retries that back off exponentially before a failure is notified, set in *Global Settings*
+- *Notify when offline* for each camera, notifying when Frigate has no video from it and again when it's back, timed as the health check, unless the camera is disabled in Frigate
+- Both read from the stats the Frigate integration already polls, so they add nothing to Frigate's load
+- *Automatic discovery* is now *Global Settings*, renamed as it's set up
+
 ## 0.4.0
 - Warning on the setup and settings screens when a Frigate server's notification proxy is off, or its links expire
 - Snapshot and clip links name the Frigate server by its instance id when there's more than one server

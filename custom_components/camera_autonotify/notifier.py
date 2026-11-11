@@ -7,7 +7,7 @@ from dataclasses import replace
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.const import ATTR_ENTITY_ID, CONF_TYPE
-from homeassistant.core import callback
+from homeassistant.core import Context, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
 
@@ -33,8 +33,10 @@ from .rules import Outcome, Rule, apply_rules, rank
 from .supernotify_api import supernotify_available
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from homeassistant.config_entries import ConfigEntry
-    from homeassistant.core import Context, HomeAssistant
+    from homeassistant.core import HomeAssistant
 
     from .tracker import Decision
 
@@ -68,6 +70,61 @@ def notification_rules(hass: HomeAssistant) -> list[Rule]:
             ]
             return [rule for rule in built if rule is not None]
     return []
+
+
+@callback
+def mobile_app_targets(hass: HomeAssistant) -> list[str]:
+    """Every phone with the mobile app, those told when no targets are chosen"""
+    return [
+        entity.entity_id
+        for entity in er.async_get(hass).entities.values()
+        if entity.domain == "notify" and entity.platform == MOBILE_APP_PLATFORM and not entity.disabled
+    ]
+
+
+async def async_notify_message(
+    hass: HomeAssistant, title: str, message: str, priority: str, tag: str, options: Mapping[str, Any] | None = None
+) -> None:
+    """A notification of the integration's own, not of a review, such as a Frigate server failing its health check,
+    with the rules applied to its message like any other, through Supernotify, or else to every phone, and for a
+    camera, to whoever its options choose"""
+    options = options or {}
+    outcome = apply_rules(notification_rules(hass), message)
+    if outcome.silence:
+        _LOGGER.debug("CAMERA_AUTONOTIFY Silenced %s by %s", title, ", ".join(outcome.matched))
+        return
+    context = Context()
+    try:
+        if supernotify_available(hass):
+            data: dict[str, Any] = {
+                "title": title,
+                "message": outcome.message,
+                "priority": outcome.priority or priority,
+                # each with the same tag takes the place of the last, as a recovery does of its failure
+                "extra_data": {"mobile_push_notification_tag": tag, "group": DOMAIN},
+            }
+            if deliveries := options.get(CONF_DELIVERIES):
+                data["delivery"] = list(deliveries)
+                data["delivery_selection"] = "explicit"
+            for key in (CONF_TARGET, CONF_CUSTOM_TARGET):
+                if value := options.get(key):
+                    data[key] = value
+            if outcome.scenarios:
+                data["apply_scenarios"] = list(outcome.scenarios)
+            await hass.services.async_call(SUPERNOTIFY_DOMAIN, "notify", data, blocking=True, context=context)
+            return
+        if not (targets := options.get(CONF_TARGETS) or mobile_app_targets(hass)):
+            _LOGGER.warning("CAMERA_AUTONOTIFY Nothing to notify %s to", title)
+            return
+        await hass.services.async_call(
+            "notify",
+            "send_message",
+            {ATTR_ENTITY_ID: targets, "title": title, "message": outcome.message},
+            blocking=True,
+            context=context,
+        )
+    except HomeAssistantError:
+        _LOGGER.exception("CAMERA_AUTONOTIFY Notification failed: %s", title)
 
 
 class Notifier:
@@ -191,12 +248,7 @@ class Notifier:
         if decision.is_update:
             # each would be a new notification, with nothing to take the place of the last
             return
-        # with none chosen, every phone with the mobile app is told
-        targets: list[str] = self.entry.options.get(CONF_TARGETS) or [
-            entity.entity_id
-            for entity in er.async_get(self.hass).entities.values()
-            if entity.domain == "notify" and entity.platform == MOBILE_APP_PLATFORM and not entity.disabled
-        ]
+        targets: list[str] = self.entry.options.get(CONF_TARGETS) or mobile_app_targets(self.hass)
         if not targets:
             _LOGGER.warning("CAMERA_AUTONOTIFY Nothing to notify for %s, choose targets in its settings", self.name)
             return

@@ -63,6 +63,19 @@ async def test_zone_settings_offer_labels_of_its_cameras(hass: HomeAssistant):
     # pend is on both cameras, so the detections of each
     assert shown["labels"].config["options"] == ["bark", "car", "cat", "fox", "person"]
     assert "zones" not in shown
+    # a zone has no video of its own to check
+    assert "status_check" not in shown
+
+
+async def test_camera_offline_check_on_to_begin_with(hass: HomeAssistant):
+    add_frigate(hass)
+    await set_up_discovery(hass)
+    shown = fields_of(await open_settings(hass))
+    status_check = next(key for key in shown if key == "status_check")
+    assert status_check == "status_check"
+    form = await open_settings(hass)
+    marker = next(key for key in form["data_schema"].schema if str(key) == "status_check")
+    assert marker.default() is True
 
 
 async def test_settings_stored_flat_without_defaults(hass: HomeAssistant):

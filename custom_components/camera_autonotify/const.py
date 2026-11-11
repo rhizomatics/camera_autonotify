@@ -49,6 +49,16 @@ PRIORITIES: Final[tuple[str, ...]] = ("critical", "high", "medium", "low", "mini
 CONF_THREAT_PRIORITIES: Final[tuple[str, ...]] = ("priority_normal", "priority_suspicious", "priority_critical")
 THREAT_PRIORITY_DEFAULTS: Final[tuple[str, ...]] = ("medium", "high", "critical")
 
+# the health check of each Frigate server, a setting of the discovery entry: how often it's checked, and after a
+# failed check, how many more tries, the first after the backoff and each after twice the one before, before its
+# failure is notified
+CONF_HEALTH_CHECK: Final[str] = "health_check"
+CONF_HEALTH_INTERVAL: Final[str] = "health_interval"
+CONF_HEALTH_RETRIES: Final[str] = "health_retries"
+CONF_HEALTH_BACKOFF: Final[str] = "health_backoff"
+# a camera's own setting, to notify when Frigate has no video from it, timed as the health check of its server
+CONF_STATUS_CHECK: Final[str] = "status_check"
+
 # a rule, a subentry of the discovery entry, that changes how any notification whose message it matches is sent
 SUBENTRY_RULE: Final[str] = "rule"
 CONF_MATCH: Final[str] = "match"
@@ -70,7 +80,9 @@ CONF_DELIVERIES: Final[str] = "deliveries"
 CONF_TARGETS: Final[str] = "targets"
 
 # English only for the MVP
-DISCOVERY_TITLE: Final[str] = "Automatic discovery"
+DISCOVERY_TITLE: Final[str] = "Global Settings"
+# its title before 0.5.0, taken as not chosen by the user, so renamed
+DISCOVERY_TITLE_BEFORE: Final[str] = "Automatic discovery"
 SUPERNOTIFY_PRESENT: Final[str] = (
     "Supernotify is installed, so notifications will have the snapshot, links to the clip, and every delivery it has."
 )
@@ -92,3 +104,13 @@ PROXY_EXPIRES: Final[str] = (
 HEADLINE: Final[str] = "{label} detected at {where}"
 HEADLINE_ENDED: Final[str] = "{headline}, now ended"
 ACTION_VIEW_SNAPSHOT: Final[str] = "View snapshot"
+# a Frigate server failing its health check, and answering again, named by its title
+HEALTH_DOWN_TITLE: Final[str] = "Frigate is not responding"
+HEALTH_DOWN: Final[str] = "{server} has failed its health check since {since}, so camera notifications may have stopped."
+HEALTH_UP_TITLE: Final[str] = "Frigate is back"
+HEALTH_UP: Final[str] = "{server} is responding again, after {duration}."
+# a camera Frigate has no video from, while not disabled in Frigate, and its video back, named as its entry
+CAMERA_DOWN_TITLE: Final[str] = "{camera} camera is offline"
+CAMERA_DOWN: Final[str] = "Frigate has had no video from {camera} since {since}."
+CAMERA_UP_TITLE: Final[str] = "{camera} camera is back"
+CAMERA_UP: Final[str] = "Frigate has video from {camera} again, after {duration}."

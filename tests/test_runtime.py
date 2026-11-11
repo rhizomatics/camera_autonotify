@@ -154,8 +154,9 @@ async def test_diagnostics(hass: HomeAssistant, fake_mqtt: FakeMQTT):
     diagnostics = await async_get_config_entry_diagnostics(hass, entry)
     assert diagnostics["options"] == {"target": "**REDACTED**"}
     assert diagnostics["reviews"] == [review("courtyard")["id"]]
-    discovery = next(e for e in hass.config_entries.async_entries(DOMAIN) if e.title == "Automatic discovery")
-    assert (await async_get_config_entry_diagnostics(hass, discovery))["reviews"] == []
+    discovery = next(e for e in hass.config_entries.async_entries(DOMAIN) if e.title == "Global Settings")
+    # the discovery entry has the health of each Frigate server instead, none checked yet
+    assert (await async_get_config_entry_diagnostics(hass, discovery))["health"] == {}
 
 
 async def test_genai_told_through_review_notification(hass: HomeAssistant, fake_mqtt: FakeMQTT):
