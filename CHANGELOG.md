@@ -7,6 +7,7 @@
 - A camera partway through its retries when its Frigate server stops answering starts them over once the server is back, rather than being notified as offline after fewer retries, with its time offline counted from before the server went down
 ## 📚 Documentation
 - The health check, and keeping cameras switched off on purpose quiet, moved to a [Health Check](https://camera-autonotify.rhizomatics.org.uk/health/) page of its own
+- Added hints on using Supernotify's occupancy and alarm panel mode to control notification delivery, and using Auto Arm to manage alarm panels and Frigate profiles
 
 ## 0.6.0
 ## ✨ Enhancements
