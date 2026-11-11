@@ -417,6 +417,44 @@ async def test_cameras_not_checked_while_server_failing(hass: HomeAssistant, fre
     assert [call.data["title"] for call in calls] == [HEALTH_DOWN_TITLE]
 
 
+async def test_camera_failures_forgotten_while_server_failing(hass: HomeAssistant, freezer: FrozenDateTimeFactory):
+    """A camera failing its retries as its server stops answering starts its retries over once it's back"""
+    _, stats, _ = loaded_frigate(hass)
+    calls = mock_supernotify(hass)
+    camera = add_camera_entry(hass)
+    entry = await set_up(hass, {CONF_HEALTH_CHECK: False, CONF_HEALTH_RETRIES: 2})
+    stats.data["cameras"]["courtyard"]["camera_fps"] = 0
+    await advance(hass, freezer, 60)
+    await advance(hass, freezer, 10)
+    assert monitor(entry).states[camera.entry_id].failures == 2
+
+    # its retry while the server isn't answering, with no telling
+    stats.last_update_success = False
+    await advance(hass, freezer, 20)
+    assert camera.entry_id not in monitor(entry).states
+
+    # answering again, but the camera with no video yet, so its first failure, not its last
+    stats.last_update_success = True
+    await advance(hass, freezer, 30)
+    assert monitor(entry).states[camera.entry_id].failures == 1
+    assert calls == []
+
+
+async def test_camera_offline_kept_while_server_failing(hass: HomeAssistant, freezer: FrozenDateTimeFactory):
+    _, stats, _ = loaded_frigate(hass)
+    calls = mock_supernotify(hass)
+    add_camera_entry(hass)
+    await set_up(hass, {CONF_HEALTH_CHECK: False, CONF_HEALTH_RETRIES: 0})
+    stats.data["cameras"]["courtyard"]["camera_fps"] = 0
+    await advance(hass, freezer, 60)
+    stats.last_update_success = False
+    await advance(hass, freezer, 60)
+    stats.last_update_success = True
+    stats.data["cameras"]["courtyard"]["camera_fps"] = 5
+    await advance(hass, freezer, 60)
+    assert [call.data["title"] for call in calls] == ["Courtyard camera is offline", "Courtyard camera is back"]
+
+
 async def test_camera_checked_with_server_check_off(hass: HomeAssistant, freezer: FrozenDateTimeFactory):
     _, stats, _ = loaded_frigate(hass)
     calls = mock_supernotify(hass)

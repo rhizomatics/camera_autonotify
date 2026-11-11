@@ -264,7 +264,13 @@ class HealthMonitor:
             ok = await self._async_probe(subject)
         finally:
             self._checking.discard(key)
-        if ok is None or self._stop_interval is None:
+        if self._stop_interval is None:
+            return
+        if ok is None:
+            # no telling, as while its server isn't answering, so failures not yet notified are forgotten, rather than
+            # counted with those after, and the camera given its every retry again once there's telling
+            if (health := self.states.get(key)) is not None and not health.down:
+                del self.states[key]
             return
         health = self.states.setdefault(key, Health(self.settings))
         now = time.time()

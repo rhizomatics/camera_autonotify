@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.0
+## 🐞 Fixes
+- A camera partway through its retries when its Frigate server stops answering starts them over once the server is back, rather than being notified as offline after fewer retries, with its time offline counted from before the server went down
+## 📚 Documentation
+- The health check, and keeping cameras switched off on purpose quiet, moved to a [Health Check](https://camera-autonotify.rhizomatics.org.uk/health/) page of its own
+
 ## 0.6.0
 ## ✨ Enhancements
 - *Powered by* for each camera, the PoE port, smart plug or schedule it's powered by, so it's only notified as offline while that's on, with *Time to start up*, 3 minutes, before it's checked once it comes on

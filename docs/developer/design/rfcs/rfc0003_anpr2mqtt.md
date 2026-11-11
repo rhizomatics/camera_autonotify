@@ -215,7 +215,7 @@ built, so Camera AutoNotify and AutoArm look alike.
 ### Health
 
 An anpr2mqtt entity being `unavailable` means anpr2mqtt is down, and is notified by the
-[health checks](https://camera-autonotify.rhizomatics.org.uk/#frigate-health-check) as a third kind beside servers and cameras, from the
+[health checks](https://camera-autonotify.rhizomatics.org.uk/health/) as a third kind beside servers and cameras, from the
 entity's state, with nothing polled.
 
 ## Phases
