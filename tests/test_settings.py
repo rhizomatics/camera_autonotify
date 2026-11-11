@@ -69,9 +69,9 @@ async def test_settings_stored_flat_without_defaults(hass: HomeAssistant):
     add_frigate(hass)
     await set_up_discovery(hass)
     entry = entry_titled(hass, "Courtyard")
-    result = await open_settings(hass)
+    form = await open_settings(hass)
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"],
+        form["flow_id"],
         {
             CONF_SEVERITIES: ["alert"],
             CONF_LABELS: ["person"],
@@ -187,9 +187,9 @@ async def test_genai_settings_stored(hass: HomeAssistant):
     add_frigate(hass, genai=True)
     await set_up_discovery(hass)
     entry = entry_titled(hass, "Courtyard")
-    result = await open_settings(hass)
+    form = await open_settings(hass)
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"],
+        form["flow_id"],
         {
             "timing": {},
             "notify": {},

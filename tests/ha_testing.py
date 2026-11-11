@@ -13,7 +13,7 @@ try:
         mock_integration,
     )
 except ImportError:
-    from pytest_homeassistant_custom_component.common import (  # type: ignore[import-untyped,unused-ignore]
+    from pytest_homeassistant_custom_component.common import (  # type: ignore[import-untyped,import-not-found,no-redef,unused-ignore]  # ty: ignore[import-not-found]
         MockConfigEntry,
         MockModule,
         async_fire_time_changed,

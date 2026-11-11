@@ -92,6 +92,7 @@ async def test_rule_added(hass: HomeAssistant):
         (entry.entry_id, SUBENTRY_RULE), context={"source": config_entries.SOURCE_USER}
     )
     assert result["type"] is FlowResultType.FORM
+    assert result["data_schema"] is not None
     scenarios = next(value for key, value in result["data_schema"].schema.items() if str(key) == "scenarios")
     assert [option["value"] for option in scenarios.config["options"]] == ["high_alert", "noisy"]
     result = await hass.config_entries.subentries.async_configure(
@@ -126,6 +127,7 @@ async def test_rule_pattern_checked(hass: HomeAssistant):
         (entry.entry_id, SUBENTRY_RULE), context={"source": config_entries.SOURCE_USER}
     )
     # no scenarios to choose from without Supernotify
+    assert result["data_schema"] is not None
     assert not any(str(key) == "scenarios" for key in result["data_schema"].schema)
     result = await hass.config_entries.subentries.async_configure(
         result["flow_id"], {"name": "Bad", "match": "regex", "pattern": "(risk", "silence": True, "remove": False}

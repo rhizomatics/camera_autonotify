@@ -149,7 +149,7 @@ def test_description_before_review_said_with_it():
     assert decision.key == BARN
     # the second object joins the review later, with its description already there
     tracker.on_description(second, T0 + 2)
-    update = review_message(BARN, "end") | {"type": "update"}
+    update: dict[str, Any] = review_message(BARN, "end") | {"type": "update"}
     update["after"] = update["after"] | {"end_time": None}
     decision = tracker.on_message(update, T0 + 3)
     assert isinstance(decision, Decision)
