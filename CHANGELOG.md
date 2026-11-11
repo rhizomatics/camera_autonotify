@@ -7,6 +7,7 @@
 - Both read from the stats the Frigate integration already polls, so they add nothing to Frigate's load
 ## 📝 Other changes
 - *Automatic discovery* is now *Global Settings*, renamed as it's set up
+- Integration categories in the manifest, *Security & safety: Cameras* and *Messaging & notifications*
 ## 📚 Documentation
 - RFC0003 published for integrating [anpr2mqtt](https://anpr2mqtt.rhizomatics.org.uk)
 

@@ -6,6 +6,10 @@
         "mqtt",
         "supernotify"
     ],
+    "categories": [
+        "security_safety.cameras",
+        "messaging_notifications"
+    ],
     "codeowners": [
         "@jeyrb"
     ],
