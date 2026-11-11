@@ -58,6 +58,12 @@ CONF_HEALTH_RETRIES: Final[str] = "health_retries"
 CONF_HEALTH_BACKOFF: Final[str] = "health_backoff"
 # a camera's own setting, to notify when Frigate has no video from it, timed as the health check of its server
 CONF_STATUS_CHECK: Final[str] = "status_check"
+# what powers a camera, such as its PoE port or smart plug, or a schedule of when it's meant to be on, so it's only
+# checked while that's on, and not until the grace has passed since it came on, for the camera to start up
+CONF_POWER_ENTITY: Final[str] = "power_entity"
+CONF_POWER_GRACE: Final[str] = "power_grace"
+POWER_DOMAINS: Final[tuple[str, ...]] = ("switch", "binary_sensor", "input_boolean", "schedule")
+DEFAULT_POWER_GRACE: Final[int] = 180
 
 # a rule, a subentry of the discovery entry, that changes how any notification whose message it matches is sent
 SUBENTRY_RULE: Final[str] = "rule"

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.0
+## ✨ Enhancements
+- *Powered by* for each camera, the PoE port, smart plug or schedule it's powered by, so it's only notified as offline while that's on, with *Time to start up*, 3 minutes, before it's checked once it comes on
+
 ## 0.5.0
 ## ✨ Enhancements
 - Frigate health check, notifying when a Frigate server stops responding and again when it's back, checked once a period, with retries that back off exponentially before a failure is notified, set in *Global Settings*

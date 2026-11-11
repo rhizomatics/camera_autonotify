@@ -336,6 +336,66 @@ async def test_camera_disabled_in_frigate_not_notified(
     assert len(calls) == 1
 
 
+async def test_camera_powered_off_not_notified(hass: HomeAssistant, freezer: FrozenDateTimeFactory):
+    _, stats, _ = loaded_frigate(hass)
+    calls = mock_supernotify(hass)
+    hass.states.async_set("switch.courtyard_poe", "on")
+    camera = add_camera_entry(hass, power_entity="switch.courtyard_poe", power_grace=120)
+    entry = await set_up(hass, {CONF_HEALTH_RETRIES: 0})
+    await advance(hass, freezer, 60)
+
+    # its PoE switched off for the day, so no video, and nothing said
+    hass.states.async_set("switch.courtyard_poe", "off")
+    stats.data["cameras"]["courtyard"]["camera_fps"] = 0
+    await advance(hass, freezer, 60)
+    await advance(hass, freezer, 60)
+    assert calls == []
+    assert camera.entry_id not in monitor(entry).states
+
+    # switched on again, and given time to start up before it's checked
+    hass.states.async_set("switch.courtyard_poe", "on")
+    await advance(hass, freezer, 60)
+    assert calls == []
+    # still no video once started, so offline after all
+    await advance(hass, freezer, 60)
+    assert [call.data["title"] for call in calls] == ["Courtyard camera is offline"]
+
+
+async def test_camera_powered_on_in_grace_keeps_offline(hass: HomeAssistant, freezer: FrozenDateTimeFactory):
+    """An offline camera powered off and on between checks still says when it's back"""
+    _, stats, _ = loaded_frigate(hass)
+    calls = mock_supernotify(hass)
+    hass.states.async_set("switch.courtyard_poe", "on")
+    add_camera_entry(hass, power_entity="switch.courtyard_poe")
+    await set_up(hass, {CONF_HEALTH_RETRIES: 0})
+    # past the grace of it having come on
+    await advance(hass, freezer, 180)
+    stats.data["cameras"]["courtyard"]["camera_fps"] = 0
+    await advance(hass, freezer, 60)
+    assert [call.data["title"] for call in calls] == ["Courtyard camera is offline"]
+
+    hass.states.async_set("switch.courtyard_poe", "off")
+    hass.states.async_set("switch.courtyard_poe", "on")
+    stats.data["cameras"]["courtyard"]["camera_fps"] = 5
+    await advance(hass, freezer, 60)
+    assert len(calls) == 1
+    await advance(hass, freezer, 180)
+    assert [call.data["title"] for call in calls][1:] == ["Courtyard camera is back"]
+
+
+@pytest.mark.parametrize("power", ["unavailable", "unknown", None])
+async def test_camera_checked_when_power_unknown(hass: HomeAssistant, freezer: FrozenDateTimeFactory, power: str | None):
+    _, stats, _ = loaded_frigate(hass)
+    calls = mock_supernotify(hass)
+    if power is not None:
+        hass.states.async_set("switch.courtyard_poe", power)
+    add_camera_entry(hass, power_entity="switch.courtyard_poe", power_grace=0)
+    await set_up(hass, {CONF_HEALTH_RETRIES: 0})
+    stats.data["cameras"]["courtyard"]["camera_fps"] = 0
+    await advance(hass, freezer, 60)
+    assert [call.data["title"] for call in calls] == ["Courtyard camera is offline"]
+
+
 async def test_camera_check_switched_off(hass: HomeAssistant, freezer: FrozenDateTimeFactory):
     _, stats, _ = loaded_frigate(hass)
     calls = mock_supernotify(hass)

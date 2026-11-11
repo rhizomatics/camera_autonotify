@@ -55,6 +55,8 @@ from .const import (
     CONF_MATCH,
     CONF_MIN_THREAT_LEVEL,
     CONF_PATTERN,
+    CONF_POWER_ENTITY,
+    CONF_POWER_GRACE,
     CONF_PRIORITY,
     CONF_REMOVE,
     CONF_SCENARIOS,
@@ -74,10 +76,12 @@ from .const import (
     CONF_ZONE_MULTI,
     CONF_ZONE_ORDER,
     CONF_ZONES,
+    DEFAULT_POWER_GRACE,
     DISCOVERY_TITLE,
     DOMAIN,
     MATCH_CONTAINS,
     MATCHES,
+    POWER_DOMAINS,
     PRIORITIES,
     PROXY_EXPIRES,
     PROXY_OFF,
@@ -107,7 +111,7 @@ SECTIONS = (SECTION_TIMING, SECTION_GENAI, SECTION_NOTIFY, SECTION_HEALTH)
 DEFAULTS: dict[str, Any] = (
     {f.name: sorted(value) if isinstance(value := getattr(Settings(), f.name), frozenset) else value for f in fields(Settings)}
     | dict(zip(CONF_THREAT_PRIORITIES, THREAT_PRIORITY_DEFAULTS, strict=True))
-    | {CONF_STATUS_CHECK: True}
+    | {CONF_STATUS_CHECK: True, CONF_POWER_GRACE: DEFAULT_POWER_GRACE}
 )
 # what a rule holds, its name being the subentry's title
 RULE_DATA = (CONF_MATCH, CONF_PATTERN, CONF_PRIORITY, CONF_SILENCE, CONF_SCENARIOS, CONF_REMOVE)
@@ -214,6 +218,8 @@ async def settings_schema(
         fields_[vol.Required(CONF_ZONE_ORDER, default=False)] = BooleanSelector()
         # a camera's own, a zone having no video of its own
         fields_[vol.Required(CONF_STATUS_CHECK, default=DEFAULTS[CONF_STATUS_CHECK])] = BooleanSelector()
+        fields_[vol.Optional(CONF_POWER_ENTITY)] = EntitySelector(EntitySelectorConfig(domain=list(POWER_DOMAINS)))
+        fields_[vol.Required(CONF_POWER_GRACE, default=DEFAULTS[CONF_POWER_GRACE])] = _seconds(1800)
     timing: dict[vol.Marker, Any] = {
         vol.Required(CONF_COOLDOWN, default=DEFAULTS[CONF_COOLDOWN]): _seconds(3600),
         vol.Required(CONF_INITIAL_DELAY, default=DEFAULTS[CONF_INITIAL_DELAY]): _seconds(60),

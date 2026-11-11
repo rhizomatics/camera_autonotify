@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Any
 
 from homeassistant.components import mqtt
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.const import CONF_TYPE
+from homeassistant.const import CONF_TYPE, STATE_OFF, STATE_ON
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.event import async_call_later, async_track_time_interval
@@ -39,9 +39,12 @@ from .const import (
     CONF_HEALTH_CHECK,
     CONF_HEALTH_INTERVAL,
     CONF_HEALTH_RETRIES,
+    CONF_POWER_ENTITY,
+    CONF_POWER_GRACE,
     CONF_SOURCE_ENTRY_ID,
     CONF_SOURCE_NAME,
     CONF_STATUS_CHECK,
+    DEFAULT_POWER_GRACE,
     DOMAIN,
     FRIGATE_DOMAIN,
     HEALTH_DOWN,
@@ -98,6 +101,14 @@ class HealthSettings:
 class Change(StrEnum):
     DOWN = "down"
     UP = "up"
+
+
+class Power(StrEnum):
+    """Whether what powers a camera says it should have video"""
+
+    ON = "on"
+    OFF = "off"
+    STARTING = "starting"
 
 
 class Kind(StrEnum):
@@ -241,10 +252,15 @@ class HealthMonitor:
     async def _async_check(self, key: str) -> None:
         subject = self.subjects[key]
         try:
-            if subject.kind is Kind.CAMERA and not self._camera_enabled(subject):
-                # disabled on purpose, so neither offline nor back
-                self.states.pop(key, None)
-                return
+            if subject.kind is Kind.CAMERA:
+                power = self._power(subject)
+                if power is Power.OFF or not self._camera_enabled(subject):
+                    # switched off on purpose, so neither offline nor back
+                    self.states.pop(key, None)
+                    return
+                if power is Power.STARTING:
+                    # still starting up, so no telling yet, and whatever was known kept
+                    return
             ok = await self._async_probe(subject)
         finally:
             self._checking.discard(key)
@@ -292,6 +308,22 @@ class HealthMonitor:
             _LOGGER.debug("CAMERA_AUTONOTIFY Frigate %s health check failed: %s", subject.name, error)
             return False
         return True
+
+    @callback
+    def _power(self, subject: Subject) -> Power:
+        """As the entity powering the camera is, if it has one, taken as on when there's no telling, the entity
+        missing, unavailable or unknown, so a fault with the switch can't hide the camera being offline"""
+        entity_id = subject.options.get(CONF_POWER_ENTITY)
+        if not entity_id or (state := self.hass.states.get(entity_id)) is None:
+            return Power.ON
+        if state.state == STATE_OFF:
+            return Power.OFF
+        if state.state != STATE_ON:
+            return Power.ON
+        grace = max(0, int(subject.options.get(CONF_POWER_GRACE, DEFAULT_POWER_GRACE)))
+        if (dt_util.utcnow() - state.last_changed).total_seconds() < grace:
+            return Power.STARTING
+        return Power.ON
 
     @callback
     def _camera_enabled(self, subject: Subject) -> bool:

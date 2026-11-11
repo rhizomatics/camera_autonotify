@@ -65,7 +65,9 @@
                     "zones": "Zones",
                     "zone_multi": "Every zone",
                     "zone_order": "Zones in order",
-                    "status_check": "Notify when offline"
+                    "status_check": "Notify when offline",
+                    "power_entity": "Powered by",
+                    "power_grace": "Time to start up"
                 },
                 "data_description": {
                     "severities": "Which of Frigate's reviews to notify. Alerts are what Frigate is set to treat as important, detections are everything else it tracks.",
@@ -73,7 +75,9 @@
                     "zones": "Only notify when one of these zones is entered. Leave empty for anywhere.",
                     "zone_multi": "Only notify once every zone chosen has been entered, rather than any of them.",
                     "zone_order": "Only notify when the zones chosen are entered in the order listed, such as from the gate to the door.",
-                    "status_check": "Notify when Frigate has no video from this camera, and again when it's back. Not while the camera is disabled in Frigate. Timed as the Frigate health check in Global Settings."
+                    "status_check": "Notify when Frigate has no video from this camera, and again when it's back. Not while the camera is disabled in Frigate. Timed as the Frigate health check in Global Settings.",
+                    "power_entity": "What powers this camera, such as its PoE port or smart plug, or a schedule of when it's meant to be on. While it's off the camera isn't notified as offline. Leave empty to always check.",
+                    "power_grace": "How long after it comes on before the camera is checked, for it to start up."
                 },
                 "sections": {
                     "timing": {
