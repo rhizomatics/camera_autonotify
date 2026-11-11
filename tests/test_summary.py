@@ -84,7 +84,7 @@ async def test_summary_of_the_day_before(hass: HomeAssistant, freezer: FrozenDat
     assert dt_util.as_local(dt_util.utc_from_timestamp(start)).isoformat() == "2026-11-10T00:00:00+00:00"
     assert dt_util.as_local(dt_util.utc_from_timestamp(end)).isoformat() == "2026-11-11T00:00:00+00:00"
     assert len(calls) == 1
-    assert calls[0].data["title"] == "Frigate summary for Tuesday 10 November"
+    assert calls[0].data["title"] == "Frigate report for Tuesday 10 November"
     assert calls[0].data["message"] == SUMMARY
     # by e-mail, too long for a phone or a voice assistant
     assert calls[0].data["delivery"] == ["email"]
@@ -104,7 +104,7 @@ async def test_summary_at_time_set(hass: HomeAssistant, freezer: FrozenDateTimeF
     await at(hass, freezer, "2026-11-11 08:30:00")
     # the 24 hours before, up to the hour
     assert [call.data["title"] for call in calls] == [
-        "Frigate summary for Tuesday 10 November 08:00 to Wednesday 11 November 08:00"
+        "Frigate report for Tuesday 10 November 08:00 to Wednesday 11 November 08:00"
     ]
 
 
@@ -126,7 +126,7 @@ async def test_summary_once_genai_review_seen(hass: HomeAssistant, freezer: Froz
     await hass.async_block_till_done()
     calls.clear()
     await at(hass, freezer, "2026-11-11 00:05:00")
-    assert [call.data["title"] for call in calls] == ["Frigate summary for Tuesday 10 November"]
+    assert [call.data["title"] for call in calls] == ["Frigate report for Tuesday 10 November"]
 
     # none on the day after, so no summary of it
     calls.clear()
@@ -172,8 +172,8 @@ async def test_summary_from_each_server(hass: HomeAssistant, freezer: FrozenDate
     await set_up(hass)
     await at(hass, freezer, "2026-11-11 00:05:00")
     assert sorted(call.data["title"] for call in calls) == [
-        "Frigate summary for Tuesday 10 November from frigate:5000",
-        "Frigate summary for Tuesday 10 November from garden:5000",
+        "Frigate report for Tuesday 10 November from frigate:5000",
+        "Frigate report for Tuesday 10 November from garden:5000",
     ]
     assert len({call.data["extra_data"]["mobile_push_notification_tag"] for call in calls}) == 2
 
@@ -274,12 +274,12 @@ async def test_summary_every_few_hours(hass: HomeAssistant, freezer: FrozenDateT
         await at(hass, freezer, f"2026-11-11 {hour:02}:15:00")
     # every 4 hours from 08:15, the day through
     assert [call.data["title"] for call in calls] == [
-        "Frigate summary for Tuesday 10 November, 20:00 to midnight",
-        "Frigate summary for Wednesday 11 November, 00:00 to 04:00",
-        "Frigate summary for Wednesday 11 November, 04:00 to 08:00",
-        "Frigate summary for Wednesday 11 November, 08:00 to 12:00",
-        "Frigate summary for Wednesday 11 November, 12:00 to 16:00",
-        "Frigate summary for Wednesday 11 November, 16:00 to 20:00",
+        "Frigate report for Tuesday 10 November, 20:00 to midnight",
+        "Frigate report for Wednesday 11 November, 00:00 to 04:00",
+        "Frigate report for Wednesday 11 November, 04:00 to 08:00",
+        "Frigate report for Wednesday 11 November, 08:00 to 12:00",
+        "Frigate report for Wednesday 11 November, 12:00 to 16:00",
+        "Frigate report for Wednesday 11 November, 16:00 to 20:00",
     ]
     assert client.async_review_summarize.await_count == 6
 
@@ -289,18 +289,18 @@ async def test_summary_only_with_concerns(hass: HomeAssistant, freezer: FrozenDa
     calls = mock_supernotify(hass)
     await set_up(hass, **{CONF_SUMMARY_INTERVAL: "4", CONF_SUMMARY_TIME: "00:05:00", CONF_SUMMARY_CONCERNS: True})
 
-    # nothing worrying, and one before the hours summarised, so no summary asked for, and no tokens spent
+    # nothing worrying, and one before the hours summarised, so the summary is made but not sent
     client.async_get_reviews.return_value = [concern("2026-11-11 05:00"), concern("2026-11-11 03:00", level=1)]
     await at(hass, freezer, "2026-11-11 08:05:00")
     assert calls == []
-    assert client.async_review_summarize.await_count == 0
+    assert client.async_review_summarize.await_count == 1
     after, before = (client.async_get_reviews.await_args.kwargs[key] for key in ("after", "before"))
     assert before - after == 4 * 3600
 
     # a threat level
     client.async_get_reviews.return_value = [concern("2026-11-11 09:00"), concern("2026-11-11 10:30", level=1)]
     await at(hass, freezer, "2026-11-11 12:05:00")
-    assert [call.data["title"] for call in calls] == ["Frigate summary for Wednesday 11 November, 08:00 to 12:00"]
+    assert [call.data["title"] for call in calls] == ["Frigate report for Wednesday 11 November, 08:00 to 12:00"]
 
     # or other concerns
     client.async_get_reviews.return_value = [concern("2026-11-11 13:00", other=["Gate left open"])]
@@ -360,6 +360,49 @@ async def test_no_summary_without_supernotify(hass: HomeAssistant, freezer: Froz
         )
         await hass.async_block_till_done()
         assert dict(entry.options)[CONF_SUMMARY_MODE] == "on"
+
+
+def no_email_delivery(hass: HomeAssistant) -> None:
+    async_mock_service(
+        hass,
+        "supernotify",
+        "enquire_implicit_deliveries",
+        response={"mobile_push": ["mobile_push"]},
+        supports_response=SupportsResponse.ONLY,
+    )
+
+
+async def test_warned_when_summary_undeliverable(hass: HomeAssistant):
+    mock_supernotify(hass)
+    no_email_delivery(hass)
+    entry = await set_up(hass)
+    settings = {
+        CONF_AUTO_DISCOVER: False,
+        CONF_DISCOVER_ZONES: False,
+        "health": {},
+        "summary": {CONF_SUMMARY_MODE: "auto", CONF_SUMMARY_INTERVAL: "4"},
+    }
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(result["flow_id"], settings)
+    assert result["type"] == "form"
+    assert result["errors"] == {"base": "summary_undeliverable"}
+    # saved as it is when sent again
+    result = await hass.config_entries.options.async_configure(result["flow_id"], settings)
+    assert result["type"] == "create_entry"
+    await hass.async_block_till_done()
+    assert entry.options[CONF_SUMMARY_INTERVAL] == "4"
+
+
+async def test_not_warned_when_summary_off(hass: HomeAssistant):
+    mock_supernotify(hass)
+    no_email_delivery(hass)
+    entry = await set_up(hass)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {CONF_AUTO_DISCOVER: False, CONF_DISCOVER_ZONES: False, "health": {}, "summary": {CONF_SUMMARY_MODE: "off"}},
+    )
+    assert result["type"] == "create_entry"
 
 
 async def test_no_summary_without_email(hass: HomeAssistant, freezer: FrozenDateTimeFactory, caplog: pytest.LogCaptureFixture):

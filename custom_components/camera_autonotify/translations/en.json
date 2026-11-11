@@ -39,7 +39,7 @@
                 },
                 "sections": {
                     "health": {
-                        "name": "Frigate health check",
+                        "name": "Frigate Health Checks",
                         "description": "Notify when a Frigate server stops responding, and again when it's back. The timing is also used for each camera's own check of its video.",
                         "data": {
                             "health_check": "Check Frigate's health",
@@ -55,26 +55,26 @@
                         }
                     },
                     "summary": {
-                        "name": "GenAI summary",
-                        "description": "A summary of the hours before, written by Frigate's GenAI from their reviews, once a day to begin with, or more often to hear of anything worrying. It goes by e-mail, being too long for a phone's notification or a voice assistant. Each summary is written by Frigate's GenAI provider, so is subject to its charges and limits.",
+                        "name": "Frigate GenAI Periodic Report",
+                        "description": "A report of activity across multiple cameras for the preceding hours, written by Frigate's GenAI from their reviews, called every few hours or once a day. It goes by e-mail, being too long for a phone's notification or a voice assistant. Each report is written by Frigate's GenAI provider, so is subject to its charges and limits.",
                         "data": {
-                            "summary_mode": "Send a summary",
+                            "summary_mode": "Send a report",
                             "summary_interval": "How often",
                             "summary_time": "Starting at",
                             "summary_concerns_only": "Only when there's a concern",
                             "summary_deliveries": "Deliveries"
                         },
                         "data_description": {
-                            "summary_mode": "Automatic sends it when Frigate makes review summaries for any camera.",
-                            "summary_interval": "Each summary covers the hours since the one before, up to the hour it's sent in.",
+                            "summary_mode": "Automatic sends it when Frigate makes GenAI review summaries for any camera.",
+                            "summary_interval": "Each report covers the hours since the one before, up to the hour it's sent in.",
                             "summary_time": "When the first of the day is sent, and the others every so many hours from it.",
-                            "summary_concerns_only": "Only send it when GenAI rated one of the reviews in those hours as suspicious or critical, or noted other concerns. The reviews are checked first, and Frigate is only asked for the summary if there's a concern.",
-                            "summary_deliveries": "Supernotify's e-mail delivery to begin with, the one called email if there's more than one, or choose others, such as Telegram. Left empty, it goes by that e-mail delivery, and isn't sent if Supernotify has none."
+                            "summary_concerns_only": "Frigate is still asked for the report every time, but it's only sent when GenAI rated one of the reviews in those hours as suspicious or critical, or noted other concerns.",
+                            "summary_deliveries": "Use the Supernotify 'email' delivery by default, override to choose one or more other deliveries, such as Telegram or the File Notify Entity. If left empty and Supernotify has no e-mail delivery, reports aren't delivered at all."
                         }
                     },
                     "summary_unavailable": {
-                        "name": "GenAI summary",
-                        "description": "A summary of the hours before, written by Frigate's GenAI from their reviews, once a day or more often. It's too long for a phone's notification or a voice assistant, so it needs Supernotify to send it, by e-mail or another delivery. Install Supernotify from HACS, with an e-mail delivery, to switch it on here."
+                        "name": "Frigate GenAI Periodic Report",
+                        "description": "A report of the hours before, written by Frigate's GenAI from their reviews, once a day or more often. It's too long for a phone's notification or a voice assistant, so it needs Supernotify to send it - install it from Marketplace, with an e-mail or alternative delivery, to switch it on here."
                     }
                 }
             },
@@ -166,6 +166,9 @@
                     }
                 }
             }
+        },
+        "error": {
+            "summary_undeliverable": "Periodic reports won't be delivered at all: no Deliveries are chosen for the Frigate GenAI Periodic Report, and Supernotify has no e-mail delivery to use instead. Choose a delivery, set Send a report to Off, or save again to keep it as it is."
         }
     },
     "selector": {

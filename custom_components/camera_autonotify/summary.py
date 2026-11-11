@@ -4,9 +4,8 @@ settings
 
 Sent automatically when Frigate makes review summaries for any of a server's cameras, or a review summary has come
 over MQTT in the hours summarised, or else always or never, as chosen. It can be kept for when there's something to
-worry about, sent only when one of the reviews in those hours was given a threat level, or other concerns, by GenAI,
-which is checked before asking for the summary, so Frigate isn't asked for one that wouldn't be sent. A summary
-Frigate can't make is logged and nothing sent.
+worry about: Frigate is always asked for the summary, but it's only sent when one of the reviews in those hours was
+given a threat level, or other concerns, by GenAI. A summary Frigate can't make is logged and nothing sent.
 
 Too long for a phone's notification or a voice assistant, so only sent through Supernotify, by one of its e-mail
 deliveries unless others are chosen, such as Telegram, and not at all when it has none.
@@ -182,8 +181,6 @@ class Summaries:
             if client is None or not hasattr(client, "async_review_summarize"):
                 _LOGGER.warning("CAMERA_AUTONOTIFY Frigate %s can't summarise, needing Frigate 0.17", server.title)
                 continue
-            if self.settings.concerns_only and not await self._async_concerned(client, server.title, start, end):
-                continue
             try:
                 response = await client.async_review_summarize(start.timestamp(), end.timestamp())
             except Exception as error:
@@ -192,6 +189,8 @@ class Summaries:
                 continue
             if (text := summary_text(response)) is None:
                 _LOGGER.warning("CAMERA_AUTONOTIFY Frigate %s made no summary of %s: %s", server.title, said, response)
+                continue
+            if self.settings.concerns_only and not await self._async_concerned(client, server.title, start, end):
                 continue
             names = {"period": said, "server": server.title}
             title = (SUMMARY_SERVER_TITLE if len(servers) > 1 else SUMMARY_TITLE).format(**names)
@@ -212,7 +211,7 @@ class Summaries:
             if isinstance(review, dict)
         )
         if not found:
-            _LOGGER.debug("CAMERA_AUTONOTIFY Nothing of concern from Frigate %s, so no summary", server)
+            _LOGGER.debug("CAMERA_AUTONOTIFY Nothing of concern from Frigate %s, so summary not sent", server)
         return found
 
 

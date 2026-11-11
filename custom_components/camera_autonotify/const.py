@@ -138,5 +138,5 @@ CAMERA_DOWN: Final[str] = "Frigate has had no video from {camera} since {since}.
 CAMERA_UP_TITLE: Final[str] = "{camera} camera is back"
 CAMERA_UP: Final[str] = "Frigate has video from {camera} again, after {duration}."
 # a summary, named by the hours it covers, and by the server's title when there's more than one
-SUMMARY_TITLE: Final[str] = "Frigate summary for {period}"
-SUMMARY_SERVER_TITLE: Final[str] = "Frigate summary for {period} from {server}"
+SUMMARY_TITLE: Final[str] = "Frigate report for {period}"
+SUMMARY_SERVER_TITLE: Final[str] = "Frigate report for {period} from {server}"

@@ -1,5 +1,5 @@
 ---
-description: Notifications from what Frigate's generative AI says about a review, by its threat level, summaries of the day or of anything suspicious every few hours, and rules to set the priority of any notification by what it says.
+description: Notifications from what Frigate's generative AI says about a review, by its threat level, reports of the day or of anything suspicious every few hours, and rules to set the priority of any notification by what it says.
 ---
 # GenAI Notifications
 
@@ -63,37 +63,38 @@ upper case, one of NO RISK, LOW RISK, MEDIUM RISK, HIGH RISK or CRITICAL RISK. K
 behavior, and potential intent of the {label}, rather than just describing its appearance.
 ```
 
-## Summaries
+## Periodic Reports
 
-Frigate's GenAI can also write a summary of everything its cameras saw over a period, from the reviews in it, as the
+Frigate's GenAI can also write a report of everything its cameras saw over a period, from the reviews in it, as the
 `frigate.review_summarize` action does. Camera AutoNotify sends one once a day to begin with, a little after
-midnight, of the day before, titled such as "Frigate summary for Tuesday 10 November". It can instead be sent every
+midnight, of the day before, titled such as "Frigate report for Tuesday 10 November". It can instead be sent every
 few hours, and kept for when something in those hours was worth worrying about, as a regular check for suspicious
 activity. The Frigate server's name is in the title too when there's more than one.
 
-A summary is too long for a phone's notification or a voice assistant, so it needs
+A report is too long for a phone's notification or a voice assistant, so it needs
 [Supernotify](https://supernotify.rhizomatics.org.uk), and goes by e-mail unless you choose otherwise. Without
 Supernotify it isn't sent, and its section of *Global Settings* only says Supernotify is needed to switch it on.
 
-It's in the *GenAI summary* section of *Global Settings*:
+It's in the *Frigate GenAI Periodic Report* section of *Global Settings*:
 
 | Setting | Default | What it does |
 |---------|---------|--------------|
-| Send a summary | Automatic | *Automatic* sends it once Frigate makes review summaries, `review.genai`, for any camera, or a review summary came over MQTT in the hours summarised. *On* always tries, and *Off* never does |
-| How often | Once a day | Every 1, 2, 3, 4, 6, 8 or 12 hours, or once a day. Each summary covers the hours since the one before, up to the hour it's sent in |
+| Send a report | Automatic | *Automatic* sends it once Frigate makes review summaries, `review.genai`, for any camera, or a review summary came over MQTT in the hours summarised. *On* always tries, and *Off* never does |
+| How often | Once a day | Every 1, 2, 3, 4, 6, 8 or 12 hours, or once a day. Each report covers the hours since the one before, up to the hour it's sent in |
 | Starting at | 00:05 | When the first of the day is sent, and the others every so many hours from it |
 | Only when there's a concern | Off | Only send it when GenAI gave one of the reviews in those hours a threat level of suspicious or critical, or noted other concerns |
-| Deliveries | Supernotify's e-mail delivery | Choose others to send it by instead, such as Telegram. Left empty, it goes by Supernotify's e-mail delivery, the one called `email` if there's more than one, such as one for HTML too, so it's only sent once, and isn't sent at all if Supernotify has none |
+| Deliveries | Supernotify's e-mail delivery | Choose others to send it by instead, such as Telegram. Left empty, it goes by Supernotify's e-mail delivery, the one called `email` if there's more than one, such as one for HTML too, so it's only sent once, and isn't sent at all if Supernotify has none, which Global Settings warns of when saved |
 
-Whether there's a concern is read from the threat level and other concerns Frigate's GenAI already gave each review,
-and only if there is one is Frigate asked for the summary. Each summary goes at `medium` priority, and rules apply to it as to
+Frigate is asked for the report every time it's due, whatever reviews came over MQTT. Whether it's then sent, with
+*Only when there's a concern* on, is read from the threat level and other concerns Frigate's GenAI already gave each
+review in those hours. Each report goes at `medium` priority, and rules apply to it as to
 any other notification. Frigate needs to be 0.17 or later.
 
 ### Two Ways to Use It
 
 **A daily account, always sent.** Leave *How often* at once a day and *Only when there's a concern* off, and choose
 an e-mail delivery. Every morning there's a report of the day before, worrying or not, to read when convenient.
-Choose a later *Starting at* to have it arrive later in the morning, such as 08:30, and each summary then covers
+Choose a later *Starting at* to have it arrive later in the morning, such as 08:30, and each report then covers
 08:00 to 08:00.
 
 | How often | Starting at | Only when there's a concern | Deliveries |
@@ -102,7 +103,7 @@ Choose a later *Starting at* to have it arrive later in the morning, such as 08:
 
 **A regular check that only speaks up when needed.** Set *How often* to every 4 hours, say, and switch on *Only when
 there's a concern*, with a delivery that's seen sooner than e-mail, such as Telegram. Most of the time nothing is
-sent, and when something suspicious was seen, the summary puts it in the context of everything else in those hours,
+sent, and when something suspicious was seen, the report puts it in the context of everything else in those hours,
 such as a delivery van on another camera at the same time.
 
 | How often | Starting at | Only when there's a concern | Deliveries |
@@ -113,28 +114,28 @@ Only one of these can be set at a time. The review's own notification already sa
 suspicious as it happens, so the regular check suits keeping a record that's easier to read, or being told by a
 delivery the review notifications don't go to.
 
-!!! tip "Keeping the summaries in a file"
-    To keep each summary on Home Assistant's file system, as well as or instead of e-mailing it, set up the
+!!! tip "Keeping the reports in a file"
+    To keep each report on Home Assistant's file system, as well as or instead of e-mailing it, set up the
     [File](https://www.home-assistant.io/integrations/file/#notifications) integration's notifications, which give a
     notify entity that adds each message to a file. Supernotify supports notify entities directly, so make a delivery
     for it, and choose that delivery in *Deliveries*, with the e-mail delivery too if both are wanted.
 
 !!! note "Your GenAI provider"
-    Every summary is written by the GenAI provider Frigate is set up with, as each review's own summary is, so it's
-    subject to whatever that provider charges or limits, and a summary every hour or two asks for more of them than
-    one a day. See Frigate's [GenAI configuration](https://docs.frigate.video/configuration/genai/genai_config) and [review summaries](https://docs.frigate.video/configuration/genai/genai_review). A summary Frigate can't
-    write is logged as a warning, and nothing is sent. If summaries are missing, see Frigate's
+    Every report is written by the GenAI provider Frigate is set up with, as each review's own summary is, so it's
+    subject to whatever that provider charges or limits, and a report every hour or two asks for more of them than
+    one a day. See Frigate's [GenAI configuration](https://docs.frigate.video/configuration/genai/genai_config) and [review summaries](https://docs.frigate.video/configuration/genai/genai_review). A report Frigate can't
+    write is logged as a warning, and nothing is sent. If reports are missing, see Frigate's
     [How do I debug GenAI issues?](https://docs.frigate.video/configuration/genai/genai_config#how-do-i-debug-genai-issues).
 
-!!! tip "Summaries in your own language"
+!!! tip "Reports in your own language"
     Frigate writes its summaries in English unless its `review.genai.preferred_language` is set, such as to
-    `Spanish`, which applies both to each review's summary and to these summaries of the hours before. See Frigate's
+    `Spanish`, which applies both to each review's summary and to these reports of the hours before. See Frigate's
     [Preferred Language](https://docs.frigate.video/configuration/genai/genai_review/#preferred-language).
 
 ### Moving From an Automation
 
 An automation that calls `frigate.review_summarize` each night and sends what it answers can be switched off once
-the summary is set up, with its deliveries chosen, or the summary will be sent twice.
+the report is set up, with its deliveries chosen, or the report will be sent twice.
 
 ## Rules
 

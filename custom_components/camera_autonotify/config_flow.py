@@ -98,6 +98,7 @@ from .const import (
     SUMMARY_AUTO,
     SUMMARY_INTERVALS,
     SUMMARY_MODES,
+    SUMMARY_OFF,
     SUPERNOTIFY_MISSING,
     SUPERNOTIFY_PRESENT,
     THREAT_PRIORITY_DEFAULTS,
@@ -398,12 +399,22 @@ class CameraAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
+    # warned once that summaries have no delivery, saved as they are if sent again
+    _undeliverable_warned: bool = False
+
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if self.config_entry.data.get(CONF_TYPE) == TYPE_DISCOVERY:
             return await self.async_step_discovery()
         return await self.async_step_settings()
 
     async def async_step_discovery(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        if user_input is not None and not self._undeliverable_warned and await self._summary_undeliverable(user_input):
+            self._undeliverable_warned = True
+            return await self._show_discovery(
+                dict(self.config_entry.options) | flattened(user_input),
+                shown_as_is=True,
+                errors={"base": "summary_undeliverable"},
+            )
         if user_input is not None:
             # the daily summary's settings kept while they can't be shown, without Supernotify
             kept = (
@@ -412,19 +423,32 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
                 else {key: value for key, value in self.config_entry.options.items() if key in SUMMARY_OPTIONS}
             )
             return self.async_create_entry(data=kept | flattened(user_input))
-        options = self.config_entry.options
+        return await self._show_discovery(dict(self.config_entry.options))
+
+    async def _show_discovery(
+        self, shown: dict[str, Any], shown_as_is: bool = False, errors: dict[str, str] | None = None
+    ) -> ConfigFlowResult:
         schema = discovery_schema(
-            options.get(CONF_AUTO_DISCOVER, True),
-            options.get(CONF_DISCOVER_ZONES, False),
+            shown.get(CONF_AUTO_DISCOVER, True),
+            shown.get(CONF_DISCOVER_ZONES, False),
             health=True,
             deliveries=await supernotify_deliveries(self.hass),
         )
-        shown = dict(options)
-        if not shown.get(CONF_SUMMARY_DELIVERIES) and supernotify_available(self.hass):
+        if not shown_as_is and not shown.get(CONF_SUMMARY_DELIVERIES) and supernotify_available(self.hass):
             shown[CONF_SUMMARY_DELIVERIES] = await email_deliveries(self.hass)
         return self.async_show_form(
-            step_id=STEP_DISCOVERY, data_schema=self.add_suggested_values_to_schema(schema, sectioned(schema, shown))
+            step_id=STEP_DISCOVERY,
+            data_schema=self.add_suggested_values_to_schema(schema, sectioned(schema, shown)),
+            errors=errors,
         )
+
+    async def _summary_undeliverable(self, user_input: dict[str, Any]) -> bool:
+        """Whether the summary is switched on with no deliveries chosen, and Supernotify has no e-mail delivery to
+        send it by instead, so it would never be delivered"""
+        summary = user_input.get(SECTION_SUMMARY)
+        if not isinstance(summary, dict) or summary.get(CONF_SUMMARY_MODE, SUMMARY_AUTO) == SUMMARY_OFF:
+            return False
+        return not summary.get(CONF_SUMMARY_DELIVERIES) and not await email_deliveries(self.hass)
 
     async def async_step_settings(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:

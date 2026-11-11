@@ -1,3 +1,8 @@
+# 0.7.2
+## 🐞 Fixes
+- *Only when there's a concern* for periodic reports no longer stops Frigate being asked for the report, only whether it's sent as a notification after being generated.
+- *Global Settings* warns when saved if periodic reports are on with no deliveries chosen and Supernotify has no e-mail delivery, so they'd never be delivered. Saving again keeps the settings as they are.
+
 # 0.7.1
 ## 📚 Documentation
 - Correct wording on Frigate use of GenAI and token limits
@@ -5,10 +10,11 @@
 ## 🐞 Fixes
 - Only select 1 `email` delivery by default in Supernotify if there are several
 
+
 # 0.7.0
 ## ✨ Enhancements
-### GenAI Hourly/Daily Summaries
-- New option in *Global Settings* to send a summary written by Frigate's GenAI of the reviews of the hours before, once a day, or every few hours. Defaults automatically to on where Frigate makes review summaries, and can be restricted to only send when GenAI saw something of concern in those hours. Requires Supernotify, and by default only sends via e-mail, though other deliveries can be chosen, e.g. Telegram.
+### GenAI Hourly/Daily Reports
+- New option in *Global Settings* to send a report written by Frigate's GenAI of the reviews of the hours before, once a day, or every few hours. Defaults automatically to on where Frigate makes review summaries, and can be restricted to only send when GenAI saw something of concern in those hours. Requires Supernotify, and by default only sends via e-mail, though other deliveries can be chosen, e.g. Telegram.
 ## 🐞 Fixes
 - A camera part way through its retries when its Frigate server stops answering starts them over once the server is back, rather than being notified as offline after fewer retries, with its time offline counted from before the server went down
 ## 📚 Documentation

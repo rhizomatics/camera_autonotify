@@ -72,13 +72,13 @@ Nothing needs changing for notifications to work. Each camera or zone on the int
 | GenAI                | Shown once Frigate has review summaries or object descriptions on for the camera. *Review summaries*, on, *Object descriptions*, on, and *Descriptions without a review*, off, choose what's used. *Lowest threat level*, 0, leaves out summaries below it, and the priority of each threat level is `medium`, `high` and `critical` to begin with. *Wait for GenAI*, 2 minutes, is how long an ended review is kept for what GenAI adds. See [GenAI Notifications](https://camera-autonotify.rhizomatics.org.uk/genai/) |
 | Notification targets | With Supernotify, *Targets* is the same choice of entities, devices, areas, floors and labels as any Supernotify notification, *Custom targets* is for those outside Home Assistant, such as e-mail addresses or phone numbers, and *Deliveries* limits notifications to those chosen. Leave them empty for Supernotify to choose. Without Supernotify, *Targets* is a choice of notify entities, and left empty means every phone with the Home Assistant app |
 
-### Frigate Health Check
+### Frigate Health Checks
 
 The integration also notifies when a Frigate server stops responding, and when a camera stops sending Frigate video, once a few retries have failed, and again when it's back. Both are on to begin with, set in the *Frigate health check* section of *Global Settings*, and each camera's *Notify when offline*. Cameras switched off on purpose, by their PoE port, a smart plug or a schedule, can be kept quiet with *Powered by*. See [Health Check](https://camera-autonotify.rhizomatics.org.uk/health/).
 
-### GenAI Summaries
+### GenAI Periodic Reports
 
-Where Frigate makes GenAI review summaries, a summary of the day before is also sent each day, written by Frigate's GenAI from that day's reviews. It can instead be sent every few hours, and only when GenAI saw something suspicious in those hours. It needs Supernotify, and goes by e-mail, or whichever Supernotify deliveries you choose instead, such as Telegram, being too long for a phone's notification or a voice assistant. It's set in the *GenAI summary* section of *Global Settings*. Each summary is written by Frigate's GenAI provider, so is subject to its charges and limits. See [Summaries](https://camera-autonotify.rhizomatics.org.uk/genai/#summaries).
+Where Frigate makes GenAI review summaries, a report of the day before is also sent each day, written by Frigate's GenAI from that day's reviews. It can instead be sent every few hours, and only when GenAI saw something suspicious in those hours. It needs Supernotify, and goes by e-mail, or whichever Supernotify deliveries you choose instead, such as Telegram, being too long for a phone's notification or a voice assistant. It's set in the *Frigate GenAI Periodic Report* section of *Global Settings*. Each report is written by Frigate's GenAI provider, so is subject to its charges and limits. See [Periodic Reports](https://camera-autonotify.rhizomatics.org.uk/genai/#periodic-reports).
 
 ## What Gets Sent
 
