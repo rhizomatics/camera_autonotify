@@ -3,6 +3,7 @@
 minimum_release_age = "7d"
 
 [tools]
+make = "latest"
 prek = "latest"
 ruff = { version = "latest", minimum_release_age = "2d" }
 ty = { version = "latest", minimum_release_age = "2d" }
