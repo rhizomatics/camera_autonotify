@@ -1,3 +1,7 @@
+---
+title: What's New
+---
+
 # 0.8.0
 ## ✨ Enhancements
 - *Object names* in *Global Settings* gives any of Frigate's objects a name of its own in every notification, such as `car` as "Vehicle", or a translation
