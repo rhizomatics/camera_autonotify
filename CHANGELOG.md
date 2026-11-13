@@ -7,6 +7,7 @@
 - French, German and Italian translations
 ## 📚 Documentation
 - New [Migrating from Frigate Blueprint](https://camera-autonotify.rhizomatics.org.uk/migrating/) page, with the steps, where each input of the blueprint's latest release is now, the defaults that differ, what isn't offered yet, and what's new
+- New RFCs for improved Frigate integration, and text matching for priority setting, and start on design principles
 
 # 0.7.2
 ## 🐞 Fixes
