@@ -25,7 +25,8 @@ from custom_components.camera_autonotify.const import (
     TYPE_DISCOVERY,
 )
 from custom_components.camera_autonotify.frigate import concerning
-from custom_components.camera_autonotify.summary import SummarySettings, said_day, said_period, summary_text
+from custom_components.camera_autonotify.summary import SummarySettings, said_period, summary_text
+from custom_components.camera_autonotify.texts import async_load_texts, said_day
 from tests.ha_testing import MockConfigEntry, async_fire_time_changed, async_mock_service
 
 from .conftest import FRIGATE_ENTRY_ID, FakeMQTT, add_frigate, mock_supernotify
@@ -239,8 +240,9 @@ def test_summary_text():
     assert summary_text("Internal Server Error") is None
 
 
-def test_said_day():
-    assert said_day(date(2026, 11, 1)) == "Sunday 1 November"
+async def test_said_day(hass: HomeAssistant):
+    await async_load_texts(hass)
+    assert said_day(hass, date(2026, 11, 1)) == "Sunday 1 November"
 
 
 @pytest.mark.parametrize(
@@ -252,8 +254,9 @@ def test_said_day():
         ("2026-11-10 22:00", "2026-11-11 02:00", "Tuesday 10 November 22:00 to Wednesday 11 November 02:00"),
     ],
 )
-def test_said_period(start: str, end: str, said: str):
-    assert said_period(datetime.fromisoformat(start), datetime.fromisoformat(end)) == said
+async def test_said_period(hass: HomeAssistant, start: str, end: str, said: str):
+    await async_load_texts(hass)
+    assert said_period(hass, datetime.fromisoformat(start), datetime.fromisoformat(end)) == said
 
 
 def concern(start: str, level: int = 0, other: list[str] | None = None) -> dict[str, Any]:

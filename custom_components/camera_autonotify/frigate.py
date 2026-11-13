@@ -9,7 +9,14 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.util import slugify
 
-from .const import DOMAIN, FRIGATE_DOMAIN
+from .const import (
+    DOMAIN,
+    FRIGATE_DOMAIN,
+    IMAGE_SNAPSHOT,
+    IMAGE_SNAPSHOT_BOX,
+    IMAGE_SNAPSHOT_CROP,
+    IMAGE_THUMBNAIL,
+)
 
 DEFAULT_TOPIC_PREFIX = "frigate"
 # the Frigate integration keeps each server's config, as Frigate itself reports it, under its entry id
@@ -116,6 +123,21 @@ def snapshot_url(notifications: str, detection_id: str) -> str:
     return f"{notifications}/{detection_id}/snapshot.jpg"
 
 
+# the path of each image under the notification proxy, which passes the query on to Frigate's own events API, so
+# Frigate draws the box or crops the snapshot itself
+IMAGE_PATHS = {
+    IMAGE_SNAPSHOT: "snapshot.jpg",
+    IMAGE_SNAPSHOT_BOX: "snapshot.jpg?bbox=1",
+    IMAGE_SNAPSHOT_CROP: "snapshot.jpg?crop=1",
+    IMAGE_THUMBNAIL: "thumbnail.jpg",
+}
+
+
+def image_url(notifications: str, detection_id: str, image: str | None = None) -> str:
+    """The image chosen for a notification, the snapshot unless another is"""
+    return f"{notifications}/{detection_id}/{IMAGE_PATHS.get(image or IMAGE_SNAPSHOT, IMAGE_PATHS[IMAGE_SNAPSHOT])}"
+
+
 def hls_url(notifications: str, detection_id: str, camera: str) -> str:
     """The clip as HLS, which iOS plays when tapped, where an attached `clip.mp4` fails to show at all"""
     return f"{notifications}/{detection_id}/{camera}/master.m3u8"
@@ -161,6 +183,18 @@ def camera_choices(config: dict[str, Any] | None, camera: str) -> tuple[list[str
     """The labels and zones of a camera, as its config has them, to choose from"""
     settings = ((config or {}).get("cameras") or {}).get(camera) or {}
     return sorted(_labels(settings)), list(settings.get("zones") or {})
+
+
+@callback
+def all_labels(hass: HomeAssistant) -> list[str]:
+    """The labels of every camera of every Frigate server, for naming each in the global settings"""
+    return sorted({
+        label
+        for entry in hass.config_entries.async_entries(FRIGATE_DOMAIN)
+        for camera in ((frigate_config(hass, entry.entry_id) or {}).get("cameras") or {}).values()
+        if isinstance(camera, dict)
+        for label in _labels(camera)
+    })
 
 
 def zone_labels(config: dict[str, Any] | None, zone: str) -> list[str]:

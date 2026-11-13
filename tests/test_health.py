@@ -30,8 +30,6 @@ from custom_components.camera_autonotify.const import (
     DISCOVERY_TITLE,
     DISCOVERY_TITLE_BEFORE,
     DOMAIN,
-    HEALTH_DOWN_TITLE,
-    HEALTH_UP_TITLE,
     TYPE_CAMERA,
     TYPE_DISCOVERY,
 )
@@ -41,12 +39,15 @@ from custom_components.camera_autonotify.health import (
     Health,
     HealthMonitor,
     HealthSettings,
-    duration,
 )
 from custom_components.camera_autonotify.notifier import async_notify_message
+from custom_components.camera_autonotify.texts import async_load_texts, said_duration
 from tests.ha_testing import MockConfigEntry, async_fire_time_changed, async_mock_service
 
-from .conftest import FakeFrigate, FakeMQTT, add_frigate, mock_supernotify
+from .conftest import FakeFrigate, FakeMQTT, add_frigate, english, mock_supernotify
+
+HEALTH_DOWN_TITLE = english("health_down_title")
+HEALTH_UP_TITLE = english("health_up_title")
 from .test_notifier import add_phone, add_rules
 
 FRIGATE = "01FRIGATE"
@@ -88,8 +89,9 @@ def test_no_retries_notifies_first_failure():
     ("seconds", "said"),
     [(1, "1 second"), (45, "45 seconds"), (60, "1 minute"), (190, "3 minutes"), (3600, "1 hour"), (7380, "2 hours 3 minutes")],
 )
-def test_duration(seconds: float, said: str):
-    assert duration(seconds) == said
+async def test_duration(hass: HomeAssistant, seconds: float, said: str):
+    await async_load_texts(hass)
+    assert said_duration(hass, seconds) == said
 
 
 def test_settings_from_options():

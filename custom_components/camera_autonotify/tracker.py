@@ -10,6 +10,7 @@ import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field, fields
 from enum import StrEnum
+from functools import reduce
 from typing import Any
 
 from homeassistant.util import slugify
@@ -206,8 +207,16 @@ class Review:
 
     @property
     def label(self) -> str:
-        """What was seen, as said in a notification, with whoever or whatever was recognised"""
-        text = " and ".join(obj.replace("_", " ").capitalize() for obj in self.objects) or "Something"
+        return self.said()
+
+    def said(
+        self, names: Mapping[str, str] | None = None, joined: str = "{first} and {second}", nothing: str = "Something"
+    ) -> str:
+        """What was seen, as said in a notification, with whoever or whatever was recognised: each object by the name
+        given it, and once only where more than one has the same name, joined two at a time by the template given"""
+        names = names or {}
+        said = dict.fromkeys(names.get(obj) or obj.replace("_", " ").capitalize() for obj in self.objects)
+        text = reduce(lambda first, second: joined.format(first=first, second=second), said) if said else nothing
         return f"{text} ({', '.join(self.sub_labels)})" if self.sub_labels else text
 
 

@@ -36,6 +36,14 @@ CONF_FINAL_DELAY: Final[str] = "final_delay"
 CONF_TIMEOUT: Final[str] = "timeout"
 CONF_ALERT_ONCE: Final[str] = "alert_once"
 CONF_UPDATE_SUB_LABEL: Final[str] = "update_sub_label"
+# the image of each notification, served by Frigate through the Frigate integration's notification proxy, the snapshot
+# to begin with, which Frigate can draw the object's box on, or crop to the object, or else the smaller thumbnail
+CONF_IMAGE: Final[str] = "image"
+IMAGE_SNAPSHOT: Final[str] = "snapshot"
+IMAGE_SNAPSHOT_BOX: Final[str] = "snapshot_box"
+IMAGE_SNAPSHOT_CROP: Final[str] = "snapshot_crop"
+IMAGE_THUMBNAIL: Final[str] = "thumbnail"
+IMAGES: Final[tuple[str, ...]] = (IMAGE_SNAPSHOT, IMAGE_SNAPSHOT_BOX, IMAGE_SNAPSHOT_CROP, IMAGE_THUMBNAIL)
 SEVERITIES: Final[tuple[str, ...]] = ("alert", "detection")
 # what Frigate's generative AI adds, the review summaries and object descriptions, named as the tracker's settings
 CONF_SUMMARIES: Final[str] = "summaries"
@@ -56,6 +64,10 @@ CONF_HEALTH_CHECK: Final[str] = "health_check"
 CONF_HEALTH_INTERVAL: Final[str] = "health_interval"
 CONF_HEALTH_RETRIES: Final[str] = "health_retries"
 CONF_HEALTH_BACKOFF: Final[str] = "health_backoff"
+# what each of Frigate's objects is called in a notification, a setting of the discovery entry, for every camera and
+# zone, as a list of the object as Frigate names it and what to call it instead, such as `car` as `Vehicle`
+CONF_OBJECT_NAMES: Final[str] = "object_names"
+CONF_OBJECT: Final[str] = "object"
 # a camera's own setting, to notify when Frigate has no video from it, timed as the health check of its server
 CONF_STATUS_CHECK: Final[str] = "status_check"
 # what powers a camera, such as its PoE port or smart plug, or a schedule of when it's meant to be on, so it's only
@@ -102,41 +114,7 @@ CONF_DELIVERIES: Final[str] = "deliveries"
 # notify entities, used only without Supernotify
 CONF_TARGETS: Final[str] = "targets"
 
-# English only for the MVP
+# the global settings entry's title, which the user can change, entry titles not being translated
 DISCOVERY_TITLE: Final[str] = "Global Settings"
 # its title before 0.5.0, taken as not chosen by the user, so renamed
 DISCOVERY_TITLE_BEFORE: Final[str] = "Automatic discovery"
-SUPERNOTIFY_PRESENT: Final[str] = (
-    "Supernotify is installed, so notifications will have the snapshot, links to the clip, and every delivery it has."
-)
-SUPERNOTIFY_MISSING: Final[str] = (
-    "**Supernotify is not installed.** Only a plain text notification can be sent, to every phone with the Home "
-    "Assistant app, with no snapshot or links. Install Supernotify from HACS for the full experience."
-)
-# a Frigate server whose notification proxy can't serve the snapshot and clip of every notification, named by its title
-PROXY_OFF: Final[str] = (
-    "**Frigate's notification proxy is switched off for {server}.** Notifications will have no snapshot, and tapping "
-    "one won't play the clip. Switch the notification proxy back on in the Frigate integration's options."
-)
-PROXY_EXPIRES: Final[str] = (
-    "Frigate's notification links for {server} stop working {seconds} seconds after each detection, so older "
-    "notifications lose their snapshot and clip. Set the notification proxy's expiry to 0 in the Frigate "
-    "integration's options to keep them."
-)
-# what a notification says, the title being the camera's or zone's name
-HEADLINE: Final[str] = "{label} detected at {where}"
-HEADLINE_ENDED: Final[str] = "{headline}, now ended"
-ACTION_VIEW_SNAPSHOT: Final[str] = "View snapshot"
-# a Frigate server failing its health check, and answering again, named by its title
-HEALTH_DOWN_TITLE: Final[str] = "Frigate is not responding"
-HEALTH_DOWN: Final[str] = "{server} has failed its health check since {since}, so camera notifications may have stopped."
-HEALTH_UP_TITLE: Final[str] = "Frigate is back"
-HEALTH_UP: Final[str] = "{server} is responding again, after {duration}."
-# a camera Frigate has no video from, while not disabled in Frigate, and its video back, named as its entry
-CAMERA_DOWN_TITLE: Final[str] = "{camera} camera is offline"
-CAMERA_DOWN: Final[str] = "Frigate has had no video from {camera} since {since}."
-CAMERA_UP_TITLE: Final[str] = "{camera} camera is back"
-CAMERA_UP: Final[str] = "Frigate has video from {camera} again, after {duration}."
-# a summary, named by the hours it covers, and by the server's title when there's more than one
-SUMMARY_TITLE: Final[str] = "Frigate report for {period}"
-SUMMARY_SERVER_TITLE: Final[str] = "Frigate report for {period} from {server}"

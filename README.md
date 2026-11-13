@@ -70,11 +70,15 @@ Nothing needs changing for notifications to work. Each camera or zone on the int
 | -------------------- | -------------------------------------------------------------------------------------- |
 | Timing               | *Cooldown*, 30 seconds, is the time after a notification before another is sent for something new, though updates of one already sent aren't held back. *Initial delay*, none, holds back the first notification for a better snapshot. *Notify when over*, off, sends one more once Frigate has finished, after *Delay when over*. *Stop updates after*, 10 minutes, ends the updates however long a review goes on. *Sound only the first*, on, has updates replace the first notification silently. *Notify recognised faces and plates*, on, sends an update when Frigate recognises a face or number plate |
 | GenAI                | Shown once Frigate has review summaries or object descriptions on for the camera. *Review summaries*, on, *Object descriptions*, on, and *Descriptions without a review*, off, choose what's used. *Lowest threat level*, 0, leaves out summaries below it, and the priority of each threat level is `medium`, `high` and `critical` to begin with. *Wait for GenAI*, 2 minutes, is how long an ended review is kept for what GenAI adds. See [GenAI Notifications](https://camera-autonotify.rhizomatics.org.uk/genai/) |
-| Notification targets | With Supernotify, *Targets* is the same choice of entities, devices, areas, floors and labels as any Supernotify notification, *Custom targets* is for those outside Home Assistant, such as e-mail addresses or phone numbers, and *Deliveries* limits notifications to those chosen. Leave them empty for Supernotify to choose. Without Supernotify, *Targets* is a choice of notify entities, and left empty means every phone with the Home Assistant app |
+| Image and targets    | *Image*, the snapshot, is the picture shown in each notification: the snapshot, the snapshot with the object's bounding box drawn on, the snapshot cropped to the object, or Frigate's smaller thumbnail. The *View snapshot* button always shows the whole snapshot. With Supernotify, *Targets* is the same choice of entities, devices, areas, floors and labels as any Supernotify notification, *Custom targets* is for those outside Home Assistant, such as e-mail addresses or phone numbers, and *Deliveries* limits notifications to those chosen. Leave them empty for Supernotify to choose. Without Supernotify, *Targets* is a choice of notify entities, and left empty means every phone with the Home Assistant app |
 
 ### Frigate Health Checks
 
 The integration also notifies when a Frigate server stops responding, and when a camera stops sending Frigate video, once a few retries have failed, and again when it's back. Both are on to begin with, set in the *Frigate health check* section of *Global Settings*, and each camera's *Notify when offline*. Cameras switched off on purpose, by their PoE port, a smart plug or a schedule, can be kept quiet with *Powered by*. See [Health Check](https://camera-autonotify.rhizomatics.org.uk/health/).
+
+### Object Names
+
+*Object names*, in *Global Settings*, gives any of Frigate's objects a name of its own in every notification, such as `car` as "Vehicle", or a translation into your own language. Objects given the same name are said once, and objects not named keep Frigate's name. See [Object Names](https://camera-autonotify.rhizomatics.org.uk/migrating/#object-names).
 
 ### GenAI Periodic Reports
 
@@ -97,7 +101,7 @@ The title says what was seen and where, such as "Person detected at Barn Door", 
 
 With Supernotify, each notification:
 
-- shows the snapshot of the review, and opens the clip when tapped, played from Frigate as HLS
+- shows the snapshot of the review, or the *Image* chosen instead, and opens the clip when tapped, played from Frigate as HLS
 - has a *View snapshot* button
 - is grouped with the others of the same camera
 - passes the camera entity, so Supernotify's camera snooze works
@@ -155,41 +159,21 @@ camera notifications stay quiet and routine when someone's home.
 
 ### Video on iPhones
 
-The clip is never attached to the notification. Attached as `clip.mp4`, an iPhone shows the snapshot only some of the time, and a Frigate clip is often too large for it to play from the notification. Attached as the HLS playlist, it shows no image at all. So every notification has the snapshot as its image, and opening it plays the clip, on iPhones and Android phones alike. This replaces the
+The clip is never attached to the notification. Attached as `clip.mp4`, an iPhone shows the snapshot only some of the time, and a Frigate clip is often too large for it to play from the notification. Attached as the HLS playlist, it shows no image at all. So every notification has the snapshot, or the *Image* chosen instead, as its image, and opening it plays the clip, on iPhones and Android phones alike. This replaces the
 [Apple push fix](https://supernotify.rhizomatics.org.uk/latest/recipes/fix_frigate_apple_push/), which isn't needed here.
 
 ## Moving From the Frigate Blueprint
 
-Camera AutoNotify replaces the
-[Frigate Notifications blueprint](https://github.com/SgtBatten/HA_blueprints/tree/main/Frigate_Camera_Notifications) for review notifications. Every camera is set up for you, so there's nothing to copy across camera by camera, though any filters changed from the blueprint's defaults need setting again. Disable the blueprint's automations once the cameras are set up, or you'll be told twice.
+Camera AutoNotify can replace the
+[Frigate Notifications blueprint](https://github.com/SgtBatten/HA_blueprints/tree/main/Frigate_Camera_Notifications) for review notifications. Every camera is set up for you, so there's nothing to copy across camera by camera, though any filters changed from the blueprint's defaults need setting again, and some of its defaults differ here. Disable the blueprint's automations once the cameras are set up, or you'll be told twice.
 
-| Blueprint input | Where it is now |
-| --------------- | --------------- |
-| `camera` | One entry per camera, found by itself |
-| `base_url`, `client_id`, `mqtt_topic` | Read from the Frigate integration and Home Assistant's URL, nothing to set |
-| `review_severity` | *Severity* |
-| `labels` | *Objects* |
-| `zones`, `zone_multi`, `zone_order_enforced` | *Zones*, *Every zone* and *Zones in order* |
-| `cooldown`, `initial_delay`, `final_update`, `final_delay`, `timeout`, `alert_once` | The *Timing* section |
-| `update_sub_label` | *Notify recognised faces and plates*, in *Timing* |
-| `notify_device`, `notify_group` | *Targets*, or Supernotify's recipients and mobile push delivery |
-| `critical`, `interruption_level`, `sound`, `volume` | Supernotify, from the priority of the notification |
-| `group`, `tag` | Set by camera and by review, nothing to set |
-| `attachment`, `video`, `ios_live_view` | The snapshot, always, see [Video on iPhones](#video-on-iphones) |
-| `tap_action`, `button_1` to `button_3` | Tap for the clip, and a *View snapshot* button |
-| `button_3` silence, `silence_timer` | Supernotify's camera snooze |
-| `title`, `message`, `subtitle` | Fixed wording, not editable |
-| `color`, `icon`, `sticky`, `channel`, `android_auto` | Supernotify's mobile push delivery, where it has them |
-| `presence_filter`, `state_filter`, `disable_times`, `master_condition`, `custom_filter` | Not offered yet. Supernotify's scenarios and snoozing cover some of these |
-| `tts` | A Supernotify TTS delivery |
-| `custom_action_manual`, `custom_action_auto` | Not offered |
-| `telegram_*`, `tv_*` | Not offered, though both can be Supernotify deliveries |
-| `debug` | Supernotify's archive, and the integration's diagnostics |
+See [Migrating from Frigate Blueprint](https://camera-autonotify.rhizomatics.org.uk/migrating/) for the steps, where each blueprint input is now, the defaults that differ, what isn't offered yet, and what's new.
 
 ## Known Limits
 
-- Frigate only, so far, and English only
-- GenAI review summaries, licence plate notifications of their own, Live Activities and editable message text aren't part of this release
+- Frigate only, so far
+- English, French, German and Italian only so far. Notifications follow the language set for Home Assistant, and the setup screens the browser's. Frigate's object names stay in English unless given names in *Object names*
+- Licence plate notifications of their own, Live Activities and editable message text aren't part of this release
 - The snapshot and clip links need Frigate's notification proxy, which the Frigate integration has on unless switched off. With it off, notifications have no image and open nothing when tapped, and with an expiry set, older notifications lose them. The setup and settings screens warn of either
 - With more than one Frigate server, links name the server by its MQTT `client_id`, as the Frigate integration expects, so each server needs its own
 - Links use Home Assistant's external URL, or its internal one if there's none, so away from home a phone only shows the snapshot where the external URL is reachable, such as through Home Assistant Cloud

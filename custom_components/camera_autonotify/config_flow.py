@@ -24,6 +24,8 @@ from homeassistant.helpers.selector import (
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
+    ObjectSelector,
+    ObjectSelectorConfig,
     SelectOptionDict,
     Selector,
     SelectSelector,
@@ -51,10 +53,13 @@ from .const import (
     CONF_HEALTH_CHECK,
     CONF_HEALTH_INTERVAL,
     CONF_HEALTH_RETRIES,
+    CONF_IMAGE,
     CONF_INITIAL_DELAY,
     CONF_LABELS,
     CONF_MATCH,
     CONF_MIN_THREAT_LEVEL,
+    CONF_OBJECT,
+    CONF_OBJECT_NAMES,
     CONF_PATTERN,
     CONF_POWER_ENTITY,
     CONF_POWER_GRACE,
@@ -87,29 +92,37 @@ from .const import (
     DEFAULT_SUMMARY_TIME,
     DISCOVERY_TITLE,
     DOMAIN,
+    IMAGE_SNAPSHOT,
+    IMAGES,
     MATCH_CONTAINS,
     MATCHES,
     POWER_DOMAINS,
     PRIORITIES,
-    PROXY_EXPIRES,
-    PROXY_OFF,
     SEVERITIES,
     SUBENTRY_RULE,
     SUMMARY_AUTO,
     SUMMARY_INTERVALS,
     SUMMARY_MODES,
     SUMMARY_OFF,
-    SUPERNOTIFY_MISSING,
-    SUPERNOTIFY_PRESENT,
     THREAT_PRIORITY_DEFAULTS,
     TYPE_DISCOVERY,
     TYPE_ZONE,
 )
 from .discovery import find_cameras
-from .frigate import camera_choices, frigate_config, genai_features, proxy_problems, zone_labels
+from .frigate import all_labels, camera_choices, frigate_config, genai_features, proxy_problems, zone_labels
 from .health import HealthSettings
 from .rules import compile_pattern
 from .supernotify_api import deliveries_by_transport, email_deliveries, scenario_names, supernotify_available
+from .texts import (
+    CAMERAS_FOUND,
+    CAMERAS_NONE,
+    PROXY_EXPIRES,
+    PROXY_OFF,
+    SUPERNOTIFY_MISSING,
+    SUPERNOTIFY_PRESENT,
+    async_load_texts,
+    text,
+)
 from .tracker import Settings
 
 STEP_DISCOVERY = "discovery"
@@ -126,7 +139,7 @@ SECTIONS = (SECTION_TIMING, SECTION_GENAI, SECTION_NOTIFY, SECTION_HEALTH, SECTI
 DEFAULTS: dict[str, Any] = (
     {f.name: sorted(value) if isinstance(value := getattr(Settings(), f.name), frozenset) else value for f in fields(Settings)}
     | dict(zip(CONF_THREAT_PRIORITIES, THREAT_PRIORITY_DEFAULTS, strict=True))
-    | {CONF_STATUS_CHECK: True, CONF_POWER_GRACE: DEFAULT_POWER_GRACE}
+    | {CONF_STATUS_CHECK: True, CONF_POWER_GRACE: DEFAULT_POWER_GRACE, CONF_IMAGE: IMAGE_SNAPSHOT}
 )
 SUMMARY_OPTIONS = (
     CONF_SUMMARY_MODE,
@@ -141,15 +154,19 @@ RULE_DATA = (CONF_MATCH, CONF_PATTERN, CONF_PRIORITY, CONF_SILENCE, CONF_SCENARI
 ENTRY_DATA = (CONF_DEVICE_ID, CONF_TYPE, CONF_SOURCE, CONF_SOURCE_ENTRY_ID, CONF_SOURCE_NAME)
 
 
-def supernotify_status(hass: HomeAssistant) -> str:
-    return SUPERNOTIFY_PRESENT if supernotify_available(hass) else SUPERNOTIFY_MISSING
+async def supernotify_status(hass: HomeAssistant) -> str:
+    """In Home Assistant's own language, rather than the browser's, a placeholder not being translated by the
+    frontend, as with the other notes"""
+    await async_load_texts(hass)
+    return text(hass, SUPERNOTIFY_PRESENT if supernotify_available(hass) else SUPERNOTIFY_MISSING)
 
 
-def proxy_status(hass: HomeAssistant, source_entry_id: str | None = None) -> str:
+async def proxy_status(hass: HomeAssistant, source_entry_id: str | None = None) -> str:
     """A warning for each Frigate server, or the one given, whose notification proxy fails some notifications, set
     apart from the text before it, or nothing"""
+    await async_load_texts(hass)
     warnings = [
-        PROXY_EXPIRES.format(server=server, seconds=seconds) if seconds else PROXY_OFF.format(server=server)
+        text(hass, PROXY_EXPIRES, server=server, seconds=seconds) if seconds else text(hass, PROXY_OFF, server=server)
         for server, seconds in proxy_problems(hass, source_entry_id)
     ]
     return "".join(f"\n\n{warning}" for warning in warnings)
@@ -160,13 +177,17 @@ def discovery_schema(
     discover_zones: bool = False,
     health: bool = False,
     deliveries: list[str] | None = None,
+    labels: list[str] | None = None,
 ) -> vol.Schema:
-    """What's found, and once set up, the health check of each Frigate server and the daily summary, out of the way
-    until wanted, the summary only to be set with Supernotify, whose deliveries are given"""
+    """What's found, and once set up, what every notification calls each object, the labels of every Frigate server
+    being given, and the health check of each Frigate server and the daily summary, out of the way until wanted, the
+    summary only to be set with Supernotify, whose deliveries are given"""
     fields_: dict[vol.Marker, Any] = {
         vol.Required(CONF_AUTO_DISCOVER, default=auto_discover): BooleanSelector(),
         vol.Required(CONF_DISCOVER_ZONES, default=discover_zones): BooleanSelector(),
     }
+    if labels is not None:
+        fields_[vol.Optional(CONF_OBJECT_NAMES)] = object_names_selector(labels)
     if health:
         fields_[vol.Required(SECTION_HEALTH)] = section(vol.Schema(health_schema()), {"collapsed": True})
         if deliveries is not None:
@@ -174,6 +195,25 @@ def discovery_schema(
         else:
             fields_[vol.Optional(SECTION_SUMMARY_UNAVAILABLE)] = section(vol.Schema({}), {"collapsed": True})
     return vol.Schema(fields_)
+
+
+def object_names_selector(labels: list[str]) -> Selector:
+    """A list of Frigate's objects, each with what to call it, the object chosen from those Frigate has, or typed"""
+    return ObjectSelector(
+        ObjectSelectorConfig(
+            fields={
+                CONF_OBJECT: {
+                    "required": True,
+                    "selector": {"select": {"options": labels, "custom_value": True, "mode": "dropdown"}},
+                },
+                CONF_NAME: {"required": True, "selector": {"text": {}}},
+            },
+            multiple=True,
+            label_field=CONF_OBJECT,
+            description_field=CONF_NAME,
+            translation_key=CONF_OBJECT_NAMES,
+        )
+    )
 
 
 def health_schema() -> dict[vol.Marker, Any]:
@@ -289,7 +329,11 @@ async def settings_schema(
         vol.Required(CONF_ALERT_ONCE, default=DEFAULTS[CONF_ALERT_ONCE]): BooleanSelector(),
         vol.Required(CONF_UPDATE_SUB_LABEL, default=DEFAULTS[CONF_UPDATE_SUB_LABEL]): BooleanSelector(),
     }
-    notify: dict[vol.Marker, Any] = {}
+    notify: dict[vol.Marker, Any] = {
+        vol.Required(CONF_IMAGE, default=DEFAULTS[CONF_IMAGE]): SelectSelector(
+            SelectSelectorConfig(options=list(IMAGES), mode=SelectSelectorMode.DROPDOWN, translation_key=CONF_IMAGE)
+        )
+    }
     if supernotify_available(hass):
         # the same pair of target fields as supernotify.notify itself
         notify[vol.Optional(CONF_TARGET)] = TargetSelector()
@@ -352,17 +396,18 @@ class CameraAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
             # the cameras are set up as this entry is, each as its own entry to change or delete
             return self.async_create_entry(title=DISCOVERY_TITLE, data={CONF_TYPE: TYPE_DISCOVERY}, options=user_input)
         found = [camera.name for camera in find_cameras(self.hass)]
+        await async_load_texts(self.hass)
         if found:
-            found_text = "Cameras found:\n\n" + "\n".join(f"- {name}" for name in found)
+            found_text = text(self.hass, CAMERAS_FOUND) + "\n\n" + "\n".join(f"- {name}" for name in found)
         else:
-            found_text = "No Frigate cameras found yet."
+            found_text = text(self.hass, CAMERAS_NONE)
         return self.async_show_form(
             step_id="user",
             data_schema=discovery_schema(),
             description_placeholders={
                 "found": found_text,
-                "supernotify": supernotify_status(self.hass),
-                "proxy": proxy_status(self.hass),
+                "supernotify": await supernotify_status(self.hass),
+                "proxy": await proxy_status(self.hass),
             },
         )
 
@@ -392,8 +437,8 @@ class CameraAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="confirm",
             description_placeholders={
                 "name": self._found[CONF_NAME],
-                "supernotify": supernotify_status(self.hass),
-                "proxy": proxy_status(self.hass, self._found.get(CONF_SOURCE_ENTRY_ID)),
+                "supernotify": await supernotify_status(self.hass),
+                "proxy": await proxy_status(self.hass, self._found.get(CONF_SOURCE_ENTRY_ID)),
             },
         )
 
@@ -433,6 +478,7 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
             shown.get(CONF_DISCOVER_ZONES, False),
             health=True,
             deliveries=await supernotify_deliveries(self.hass),
+            labels=all_labels(self.hass),
         )
         if not shown_as_is and not shown.get(CONF_SUMMARY_DELIVERIES) and supernotify_available(self.hass):
             shown[CONF_SUMMARY_DELIVERIES] = await email_deliveries(self.hass)
@@ -473,8 +519,8 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
             data_schema=self.add_suggested_values_to_schema(schema, sectioned(schema, dict(self.config_entry.options))),
             description_placeholders={
                 "name": self.config_entry.title,
-                "supernotify": supernotify_status(self.hass),
-                "proxy": proxy_status(self.hass, data[CONF_SOURCE_ENTRY_ID]),
+                "supernotify": await supernotify_status(self.hass),
+                "proxy": await proxy_status(self.hass, data[CONF_SOURCE_ENTRY_ID]),
             },
         )
 

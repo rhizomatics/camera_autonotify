@@ -31,11 +31,13 @@
                 "description": "Cameras and zones already set up are left as they are.",
                 "data": {
                     "auto_discover": "Set up cameras automatically",
-                    "discover_zones": "Find zones too"
+                    "discover_zones": "Find zones too",
+                    "object_names": "Object names"
                 },
                 "data_description": {
                     "auto_discover": "Add every Frigate camera as it's found. Switch off to be offered each one instead",
-                    "discover_zones": "Offer each Frigate zone like a camera, for notifications about that zone alone"
+                    "discover_zones": "Offer each Frigate zone like a camera, for notifications about that zone alone",
+                    "object_names": "What to call each of Frigate's objects in every notification, such as car as Vehicle, or a translation. Objects not named here are called as Frigate names them."
                 },
                 "sections": {
                     "health": {
@@ -149,15 +151,17 @@
                         }
                     },
                     "notify": {
-                        "name": "Notification targets",
-                        "description": "Who and what is notified. Leave everything empty for the usual choice.",
+                        "name": "Image and targets",
+                        "description": "The image shown, and who and what is notified. Leave the targets empty for the usual choice.",
                         "data": {
+                            "image": "Image",
                             "targets": "Targets",
                             "target": "Targets",
                             "custom_target": "Custom targets",
                             "deliveries": "Deliveries"
                         },
                         "data_description": {
+                            "image": "The image of each notification. Frigate draws the box or crops the snapshot itself. The View snapshot button always shows the whole snapshot.",
                             "targets": "Notify entities to send to. Leave empty for every phone with the Home Assistant app.",
                             "target": "Who or what to notify, as for any Supernotify notification. Leave empty for Supernotify to choose.",
                             "custom_target": "Targets outside of Home Assistant, such as e-mail addresses or phone numbers.",
@@ -211,6 +215,20 @@
                 "8": "Every 8 hours",
                 "12": "Every 12 hours",
                 "24": "Once a day"
+            }
+        },
+        "image": {
+            "options": {
+                "snapshot": "Snapshot",
+                "snapshot_box": "Snapshot with bounding box",
+                "snapshot_crop": "Snapshot cropped to the object",
+                "thumbnail": "Thumbnail"
+            }
+        },
+        "object_names": {
+            "fields": {
+                "object": "Object",
+                "name": "Name"
             }
         }
     },
@@ -271,5 +289,66 @@
                 "reconfigure_successful": "The rule is changed."
             }
         }
+    },
+    "exceptions": {
+        "frigate_not_ready": {
+            "message": "Frigate isn't set up yet, so {name} can't be followed until it is"
+        },
+        "mqtt_not_ready": {
+            "message": "MQTT isn't available, so Frigate's reviews can't be followed until it is"
+        }
+    },
+    "common": {
+        "headline": "{label} detected at {where}",
+        "headline_ended": "{headline}, now ended",
+        "objects_joined": "{first} and {second}",
+        "objects_none": "Something",
+        "action_view_snapshot": "View snapshot",
+        "health_down_title": "Frigate is not responding",
+        "health_down": "{server} has failed its health check since {since}, so camera notifications may have stopped.",
+        "health_up_title": "Frigate is back",
+        "health_up": "{server} is responding again, after {duration}.",
+        "camera_down_title": "{camera} camera is offline",
+        "camera_down": "Frigate has had no video from {camera} since {since}.",
+        "camera_up_title": "{camera} camera is back",
+        "camera_up": "Frigate has video from {camera} again, after {duration}.",
+        "summary_title": "Frigate report for {period}",
+        "summary_server_title": "Frigate report for {period} from {server}",
+        "period_to_midnight": "{day}, {start} to midnight",
+        "period_same_day": "{day}, {start} to {end}",
+        "period_days": "{start_day} {start} to {end_day} {end}",
+        "day": "{weekday} {day} {month}",
+        "weekday_0": "Monday",
+        "weekday_1": "Tuesday",
+        "weekday_2": "Wednesday",
+        "weekday_3": "Thursday",
+        "weekday_4": "Friday",
+        "weekday_5": "Saturday",
+        "weekday_6": "Sunday",
+        "month_1": "January",
+        "month_2": "February",
+        "month_3": "March",
+        "month_4": "April",
+        "month_5": "May",
+        "month_6": "June",
+        "month_7": "July",
+        "month_8": "August",
+        "month_9": "September",
+        "month_10": "October",
+        "month_11": "November",
+        "month_12": "December",
+        "seconds_one": "{count} second",
+        "seconds_other": "{count} seconds",
+        "minutes_one": "{count} minute",
+        "minutes_other": "{count} minutes",
+        "hours_one": "{count} hour",
+        "hours_other": "{count} hours",
+        "hours_minutes": "{hours} {minutes}",
+        "supernotify_present": "Supernotify is installed, so notifications will have the snapshot, links to the clip, and every delivery it has.",
+        "supernotify_missing": "**Supernotify is not installed.** Only a plain text notification can be sent, to every phone with the Home Assistant app, with no snapshot or links. Install Supernotify from HACS for the full experience.",
+        "proxy_off": "**Frigate's notification proxy is switched off for {server}.** Notifications will have no snapshot, and tapping one won't play the clip. Switch the notification proxy back on in the Frigate integration's options.",
+        "proxy_expires": "Frigate's notification links for {server} stop working {seconds} seconds after each detection, so older notifications lose their snapshot and clip. Set the notification proxy's expiry to 0 in the Frigate integration's options to keep them.",
+        "cameras_found": "Cameras found:",
+        "cameras_none": "No Frigate cameras found yet."
     }
 }

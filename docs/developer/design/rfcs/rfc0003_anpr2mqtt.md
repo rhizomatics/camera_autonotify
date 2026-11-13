@@ -214,35 +214,24 @@ built, so Camera AutoNotify and AutoArm look alike.
 
 ### Health
 
-An anpr2mqtt entity being `unavailable` means anpr2mqtt is down, and is notified by the
-[health checks](https://camera-autonotify.rhizomatics.org.uk/health/) as a third kind beside servers and cameras, from the
+An anpr2mqtt entity being `unavailable` means anpr2mqtt is down, and is notified by the [health checks](https://camera-autonotify.rhizomatics.org.uk/health/) as a third kind beside servers and cameras, from the
 entity's state, with nothing polled.
 
 ## Phases
 
-1. **Tidy the settings forms** (decision 10), and release the **upstream changes**, made but not yet released, before anything here relies on
-   them.
-2. **anpr2mqtt cameras by themselves**: discovery, the entry with its linked camera, when to notify, content, images,
-   vehicles, the notification box, health and documentation, with the recommended Supernotify scenarios. Done when
-   the example automation can be deleted on the live install.
-3. **Joined to Frigate reviews**: a Frigate sighting updating its review's notification, a filesystem sighting
-   matched by time, and the semantic levels, so a sighting at a lower level than what's already been sent, such as a
-   Frigate sub label after an anpr2mqtt sighting, isn't sent. The level and the review's key go in `extra_data`, for
-   Supernotify or anything else to use.
+1. **Tidy the settings forms** (decision 10), and release the **upstream changes**, made but not yet released, before anything here relies on them.
+2. **anpr2mqtt cameras by themselves**: discovery, the entry with its linked camera, when to notify, content, images, vehicles, the notification box, health and documentation, with the recommended Supernotify scenarios. Done when the example automation can be deleted on the live install.
+3. **Joined to Frigate reviews**: a Frigate sighting updating its review's notification, a filesystem sighting matched by time, and the semantic levels, so a sighting at a lower level than what's already been sent, such as a Frigate sub label after an anpr2mqtt sighting, isn't sent. The level and the review's key go in `extra_data`, for Supernotify or anything else to use.
 
-The recorder's three sightings above become test fixtures, as the real Frigate reviews already are, and the 14:25
-visit, a review, a sub label and both sightings, is the test of phase 3: one notification, updated, not four.
+The recorder's three sightings above become test fixtures, as the real Frigate reviews already are, and the 14:25 visit, a review, a sub label and both sightings, is the test of phase 3: one notification, updated, not four.
 
 ## Roadmap
 
-- **Other primary integrations**, per decision 3: UniFi Protect, Blue Iris or Viseron as sources of reviews in their
-  own right, as Frigate is, so sightings can be joined to their events too. A large feature, for its own RFC, but
+- **Other primary integrations**, per decision 3: UniFi Protect, Blue Iris or Viseron as sources of reviews in their own right, as Frigate is, so sightings can be joined to their events too. A large feature, for its own RFC, but
   nothing here or in anpr2mqtt stands in its way.
-- **Event types**, per decision 11: anpr2mqtt's line crossing, face and other targets, and Frigate's own, such as
-  face recognition and audio, handled the same way.
+- **Event types**, per decision 11: anpr2mqtt's line crossing, face and other targets, and Frigate's own, such as face recognition and audio, handled the same way.
 - **Stitching**, per decision 12: joining many events from different sources into the one real world event.
-- **Duplicate detection at a higher level**, per decision 13: by what happened, such as the same vehicle on two
-  cameras, rather than by the text of the message, which is all Supernotify can compare.
+- **Duplicate detection at a higher level**, per decision 13: by what happened, such as the same vehicle on two cameras, rather than by the text of the message, which is all Supernotify can compare.
 - **Target sensors**: anpr2mqtt's sensors for a target or group, such as notifying when the postman has been.
 
 ## Example Automation

@@ -10,26 +10,22 @@ from custom_components.camera_autonotify.const import (
     CONF_AUTO_DISCOVER,
     CONF_DISCOVER_ZONES,
     DOMAIN,
-    PROXY_EXPIRES,
-    PROXY_OFF,
     SUBENTRY_RULE,
-    SUPERNOTIFY_MISSING,
-    SUPERNOTIFY_PRESENT,
     TYPE_DISCOVERY,
 )
 from custom_components.camera_autonotify.notifier import notification_rules
 from custom_components.camera_autonotify.supernotify_api import deliveries_by_transport
 from tests.ha_testing import MockConfigEntry
 
-from .conftest import add_frigate, mock_supernotify
+from .conftest import add_frigate, english, mock_supernotify
 
 
 async def test_discovery_entry_created(hass: HomeAssistant):
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
     assert result["type"] is FlowResultType.FORM
     assert result["description_placeholders"] == {
-        "supernotify": SUPERNOTIFY_MISSING,
-        "found": "No Frigate cameras found yet.",
+        "supernotify": english("supernotify_missing"),
+        "found": english("cameras_none"),
         "proxy": "",
     }
 
@@ -43,7 +39,7 @@ async def test_discovery_entry_created(hass: HomeAssistant):
 async def test_supernotify_present(hass: HomeAssistant):
     mock_supernotify(hass)
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
-    assert (result.get("description_placeholders") or {}).get("supernotify") == SUPERNOTIFY_PRESENT
+    assert (result.get("description_placeholders") or {}).get("supernotify") == english("supernotify_present")
 
 
 async def test_cameras_found_listed(hass: HomeAssistant):
@@ -75,7 +71,7 @@ async def test_proxy_warnings(hass: HomeAssistant):
     add_frigate(hass, cameras={}, entry_id="02FRIGATE", title="Barn", options={"notification_proxy_expire_after_seconds": 60})
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
     assert (result.get("description_placeholders") or {}).get("proxy") == (
-        f"\n\n{PROXY_OFF.format(server='House')}\n\n{PROXY_EXPIRES.format(server='Barn', seconds=60)}"
+        f"\n\n{english('proxy_off', server='House')}\n\n{english('proxy_expires', server='Barn', seconds=60)}"
     )
 
 

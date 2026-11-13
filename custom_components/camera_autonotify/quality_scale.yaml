@@ -10,6 +10,7 @@
 #
 # Changelog
 # 2026-11-06: first file. Silver met once docs-removal-instructions is done (same change).
+# 2026-11-13: exception-translations done.
 
 rules:
   # ==================
@@ -188,8 +189,8 @@ rules:
   docs-examples:
     status: exempt
     comment: |
-      Needs no automations; notifications are sent with no YAML. "Moving From the Frigate
-      Blueprint" maps each blueprint input to where it is now.
+      Needs no automations; notifications are sent with no YAML. docs/migrating.md maps each
+      blueprint input to where it is now.
 
   docs-known-limitations:
     status: done
@@ -235,10 +236,11 @@ rules:
     comment: No entities.
 
   exception-translations:
-    status: todo
+    status: done
     comment: |
-      ConfigEntryNotReady messages in __init__.py ("Frigate isn't set up yet", "MQTT isn't
-      available") are literal strings; translations/en.json has no "exceptions".
+      __init__.py raises ConfigEntryNotReady with translation_domain and translation_key, the messages in
+      translations/en.json "exceptions" (added 2026-11-13). The wording of each notification and the setup
+      screens' notes are in its "common" section, read in Home Assistant's language through texts.py.
 
   icon-translations:
     status: exempt

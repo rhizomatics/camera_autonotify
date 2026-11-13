@@ -4,6 +4,7 @@ import inspect
 import json
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 from unittest.mock import AsyncMock, patch
@@ -189,3 +190,11 @@ def add_camera(hass: HomeAssistant, frigate: FakeFrigate, name: str) -> str:
     )
     frigate.cameras[name] = device.id
     return device.id
+
+
+EN_JSON = Path(__file__).parent.parent / "custom_components" / "camera_autonotify" / "translations" / "en.json"
+
+
+def english(key: str, **placeholders: object) -> str:
+    """A text of the `common` translations in English, as a notification or a setup screen says it"""
+    return json.loads(EN_JSON.read_text())["common"][key].format(**placeholders)

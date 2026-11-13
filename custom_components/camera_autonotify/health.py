@@ -31,10 +31,6 @@ from homeassistant.helpers.event import async_call_later, async_track_time_inter
 from homeassistant.util import dt as dt_util
 
 from .const import (
-    CAMERA_DOWN,
-    CAMERA_DOWN_TITLE,
-    CAMERA_UP,
-    CAMERA_UP_TITLE,
     CONF_HEALTH_BACKOFF,
     CONF_HEALTH_CHECK,
     CONF_HEALTH_INTERVAL,
@@ -47,10 +43,6 @@ from .const import (
     DEFAULT_POWER_GRACE,
     DOMAIN,
     FRIGATE_DOMAIN,
-    HEALTH_DOWN,
-    HEALTH_DOWN_TITLE,
-    HEALTH_UP,
-    HEALTH_UP_TITLE,
     TYPE_CAMERA,
 )
 from .frigate import (
@@ -62,6 +54,19 @@ from .frigate import (
     topic_prefix,
 )
 from .notifier import async_notify_message
+from .texts import (
+    CAMERA_DOWN,
+    CAMERA_DOWN_TITLE,
+    CAMERA_UP,
+    CAMERA_UP_TITLE,
+    HEALTH_DOWN,
+    HEALTH_DOWN_TITLE,
+    HEALTH_UP,
+    HEALTH_UP_TITLE,
+    async_load_texts,
+    said_duration,
+    text,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -156,19 +161,6 @@ class Subject:
     # the camera's name as Frigate has it, and its entry's options, for who is told
     camera: str | None = None
     options: Mapping[str, Any] = field(default_factory=dict, compare=False)
-
-
-def duration(seconds: float) -> str:
-    """How long, as said in a notification, to the minute after the first"""
-    seconds = round(seconds)
-    if seconds < 60:
-        return f"{seconds} second{'' if seconds == 1 else 's'}"
-    minutes = seconds // 60
-    if minutes < 60:
-        return f"{minutes} minute{'' if minutes == 1 else 's'}"
-    hours, minutes = divmod(minutes, 60)
-    said = f"{hours} hour{'' if hours == 1 else 's'}"
-    return f"{said} {minutes} minute{'' if minutes == 1 else 's'}" if minutes else said
 
 
 @dataclass
@@ -379,6 +371,7 @@ class HealthMonitor:
             self._subscribing = False
 
     async def _async_notify(self, key: str, subject: Subject, health: Health, change: Change, now: float) -> None:
+        await async_load_texts(self.hass)
         since = health.failing_since if health.failing_since is not None else now
         tag = f"{DOMAIN}_health_{key}"
         if change is Change.UP:
@@ -392,10 +385,13 @@ class HealthMonitor:
         if change is Change.DOWN:
             _LOGGER.warning("CAMERA_AUTONOTIFY %s %s is down", subject.kind, subject.name)
             local = dt_util.as_local(dt_util.utc_from_timestamp(since)).strftime("%H:%M")
-            title, message, priority = down_title.format(**names), down.format(**names, since=local), PRIORITY_DOWN
+            title, message = text(self.hass, down_title, **names), text(self.hass, down, **names, since=local)
+            priority = PRIORITY_DOWN
         else:
             _LOGGER.info("CAMERA_AUTONOTIFY %s %s is back", subject.kind, subject.name)
-            title, message, priority = up_title.format(**names), up.format(**names, duration=duration(now - since)), PRIORITY_UP
+            took = said_duration(self.hass, now - since)
+            title, message = text(self.hass, up_title, **names), text(self.hass, up, **names, duration=took)
+            priority = PRIORITY_UP
         await async_notify_message(self.hass, title, message, priority, tag, subject.options)
 
 

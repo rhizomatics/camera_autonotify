@@ -1,0 +1,354 @@
+{
+    "config": {
+        "flow_title": "{name}",
+        "abort": {
+            "already_configured": "Dies ist bereits eingerichtet",
+            "already_in_progress": "Die Einrichtung läuft bereits"
+        },
+        "step": {
+            "user": {
+                "title": "Frigate-Benachrichtigungen",
+                "description": "Benachrichtigungen zu den Reviews der Frigate-Kameras, gesendet über Supernotify.\n\n{supernotify}{proxy}\n\n{found}",
+                "data": {
+                    "auto_discover": "Kameras automatisch einrichten",
+                    "discover_zones": "Auch Zonen finden"
+                },
+                "data_description": {
+                    "auto_discover": "Jede Frigate-Kamera hinzufügen, sobald sie gefunden wird. Ausschalten, um stattdessen jede einzeln angeboten zu bekommen",
+                    "discover_zones": "Jede Frigate-Zone wie eine Kamera anbieten, für Benachrichtigungen nur zu dieser Zone"
+                }
+            },
+            "confirm": {
+                "title": "Benachrichtigungen für {name}",
+                "description": "Benachrichtigt werden, wenn Frigate bei {name} etwas sieht?\n\n{supernotify}{proxy}"
+            }
+        }
+    },
+    "options": {
+        "step": {
+            "discovery": {
+                "title": "Globale Einstellungen",
+                "description": "Bereits eingerichtete Kameras und Zonen bleiben unverändert.",
+                "data": {
+                    "auto_discover": "Kameras automatisch einrichten",
+                    "discover_zones": "Auch Zonen finden",
+                    "object_names": "Objektnamen"
+                },
+                "data_description": {
+                    "auto_discover": "Jede Frigate-Kamera hinzufügen, sobald sie gefunden wird. Ausschalten, um stattdessen jede einzeln angeboten zu bekommen",
+                    "discover_zones": "Jede Frigate-Zone wie eine Kamera anbieten, für Benachrichtigungen nur zu dieser Zone",
+                    "object_names": "Wie jedes Frigate-Objekt in allen Benachrichtigungen genannt wird, etwa car als Fahrzeug, oder eine Übersetzung. Hier nicht benannte Objekte behalten den Namen, den Frigate ihnen gibt."
+                },
+                "sections": {
+                    "health": {
+                        "name": "Frigate-Zustandsprüfung",
+                        "description": "Benachrichtigen, wenn ein Frigate-Server nicht mehr antwortet, und wieder, wenn er zurück ist. Die Zeiten gelten auch für die Videoprüfung jeder Kamera.",
+                        "data": {
+                            "health_check": "Frigate-Zustand prüfen",
+                            "health_interval": "Prüfen alle",
+                            "health_retries": "Wiederholungen",
+                            "health_backoff": "Erste Wiederholung nach"
+                        },
+                        "data_description": {
+                            "health_check": "Benachrichtigen, wenn ein Frigate-Server der Frigate-Integration nicht antwortet, die ihn ohnehin alle paar Sekunden nach seinen Statistiken fragt.",
+                            "health_interval": "Wie oft jeder Frigate-Server geprüft wird.",
+                            "health_retries": "Wie oft eine fehlgeschlagene Prüfung wiederholt wird, bevor gemeldet wird, dass Frigate nicht antwortet. 0 meldet den ersten Fehler.",
+                            "health_backoff": "Wartezeit vor dem erneuten Versuch einer fehlgeschlagenen Prüfung, die sich bei jeder weiteren Wiederholung verdoppelt."
+                        }
+                    },
+                    "summary": {
+                        "name": "Regelmäßiger GenAI-Bericht von Frigate",
+                        "description": "Ein Bericht über die Aktivität mehrerer Kameras in den vergangenen Stunden, von Frigates GenAI aus ihren Reviews geschrieben, alle paar Stunden oder einmal am Tag. Er wird per E-Mail gesendet, da er für eine Handy-Benachrichtigung oder einen Sprachassistenten zu lang ist. Jeder Bericht wird von Frigates GenAI-Anbieter geschrieben und unterliegt daher dessen Kosten und Grenzen.",
+                        "data": {
+                            "summary_mode": "Bericht senden",
+                            "summary_interval": "Wie oft",
+                            "summary_time": "Beginnend um",
+                            "summary_concerns_only": "Nur bei Bedenken",
+                            "summary_deliveries": "Zustellungen"
+                        },
+                        "data_description": {
+                            "summary_mode": "Automatisch sendet ihn, wenn Frigate für irgendeine Kamera GenAI-Zusammenfassungen von Reviews erstellt.",
+                            "summary_interval": "Jeder Bericht umfasst die Stunden seit dem vorherigen, bis zur Stunde, in der er gesendet wird.",
+                            "summary_time": "Wann der erste des Tages gesendet wird, die weiteren dann im gewählten Stundenabstand.",
+                            "summary_concerns_only": "Frigate wird trotzdem jedes Mal nach dem Bericht gefragt, aber er wird nur gesendet, wenn GenAI eines der Reviews dieser Stunden als verdächtig oder kritisch eingestuft oder andere Bedenken festgestellt hat.",
+                            "summary_deliveries": "Standardmäßig wird die Supernotify-Zustellung 'email' verwendet. Wähle stattdessen eine oder mehrere andere Zustellungen, etwa Telegram oder die File-Notify-Entität. Bleibt dies leer und hat Supernotify keine E-Mail-Zustellung, werden Berichte gar nicht zugestellt."
+                        }
+                    },
+                    "summary_unavailable": {
+                        "name": "Regelmäßiger GenAI-Bericht von Frigate",
+                        "description": "Ein Bericht über die vergangenen Stunden, von Frigates GenAI aus ihren Reviews geschrieben, einmal am Tag oder öfter. Er ist für eine Handy-Benachrichtigung oder einen Sprachassistenten zu lang und braucht daher Supernotify zum Senden - installiere es aus dem Marketplace, mit einer E-Mail- oder anderen Zustellung, um ihn hier einzuschalten."
+                    }
+                }
+            },
+            "settings": {
+                "title": "Benachrichtigungen für {name}",
+                "description": "Alles hier ist optional.\n\n{supernotify}{proxy}",
+                "data": {
+                    "severities": "Schweregrad",
+                    "labels": "Objekte",
+                    "zones": "Zonen",
+                    "zone_multi": "Alle Zonen",
+                    "zone_order": "Zonen in Reihenfolge",
+                    "status_check": "Benachrichtigen, wenn offline",
+                    "power_entity": "Stromversorgung durch",
+                    "power_grace": "Startzeit"
+                },
+                "data_description": {
+                    "severities": "Welche Reviews von Frigate gemeldet werden. Alarme sind, was Frigate als wichtig behandeln soll, Erkennungen alles andere, was es verfolgt.",
+                    "labels": "Nur benachrichtigen, wenn eines davon gesehen oder gehört wird. Leer lassen für alles.",
+                    "zones": "Nur benachrichtigen, wenn eine dieser Zonen betreten wird. Leer lassen für überall.",
+                    "zone_multi": "Nur benachrichtigen, wenn alle gewählten Zonen betreten wurden, statt irgendeine davon.",
+                    "zone_order": "Nur benachrichtigen, wenn die gewählten Zonen in der angegebenen Reihenfolge betreten werden, etwa vom Tor zur Tür.",
+                    "status_check": "Benachrichtigen, wenn Frigate kein Video von dieser Kamera hat, und wieder, wenn es zurück ist. Nicht, solange die Kamera in Frigate deaktiviert ist. Zeiten wie bei der Frigate-Zustandsprüfung in den globalen Einstellungen.",
+                    "power_entity": "Was diese Kamera mit Strom versorgt, etwa ihr PoE-Port oder eine smarte Steckdose, oder ein Zeitplan, wann sie an sein soll. Solange das aus ist, wird die Kamera nicht als offline gemeldet. Leer lassen, um immer zu prüfen.",
+                    "power_grace": "Wie lange nach dem Einschalten gewartet wird, bis die Kamera geprüft wird, damit sie starten kann."
+                },
+                "sections": {
+                    "timing": {
+                        "name": "Zeiten",
+                        "description": "Wann Benachrichtigungen gesendet werden, und wie oft.",
+                        "data": {
+                            "cooldown": "Abkühlzeit",
+                            "initial_delay": "Anfangsverzögerung",
+                            "final_update": "Am Ende benachrichtigen",
+                            "final_delay": "Verzögerung am Ende",
+                            "timeout": "Aktualisierungen beenden nach",
+                            "alert_once": "Nur die erste mit Ton",
+                            "update_sub_label": "Erkannte Gesichter und Kennzeichen melden"
+                        },
+                        "data_description": {
+                            "cooldown": "Zeit nach einer Benachrichtigung, bevor eine weitere für etwas Neues gesendet wird. Aktualisierungen bereits gemeldeter Ereignisse werden nicht zurückgehalten.",
+                            "initial_delay": "So lange vor der ersten Benachrichtigung warten, für einen besseren Schnappschuss.",
+                            "final_update": "Eine weitere Benachrichtigung senden, sobald Frigate mit dem Gesehenen fertig ist.",
+                            "final_delay": "So lange nach dem Ende vor dieser letzten Benachrichtigung warten.",
+                            "timeout": "Nach dieser Zeit keine Aktualisierungen mehr, egal wie lange es andauert.",
+                            "alert_once": "Aktualisierungen ersetzen die erste Benachrichtigung lautlos, statt erneut einen Ton abzuspielen.",
+                            "update_sub_label": "Eine Aktualisierung senden, wenn Frigate ein Gesicht oder ein Kennzeichen erkennt."
+                        }
+                    },
+                    "genai": {
+                        "name": "GenAI",
+                        "description": "Was Frigates generative KI hinzufügt, ihre Zusammenfassung eines Reviews und ihre Beschreibungen seines Inhalts, die jeweils die Benachrichtigung des Reviews ersetzen.",
+                        "data": {
+                            "summaries": "Review-Zusammenfassungen",
+                            "min_threat_level": "Niedrigste Bedrohungsstufe",
+                            "priority_normal": "Priorität bei normal",
+                            "priority_suspicious": "Priorität bei verdächtig",
+                            "priority_critical": "Priorität bei kritisch",
+                            "descriptions": "Objektbeschreibungen",
+                            "unreviewed_descriptions": "Beschreibungen ohne Review",
+                            "genai_wait": "Auf GenAI warten"
+                        },
+                        "data_description": {
+                            "summaries": "Die Benachrichtigung mit Frigates Titel und Zusammenfassung aktualisieren, sobald das Review vorbei ist, wenn Frigates GenAI eine erstellt.",
+                            "min_threat_level": "Zusammenfassungen unter dieser Bedrohungsstufe weglassen: 0 normal, 1 verdächtig, 2 kritisch.",
+                            "priority_normal": "Die Priorität einer Zusammenfassung mit Bedrohungsstufe 0.",
+                            "priority_suspicious": "Die Priorität einer Zusammenfassung mit Bedrohungsstufe 1.",
+                            "priority_critical": "Die Priorität einer Zusammenfassung mit Bedrohungsstufe 2.",
+                            "descriptions": "Die Benachrichtigung mit Frigates Beschreibung jedes Objekts im Review aktualisieren.",
+                            "unreviewed_descriptions": "Auch Beschreibungen von Objekten melden, zu denen Frigate kein Review erstellt hat, etwa außerhalb der Zonen, die ein Alarm braucht.",
+                            "genai_wait": "Wie lange ein beendetes Review für die Ergänzungen von GenAI aufbewahrt wird, und eine Beschreibung für ihr Review."
+                        }
+                    },
+                    "notify": {
+                        "name": "Bild und Ziele",
+                        "description": "Das angezeigte Bild, und wer und was benachrichtigt wird. Ziele leer lassen für die übliche Auswahl.",
+                        "data": {
+                            "image": "Bild",
+                            "targets": "Ziele",
+                            "target": "Ziele",
+                            "custom_target": "Benutzerdefinierte Ziele",
+                            "deliveries": "Zustellungen"
+                        },
+                        "data_description": {
+                            "image": "Das Bild jeder Benachrichtigung. Frigate zeichnet den Rahmen oder schneidet den Schnappschuss selbst zu. Die Schaltfläche Schnappschuss ansehen zeigt immer den ganzen Schnappschuss.",
+                            "targets": "Notify-Entitäten, an die gesendet wird. Leer lassen für jedes Handy mit der Home Assistant App.",
+                            "target": "Wer oder was benachrichtigt wird, wie bei jeder Supernotify-Benachrichtigung. Leer lassen, damit Supernotify wählt.",
+                            "custom_target": "Ziele außerhalb von Home Assistant, etwa E-Mail-Adressen oder Telefonnummern.",
+                            "deliveries": "Benachrichtigungen auf diese Supernotify-Zustellungen beschränken. Leer lassen, damit Supernotify wählt."
+                        }
+                    }
+                }
+            }
+        },
+        "error": {
+            "summary_undeliverable": "Regelmäßige Berichte werden gar nicht zugestellt: Für den regelmäßigen GenAI-Bericht von Frigate sind keine Zustellungen gewählt, und Supernotify hat keine E-Mail-Zustellung als Ersatz. Wähle eine Zustellung, setze Bericht senden auf Aus, oder speichere erneut, um es so zu belassen."
+        }
+    },
+    "selector": {
+        "severities": {
+            "options": {
+                "alert": "Alarme",
+                "detection": "Erkennungen"
+            }
+        },
+        "priority": {
+            "options": {
+                "critical": "Kritisch",
+                "high": "Hoch",
+                "medium": "Mittel",
+                "low": "Niedrig",
+                "minimum": "Minimal"
+            }
+        },
+        "match": {
+            "options": {
+                "starts_with": "Beginnt mit",
+                "contains": "Enthält",
+                "regex": "Regulärer Ausdruck"
+            }
+        },
+        "summary_mode": {
+            "options": {
+                "auto": "Automatisch",
+                "on": "An",
+                "off": "Aus"
+            }
+        },
+        "summary_interval": {
+            "options": {
+                "1": "Jede Stunde",
+                "2": "Alle 2 Stunden",
+                "3": "Alle 3 Stunden",
+                "4": "Alle 4 Stunden",
+                "6": "Alle 6 Stunden",
+                "8": "Alle 8 Stunden",
+                "12": "Alle 12 Stunden",
+                "24": "Einmal am Tag"
+            }
+        },
+        "image": {
+            "options": {
+                "snapshot": "Schnappschuss",
+                "snapshot_box": "Schnappschuss mit Objektrahmen",
+                "snapshot_crop": "Schnappschuss auf das Objekt zugeschnitten",
+                "thumbnail": "Vorschaubild"
+            }
+        },
+        "object_names": {
+            "fields": {
+                "object": "Objekt",
+                "name": "Name"
+            }
+        }
+    },
+    "config_subentries": {
+        "rule": {
+            "entry_type": "Regel",
+            "initiate_flow": {
+                "user": "Regel hinzufügen"
+            },
+            "step": {
+                "user": {
+                    "title": "Benachrichtigungsregel",
+                    "description": "Ändert, wie eine Benachrichtigung gesendet wird, wenn ihre Nachricht passt, ob von einer Kamera, einer Zone oder Frigates generativer KI. Jede passende Regel gilt: Stummschalten hat Vorrang, dann die dringendste Priorität, und ihre Szenarien werden kombiniert.",
+                    "data": {
+                        "name": "Name",
+                        "match": "Abgleich",
+                        "pattern": "Text",
+                        "priority": "Priorität",
+                        "silence": "Stummschalten",
+                        "remove": "Gefundenen Text entfernen",
+                        "scenarios": "Supernotify-Szenarien"
+                    },
+                    "data_description": {
+                        "match": "Wie der Text in der Nachricht gesucht wird, immer ohne Beachtung der Groß- und Kleinschreibung.",
+                        "pattern": "Wonach gesucht wird, etwa HOHES RISIKO, oder ein regulärer Ausdruck wie ^(kein|geringes) Risiko\\b.",
+                        "priority": "Mit dieser Priorität senden. Leer lassen, um die der Benachrichtigung zu behalten.",
+                        "silence": "Die Benachrichtigung gar nicht senden.",
+                        "remove": "Den gefundenen Text aus der Nachricht entfernen, etwa eine Risikostufe am Anfang.",
+                        "scenarios": "Diese Supernotify-Szenarien auf die Benachrichtigung anwenden."
+                    }
+                },
+                "reconfigure": {
+                    "title": "Regel ändern",
+                    "description": "Ändert, wie eine Benachrichtigung gesendet wird, wenn ihre Nachricht passt, ob von einer Kamera, einer Zone oder Frigates generativer KI. Jede passende Regel gilt: Stummschalten hat Vorrang, dann die dringendste Priorität, und ihre Szenarien werden kombiniert.",
+                    "data": {
+                        "name": "Name",
+                        "match": "Abgleich",
+                        "pattern": "Text",
+                        "priority": "Priorität",
+                        "silence": "Stummschalten",
+                        "remove": "Gefundenen Text entfernen",
+                        "scenarios": "Supernotify-Szenarien"
+                    },
+                    "data_description": {
+                        "match": "Wie der Text in der Nachricht gesucht wird, immer ohne Beachtung der Groß- und Kleinschreibung.",
+                        "pattern": "Wonach gesucht wird, etwa HOHES RISIKO, oder ein regulärer Ausdruck wie ^(kein|geringes) Risiko\\b.",
+                        "priority": "Mit dieser Priorität senden. Leer lassen, um die der Benachrichtigung zu behalten.",
+                        "silence": "Die Benachrichtigung gar nicht senden.",
+                        "remove": "Den gefundenen Text aus der Nachricht entfernen, etwa eine Risikostufe am Anfang.",
+                        "scenarios": "Diese Supernotify-Szenarien auf die Benachrichtigung anwenden."
+                    }
+                }
+            },
+            "error": {
+                "invalid_pattern": "Dies ist kein verwendbarer regulärer Ausdruck."
+            },
+            "abort": {
+                "reconfigure_successful": "Die Regel ist geändert."
+            }
+        }
+    },
+    "exceptions": {
+        "frigate_not_ready": {
+            "message": "Frigate ist noch nicht eingerichtet, daher kann {name} erst verfolgt werden, wenn es eingerichtet ist"
+        },
+        "mqtt_not_ready": {
+            "message": "MQTT ist nicht verfügbar, daher können Frigates Reviews erst verfolgt werden, wenn es verfügbar ist"
+        }
+    },
+    "common": {
+        "headline": "{label} erkannt bei {where}",
+        "headline_ended": "{headline}, jetzt beendet",
+        "objects_joined": "{first} und {second}",
+        "objects_none": "Etwas",
+        "action_view_snapshot": "Schnappschuss ansehen",
+        "health_down_title": "Frigate antwortet nicht",
+        "health_down": "{server} besteht die Zustandsprüfung seit {since} nicht, daher wurden Kamera-Benachrichtigungen möglicherweise unterbrochen.",
+        "health_up_title": "Frigate ist zurück",
+        "health_up": "{server} antwortet wieder, nach {duration}.",
+        "camera_down_title": "Kamera {camera} ist offline",
+        "camera_down": "Frigate hat seit {since} kein Video von {camera}.",
+        "camera_up_title": "Kamera {camera} ist zurück",
+        "camera_up": "Frigate hat wieder Video von {camera}, nach {duration}.",
+        "summary_title": "Frigate-Bericht für {period}",
+        "summary_server_title": "Frigate-Bericht für {period} von {server}",
+        "period_to_midnight": "{day}, {start} bis Mitternacht",
+        "period_same_day": "{day}, {start} bis {end}",
+        "period_days": "{start_day} {start} bis {end_day} {end}",
+        "day": "{weekday}, {day}. {month}",
+        "weekday_0": "Montag",
+        "weekday_1": "Dienstag",
+        "weekday_2": "Mittwoch",
+        "weekday_3": "Donnerstag",
+        "weekday_4": "Freitag",
+        "weekday_5": "Samstag",
+        "weekday_6": "Sonntag",
+        "month_1": "Januar",
+        "month_2": "Februar",
+        "month_3": "März",
+        "month_4": "April",
+        "month_5": "Mai",
+        "month_6": "Juni",
+        "month_7": "Juli",
+        "month_8": "August",
+        "month_9": "September",
+        "month_10": "Oktober",
+        "month_11": "November",
+        "month_12": "Dezember",
+        "seconds_one": "{count} Sekunde",
+        "seconds_other": "{count} Sekunden",
+        "minutes_one": "{count} Minute",
+        "minutes_other": "{count} Minuten",
+        "hours_one": "{count} Stunde",
+        "hours_other": "{count} Stunden",
+        "hours_minutes": "{hours} {minutes}",
+        "supernotify_present": "Supernotify ist installiert, daher haben Benachrichtigungen den Schnappschuss, Links zum Clip und alle seine Zustellungen.",
+        "supernotify_missing": "**Supernotify ist nicht installiert.** Es kann nur eine reine Textbenachrichtigung an jedes Handy mit der Home Assistant App gesendet werden, ohne Schnappschuss oder Links. Installiere Supernotify aus HACS für den vollen Umfang.",
+        "proxy_off": "**Frigates Benachrichtigungs-Proxy ist für {server} ausgeschaltet.** Benachrichtigungen haben keinen Schnappschuss, und Antippen spielt den Clip nicht ab. Schalte den Benachrichtigungs-Proxy in den Optionen der Frigate-Integration wieder ein.",
+        "proxy_expires": "Frigates Benachrichtigungslinks für {server} funktionieren {seconds} Sekunden nach jeder Erkennung nicht mehr, daher verlieren ältere Benachrichtigungen Schnappschuss und Clip. Setze den Ablauf des Benachrichtigungs-Proxys in den Optionen der Frigate-Integration auf 0, um sie zu behalten.",
+        "cameras_found": "Gefundene Kameras:",
+        "cameras_none": "Noch keine Frigate-Kameras gefunden."
+    }
+}

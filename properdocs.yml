@@ -66,6 +66,7 @@ plugins:
           - index.md: What it does, requirements, installation, settings, what gets sent, known limits and issues
           - genai.md: Notifications from Frigate's GenAI review summaries and object descriptions, summaries of the day or of anything suspicious, and rules on any notification's message
           - health.md: Notifications when a Frigate server stops responding or a camera stops sending video, retries, and cameras switched off on purpose
+          - migrating.md: Moving from the Frigate Notifications blueprint, where each blueprint input is now, defaults that differ, object names, what isn't offered yet and what's new
         Optional:
           - changelog.md: Release history
         # developer pages left out - coverage reports are no use to an agent

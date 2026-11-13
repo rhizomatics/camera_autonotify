@@ -16,6 +16,7 @@ from .frigate import frigate_config, topic_prefix
 from .health import HealthMonitor, async_start_health_check
 from .hub import ReviewWatcher, async_watch
 from .summary import async_start_summaries
+from .texts import async_load_texts
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -29,6 +30,7 @@ type CameraAutoNotifyConfigEntry = ConfigEntry[ReviewWatcher | HealthMonitor | N
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    await async_load_texts(hass)
     async_start_discovery(hass)
     return True
 
@@ -46,9 +48,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: CameraAutoNotifyConfigEn
         return True
     config = frigate_config(hass, entry.data[CONF_SOURCE_ENTRY_ID])
     if config is None:
-        raise ConfigEntryNotReady("Frigate isn't set up yet")
+        raise ConfigEntryNotReady(
+            translation_domain=DOMAIN, translation_key="frigate_not_ready", translation_placeholders={"name": entry.title}
+        )
     if not await mqtt.async_wait_for_mqtt_client(hass):
-        raise ConfigEntryNotReady("MQTT isn't available")
+        raise ConfigEntryNotReady(translation_domain=DOMAIN, translation_key="mqtt_not_ready")
     watcher = ReviewWatcher(hass, entry)
     entry.async_on_unload(await async_watch(hass, topic_prefix(config), watcher))
     entry.runtime_data = watcher

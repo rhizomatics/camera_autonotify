@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import date, datetime, time, timedelta
+from datetime import datetime, time, timedelta
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.config_entries import ConfigEntryState
@@ -39,8 +39,6 @@ from .const import (
     SUMMARY_MODES,
     SUMMARY_OFF,
     SUMMARY_ON,
-    SUMMARY_SERVER_TITLE,
-    SUMMARY_TITLE,
 )
 from .frigate import (
     FrigateApiClient,
@@ -53,6 +51,16 @@ from .frigate import (
 )
 from .notifier import async_notify_message
 from .supernotify_api import email_deliveries, supernotify_available
+from .texts import (
+    PERIOD_DAYS,
+    PERIOD_SAME_DAY,
+    PERIOD_TO_MIDNIGHT,
+    SUMMARY_SERVER_TITLE,
+    SUMMARY_TITLE,
+    async_load_texts,
+    said_day,
+    text,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -104,19 +112,23 @@ class SummarySettings:
         return end - timedelta(hours=self.interval), end
 
 
-def said_day(day: date) -> str:
-    return f"{day:%A} {day.day} {day:%B}"
-
-
-def said_period(start: datetime, end: datetime) -> str:
+@callback
+def said_period(hass: HomeAssistant, start: datetime, end: datetime) -> str:
     """The hours summarised, as said in a title, a day by its name alone when the summary is of all of it"""
     if start.time() == end.time() == time() and end - start == timedelta(days=1):
-        return said_day(start)
+        return said_day(hass, start)
     if end.time() == time() and end - start <= timedelta(days=1):
-        return f"{said_day(start)}, {start:%H:%M} to midnight"
+        return text(hass, PERIOD_TO_MIDNIGHT, day=said_day(hass, start), start=f"{start:%H:%M}")
     if start.date() == end.date():
-        return f"{said_day(start)}, {start:%H:%M} to {end:%H:%M}"
-    return f"{said_day(start)} {start:%H:%M} to {said_day(end)} {end:%H:%M}"
+        return text(hass, PERIOD_SAME_DAY, day=said_day(hass, start), start=f"{start:%H:%M}", end=f"{end:%H:%M}")
+    return text(
+        hass,
+        PERIOD_DAYS,
+        start_day=said_day(hass, start),
+        start=f"{start:%H:%M}",
+        end_day=said_day(hass, end),
+        end=f"{end:%H:%M}",
+    )
 
 
 def summary_text(response: dict[str, Any] | str | None) -> str | None:
@@ -167,8 +179,9 @@ class Summaries:
         if not deliveries:
             _LOGGER.warning("CAMERA_AUTONOTIFY No summary, Supernotify having no e-mail delivery and none chosen")
             return
+        await async_load_texts(self.hass)
         start, end = self.settings.period(now)
-        said = said_period(start, end)
+        said = said_period(self.hass, start, end)
         servers = [
             entry
             for entry in self.hass.config_entries.async_entries(FRIGATE_DOMAIN, include_disabled=False)
@@ -187,15 +200,15 @@ class Summaries:
                 # FrigateApiClientError, for a timeout, a refusal, or Frigate or its GenAI provider failing to make it
                 _LOGGER.warning("CAMERA_AUTONOTIFY Frigate %s couldn't summarise %s: %s", server.title, said, error)
                 continue
-            if (text := summary_text(response)) is None:
+            if (report := summary_text(response)) is None:
                 _LOGGER.warning("CAMERA_AUTONOTIFY Frigate %s made no summary of %s: %s", server.title, said, response)
                 continue
             if self.settings.concerns_only and not await self._async_concerned(client, server.title, start, end):
                 continue
             names = {"period": said, "server": server.title}
-            title = (SUMMARY_SERVER_TITLE if len(servers) > 1 else SUMMARY_TITLE).format(**names)
+            title = text(self.hass, SUMMARY_SERVER_TITLE if len(servers) > 1 else SUMMARY_TITLE, **names)
             await async_notify_message(
-                self.hass, title, text, PRIORITY, f"{DOMAIN}_summary_{server.entry_id}", {CONF_DELIVERIES: deliveries}
+                self.hass, title, report, PRIORITY, f"{DOMAIN}_summary_{server.entry_id}", {CONF_DELIVERIES: deliveries}
             )
 
     async def _async_concerned(self, client: FrigateApiClient, server: str, start: datetime, end: datetime) -> bool:

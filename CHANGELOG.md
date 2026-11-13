@@ -1,3 +1,13 @@
+# 0.8.0
+## ✨ Enhancements
+- *Object names* in *Global Settings* gives any of Frigate's objects a name of its own in every notification, such as `car` as "Vehicle", or a translation
+- *Image*, in each camera's or zone's settings, chooses the picture of each notification: the snapshot, as before, the snapshot with the object's bounding box, the snapshot cropped to the object, or the thumbnail. All still come through the Frigate integration's notification proxy
+## 🌐 Translations
+- The wording of every notification, the notes on the setup screens, and the reasons a camera waits to be set up are translatable, notifications following the language set for Home Assistant
+- French, German and Italian translations
+## 📚 Documentation
+- New [Migrating from Frigate Blueprint](https://camera-autonotify.rhizomatics.org.uk/migrating/) page, with the steps, where each input of the blueprint's latest release is now, the defaults that differ, what isn't offered yet, and what's new
+
 # 0.7.2
 ## 🐞 Fixes
 - *Only when there's a concern* for periodic reports no longer stops Frigate being asked for the report, only whether it's sent as a notification after being generated.

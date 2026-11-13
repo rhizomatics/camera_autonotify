@@ -6,31 +6,40 @@ import logging
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any
 
-from homeassistant.const import ATTR_ENTITY_ID, CONF_TYPE
+from homeassistant.const import ATTR_ENTITY_ID, CONF_NAME, CONF_TYPE
 from homeassistant.core import Context, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
 
 from .const import (
-    ACTION_VIEW_SNAPSHOT,
     CONF_CUSTOM_TARGET,
     CONF_DELIVERIES,
+    CONF_IMAGE,
+    CONF_OBJECT,
+    CONF_OBJECT_NAMES,
     CONF_SOURCE_ENTRY_ID,
     CONF_TARGET,
     CONF_TARGETS,
     CONF_THREAT_PRIORITIES,
     DOMAIN,
-    HEADLINE,
-    HEADLINE_ENDED,
     SUBENTRY_RULE,
     SUPERNOTIFY_DOMAIN,
     THREAT_PRIORITY_DEFAULTS,
     TYPE_DISCOVERY,
     TYPE_ZONE,
 )
-from .frigate import camera_entity_id, hls_url, notifications_url, snapshot_url
+from .frigate import camera_entity_id, hls_url, image_url, notifications_url, snapshot_url
 from .rules import Outcome, Rule, apply_rules, rank
 from .supernotify_api import supernotify_available
+from .texts import (
+    ACTION_VIEW_SNAPSHOT,
+    HEADLINE,
+    HEADLINE_ENDED,
+    OBJECTS_JOINED,
+    OBJECTS_NONE,
+    async_load_texts,
+    text,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -58,18 +67,43 @@ def _friendly(name: str) -> str:
 
 
 @callback
+def global_settings(hass: HomeAssistant) -> ConfigEntry | None:
+    """The discovery entry, holding what applies to every camera and zone, unless deleted or disabled"""
+    for entry in hass.config_entries.async_entries(DOMAIN, include_disabled=False):
+        if entry.data.get(CONF_TYPE) == TYPE_DISCOVERY:
+            return entry
+    return None
+
+
+@callback
 def notification_rules(hass: HomeAssistant) -> list[Rule]:
     """The rules for every notification, the subentries of the discovery entry, read as each is sent so a change
     applies straight away"""
-    for entry in hass.config_entries.async_entries(DOMAIN, include_disabled=False):
-        if entry.data.get(CONF_TYPE) == TYPE_DISCOVERY:
-            built = [
-                Rule.from_data(subentry.title, subentry.data)
-                for subentry in entry.subentries.values()
-                if subentry.subentry_type == SUBENTRY_RULE
-            ]
-            return [rule for rule in built if rule is not None]
-    return []
+    if (entry := global_settings(hass)) is None:
+        return []
+    built = [
+        Rule.from_data(subentry.title, subentry.data)
+        for subentry in entry.subentries.values()
+        if subentry.subentry_type == SUBENTRY_RULE
+    ]
+    return [rule for rule in built if rule is not None]
+
+
+@callback
+def object_names(hass: HomeAssistant) -> dict[str, str]:
+    """What each of Frigate's objects is called in a notification, where the global settings give it a name, read as
+    each is sent so a change applies straight away"""
+    if (entry := global_settings(hass)) is None:
+        return {}
+    named = entry.options.get(CONF_OBJECT_NAMES) or []
+    names: dict[str, str] = {}
+    for item in named if isinstance(named, list) else []:
+        if not isinstance(item, dict):
+            continue
+        obj, name = str(item.get(CONF_OBJECT) or "").strip(), str(item.get(CONF_NAME) or "").strip()
+        if obj and name:
+            names[obj] = name
+    return names
 
 
 @callback
@@ -89,6 +123,7 @@ async def async_notify_message(
     with the rules applied to its message like any other, through Supernotify, or else to every phone, and for a
     camera, to whoever its options choose"""
     options = options or {}
+    await async_load_texts(hass)
     outcome = apply_rules(notification_rules(hass), message)
     if outcome.silence:
         _LOGGER.debug("CAMERA_AUTONOTIFY Silenced %s by %s", title, ", ".join(outcome.matched))
@@ -145,8 +180,9 @@ class Notifier:
             where = self.name
         else:
             where = ", ".join(_friendly(zone) for zone in review.zones)
-        headline = HEADLINE.format(label=review.label, where=where)
-        return HEADLINE_ENDED.format(headline=headline) if decision.is_final else headline
+        label = review.said(object_names(self.hass), text(self.hass, OBJECTS_JOINED), text(self.hass, OBJECTS_NONE))
+        headline = text(self.hass, HEADLINE, label=label, where=where)
+        return text(self.hass, HEADLINE_ENDED, headline=headline) if decision.is_final else headline
 
     def title(self, decision: Decision) -> str:
         summary = decision.summary
@@ -210,11 +246,15 @@ class Notifier:
             media["camera_entity_id"] = camera
         notifications = notifications_url(self.hass, self.source_entry_id)
         if notifications and decision.detection_id:
-            snapshot = snapshot_url(notifications, decision.detection_id)
-            media["snapshot_url"] = snapshot
+            # the image chosen, though the button is always for the whole snapshot
+            media["snapshot_url"] = image_url(notifications, decision.detection_id, self.entry.options.get(CONF_IMAGE))
             data["actions"] = [
                 {"level": "notification", "uri": hls_url(notifications, decision.detection_id, review.camera)},
-                {"action": "URI", "title": ACTION_VIEW_SNAPSHOT, "uri": snapshot},
+                {
+                    "action": "URI",
+                    "title": text(self.hass, ACTION_VIEW_SNAPSHOT),
+                    "uri": snapshot_url(notifications, decision.detection_id),
+                },
             ]
         if media:
             data["media"] = media
@@ -229,6 +269,7 @@ class Notifier:
         return data
 
     async def async_notify(self, decision: Decision, context: Context) -> None:
+        await async_load_texts(self.hass)
         title, outcome = self.ruled(decision)
         if outcome.silence:
             _LOGGER.debug("CAMERA_AUTONOTIFY Silenced for %s by %s", self.name, ", ".join(outcome.matched))
