@@ -3,15 +3,9 @@ description: How to move from the Frigate Notifications blueprint to Camera Auto
 ---
 # Migrating from Frigate Blueprint
 
-Camera AutoNotify replaces the
-[Frigate Notifications blueprint](https://github.com/SgtBatten/HA_blueprints/tree/main/Frigate_Camera_Notifications)
-for review notifications. There are no automations to keep up to date: every Frigate camera is found and set up by
-itself, with settings that work as they come, and the notifications go through
-[Supernotify](https://supernotify.rhizomatics.org.uk), which handles phones, sounds, priority and who's told.
+Camera AutoNotify can replace the [Frigate Notifications blueprint](https://github.com/SgtBatten/HA_blueprints/tree/main/Frigate_Camera_Notifications). There are no automations to keep up to date: every Frigate camera is found and set up by itself, with settings that work as they come, and the notifications go through [Supernotify](https://supernotify.rhizomatics.org.uk), which handles phones, sounds, emails with image attachments, spoken announcements, priority and who's told.
 
-Most blueprint automations need nothing copied across at all. Only the filters and timing you changed from the
-blueprint's defaults need setting again, and a few of those defaults differ here, so check the
-[defaults that differ](#defaults-that-differ) before you start.
+Most blueprint automations need nothing copied across at all. Only the filters and timing you changed from the blueprint's defaults need setting again, and a few of those defaults differ here, so check the [defaults that differ](#defaults-that-differ) before you start.
 
 This page compares against the blueprint's Stable release of 13 November 2026, `0.14.0.2y`.
 
@@ -19,33 +13,22 @@ This page compares against the blueprint's Stable release of 13 November 2026, `
 
 You need the same things as the blueprint, apart from the automations:
 
-- The [Frigate integration](https://docs.frigate.video/integrations/home-assistant/), with its notification proxy
-  on, as the blueprint also needs
+- The [Frigate integration](https://docs.frigate.video/integrations/home-assistant/), with its notification proxy on, as the blueprint also needs
 - MQTT in Home Assistant, on the same broker as Frigate
-- Home Assistant's external URL, or its internal one, set in *Settings*, *System*, *Network*. The blueprint's
-  `base_url` input isn't needed, since this is used instead
-- [Supernotify](https://supernotify.rhizomatics.org.uk) from HACS, for the snapshot, the clip, sounds, critical
-  alerts and updates. Without it, only the first notification of each review is sent, as plain text
+- Home Assistant's external URL, or its internal one, set in *Settings*, *System*, *Network*. The blueprint's `base_url` input isn't needed, since this is used instead
+- [Supernotify](https://supernotify.rhizomatics.org.uk) from Marketplace (previously HACS), for the snapshot, the clip, sounds, critical alerts and updates. Without it, only the first notification of each review is sent, as plain text
 
 ## Moving Over
 
 1. **Write down what you changed.** For each of the blueprint's automations, open it in *Settings*,
-   *Automations & scenes*, choose *Edit in YAML* from its menu, and copy the `use_blueprint` `input` section
-   somewhere. Only the inputs listed there differ from the blueprint's defaults. One automation may cover more than
-   one camera, so note which.
+   *Automations & scenes*, choose *Edit in YAML* from its menu, and copy the `use_blueprint` `input` section somewhere. Only the inputs listed there differ from the blueprint's defaults. One automation may cover more than one camera, so note which.
 2. **Install Camera AutoNotify** from the Home Assistant Marketplace, and restart.
-3. **Add the integration** in *Settings*, *Devices & services*. To be told only by Camera AutoNotify from the start,
-   turn *Set up cameras automatically* off on the first screen and add each camera when you're ready, from
-   *Discovered*. Otherwise leave it on, and every camera is set up straight away.
-4. **Disable the blueprint's automations** once the cameras are set up, or you'll be told twice. Disable rather
-   than delete them until you're happy, so you can go back.
-5. **Set each camera's settings** from what you wrote down, using the [table](#where-each-input-is-now) below. A
-   camera's settings are under its entry on the integration's page. Watch the units, since the blueprint's
-   *Timeout* is in minutes and *Stop updates after* is in seconds.
+3. **Add the integration** in *Settings*, *Devices & services*. To be told only by Camera AutoNotify from the start, turn *Set up cameras automatically* off on the first screen and add each camera when you're ready, from *Discovered*. Otherwise leave it on, and every camera is set up straight away.
+4. **Disable the blueprint's automations** once the cameras are set up, or you'll be told twice. Disable rather than delete them until you're happy, so you can go back.
+5. **Set each camera's settings** from what you wrote down, using the [table](#where-each-input-is-now) below. A camera's settings are under its entry on the integration's page. Watch the units, since the blueprint's *Timeout* is in minutes and *Stop updates after* is in seconds.
 6. **Set who's told.** Leave the targets empty and Supernotify chooses, as it's set up to. To tell only some, choose them under *Image and targets* in a camera's settings, or set up recipients
-   and deliveries in Supernotify itself, once, for every camera.
-7. **Name your objects**, if your blueprint had `label_names`, or you'd rather Frigate's `car` said "Vehicle". See
-   [Object Names](#object-names).
+and deliveries in Supernotify itself, once, for every camera.
+7. **Name your objects**, if your blueprint had `label_names`, or you'd rather Frigate's `car` said "Vehicle", or have your own translations. See [Object Names](#object-names).
 8. **Try it.** Walk in front of a camera, and check the notification, its image, and that tapping it plays the clip.
 
 ## Where Each Input Is Now
@@ -81,8 +64,7 @@ You need the same things as the blueprint, apart from the automations:
 
 ## Defaults That Differ
 
-Where your blueprint automation left one of these inputs as it came, the camera's setting here may still need
-changing to keep what you had.
+Where your blueprint automation left one of these inputs as it came, the camera's setting here may still need changing to keep what you had.
 
 | Blueprint input | Blueprint default | Setting here | Default here |
 | --------------- | ----------------- | ------------ | ------------ |
@@ -95,9 +77,7 @@ changing to keep what you had.
 
 ## Object Names
 
-The blueprint's `label_names` is now *Object names*, in *Global Settings*, and applies to every camera and zone.
-Each object Frigate tracks or hears can be given a name of its own, chosen from those in Frigate's config, or typed
-in. Use it to translate the objects into your own language, or just to say what they are in your home:
+The blueprint's `label_names` is now *Object names*, in *Global Settings*, and applies to every camera and zone. Each object Frigate tracks or hears can be given a name of its own, chosen from those in Frigate's config, or typed in. Use it to translate the objects into your own language, or just to say what they are in your home:
 
 | Object | Name |
 | ------ | ---- |
@@ -105,12 +85,9 @@ in. Use it to translate the objects into your own language, or just to say what 
 | `motorcycle` | Vehicle |
 | `person` | Visitor |
 
-Objects named the same are said once, so a review of a car and a motorcycle reads "Vehicle detected at Gate".
-Objects not named keep Frigate's name, with a capital letter, as the blueprint does. The faces and plates Frigate
-recognises are kept as they are, in brackets.
+Objects named the same are said once, so a review of a car and a motorcycle reads "Vehicle detected at Gate". Objects not named keep Frigate's name, with a capital letter, as the blueprint does. The faces and plates Frigate recognises are kept as they are, in brackets.
 
-The rest of the wording, such as "detected at", is translated into the language set for Home Assistant, where the
-integration has a translation of it, and is English otherwise.
+The rest of the wording, such as "detected at", is translated into the language set for Home Assistant, where the integration has a translation of it, and is English otherwise.
 
 ## What Isn't Offered Yet
 
@@ -119,11 +96,10 @@ integration has a translation of it, and is English otherwise.
   [scenarios](https://supernotify.rhizomatics.org.uk/latest/configuration/scenarios/) cover most of what these were
   used for, such as more urgent notifications when everyone's out or the alarm is set, and its snoozing covers
   quiet times
-- Editable title and message. The wording is fixed, though [rules](genai.md#rules) can change a notification's
-  priority, silence it, or apply scenarios by what it says
+- Editable title and message. The wording is fixed, though [rules](genai.md#rules) can change a notification's priority, silence it, or apply scenarios by what it says
 - Custom actions run with each notification
 - Video attached to the notification, and iOS live view. The clip plays when the notification is tapped instead
-- Telegram and TV notifications of the integration's own, though both are Supernotify deliveries
+- Telegram and TV notifications of the integration's own, though both are built into Supernotify, so can be easily switched on
 - A different image for updates than for the first notification
 
 ## What's New
@@ -132,20 +108,21 @@ Things the blueprint doesn't do:
 
 - **Cameras set up by themselves**, including any added to Frigate later, with no automation per camera
 - **Zones of their own**, each notifying for reviews from any camera it's on. See [Zones](index.md#zones)
-- **GenAI review summaries and object descriptions**, each updating the review's notification, with the priority
-  set by the threat level Frigate's GenAI gives. See [GenAI Notifications](genai.md)
+- **GenAI review summaries and object descriptions**, each updating the review's notification, with the priority set by the threat level Frigate's GenAI gives. See [GenAI Notifications](genai.md)
 - **Rules** on what any notification says, to raise its priority, silence it, or apply Supernotify scenarios
-- **Periodic GenAI reports**, of the day, or of anything suspicious every few hours, by e-mail or another
-  delivery. See [Periodic Reports](genai.md#periodic-reports)
-- **Health checks**, telling you when a Frigate server stops responding, or a camera stops sending video, and when
-  it's back, with cameras switched off on purpose kept quiet. See [Health Check](health.md)
-- **Supernotify** for every notification: priority, critical alerts and sounds set once for every camera, delivery
-  by phone, e-mail, chime, speaker or anything else it has, snoozing, scenarios by who's home or whether the alarm
-  is set, and an archive of what was sent
+- **Periodic GenAI reports**, of the day, or of anything suspicious every few hours, by e-mail or another delivery. See [Periodic Reports](genai.md#periodic-reports)
+- **Health checks**, telling you when a Frigate server stops responding, or a camera stops sending video, and when it's back, with cameras switched off on purpose kept quiet. See [Health Check](health.md)
+- **Supernotify** for every notification
+  - priority, critical alerts and sounds set once for every camera
+  - delivery by phone, e-mail, chime, speaker or anything else it has
+    - Use a chime from a doorbell or Alexa device if you want for low priority Frigate events
+    - Have notifications go out with push mobile alerts and an e-mail with attachments
+    - Pick from any of he 22 different Supernotify transports and the [Frigate Recipes](https://supernotify.rhizomatics.org.uk/latest/recipes/)
+  - snoozing, scenarios by who's home or whether the alarm is set
+  - discovers and sends to all mobile devices automatically
+  - archive of what was sent including all the rules on why delivery choices made
 - **A device for each camera**, linked to Frigate's own, from Home Assistant 2026.8
 
 ## Going Back
 
-Delete *Global Settings* first, so the cameras aren't found and set up again, then each camera and zone, and
-re-enable the blueprint's automations. Camera AutoNotify adds no automations, scripts or YAML of its own, and
-changes nothing in Frigate, so there's nothing else to undo.
+Delete *Global Settings* first, so the cameras aren't found and set up again, then each camera and zone, and re-enable the blueprint's automations. Camera AutoNotify adds no automations, scripts or YAML of its own, and changes nothing in Frigate, so there's nothing else to undo.
