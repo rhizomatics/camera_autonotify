@@ -1,6 +1,7 @@
 # RFC 0005 Text Matching
 
-**Status**: draft, 2026-11-13, nothing yet to build
+**Status**: Ready for Review
+2026-11-13, nothing yet to build
 
 ## Motivation
 

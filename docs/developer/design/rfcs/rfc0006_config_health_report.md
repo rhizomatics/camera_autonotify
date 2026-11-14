@@ -1,6 +1,7 @@
 # RFC 0006 - Frigate Config Health Report
 
-**Status**: draft, 2026-11-13, not yet built
+**Status**: Ready for Review
+2026-11-13, not yet built
 
 ## Summary
 

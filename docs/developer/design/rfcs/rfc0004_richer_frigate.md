@@ -1,6 +1,7 @@
 # RFC 0004 - Richer Frigate Integration
 
-**Status**: draft, reviewed 2026-11-13 against the Frigate integration's source, spiked against live MQTT messages, not yet built
+**Status**: Ready for Review
+Reviewed 2026-11-13 against the Frigate integration's source, spiked against live MQTT messages, not yet built
 
 ## Summary
 

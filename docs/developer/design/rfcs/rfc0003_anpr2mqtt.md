@@ -1,6 +1,7 @@
 # RFC 0003 - ANPR2MQTT Integration
 
-**Status**: reviewed 2026-11-11, design agreed, upstream changes made for anpr2mqtt 1.3.0, not yet released, not yet built here
+**Status**: Ready for Review
+Reviewed 2026-11-11, design agreed, upstream changes made for anpr2mqtt 1.3.0, not yet released, not yet built here
 
 ## Summary
 

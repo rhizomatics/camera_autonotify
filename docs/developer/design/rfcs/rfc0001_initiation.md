@@ -1,6 +1,7 @@
 # RFC 0001 - Initial Design
 
-**Status**: done, first released in 0.3.0 on 2026-10-22, with follow-ups to 2026-11-06. Left open: confirming the
+**Status**: Complete
+First released in 0.3.0 on 2026-10-22, with follow-ups to 2026-11-06. Left open: confirming the
 tap to the HLS link on an Android device, and a feedback thread in the Supernotify discussions. GenAI, once out of
 scope, was built later under [RFC 0002](rfc0002_frigate_genai.md).
 

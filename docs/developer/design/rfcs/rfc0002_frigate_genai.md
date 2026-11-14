@@ -1,6 +1,7 @@
 # RFC 0002 - Frigate GenAI Notifications
 
-**Status**: built in 0.4.0, 2026-11-06
+**Status**: Complete
+Built in 0.4.0, 2026-11-06
 
 ## Summary
 
