@@ -345,7 +345,7 @@
         "hours_other": "{count} heures",
         "hours_minutes": "{hours} {minutes}",
         "supernotify_present": "Supernotify est installé, les notifications auront donc l'instantané, les liens vers le clip, et toutes ses livraisons.",
-        "supernotify_missing": "**Supernotify n'est pas installé.** Seule une notification en texte simple peut être envoyée, à tous les téléphones avec l'application Home Assistant, sans instantané ni liens. Installez Supernotify depuis HACS pour profiter de tout.",
+        "supernotify_missing": "**Supernotify n'est pas installé.** Seule une notification en texte simple peut être envoyée, à tous les téléphones avec l'application Home Assistant, sans instantané ni liens. Installez Supernotify depuis Marketplace pour profiter de tout.",
         "proxy_off": "**Le proxy de notification de Frigate est désactivé pour {server}.** Les notifications n'auront pas d'instantané, et les toucher ne lira pas le clip. Réactivez le proxy de notification dans les options de l'intégration Frigate.",
         "proxy_expires": "Les liens de notification de Frigate pour {server} cessent de fonctionner {seconds} secondes après chaque détection, les anciennes notifications perdent donc leur instantané et leur clip. Réglez l'expiration du proxy de notification sur 0 dans les options de l'intégration Frigate pour les garder.",
         "cameras_found": "Caméras trouvées :",

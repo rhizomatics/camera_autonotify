@@ -345,7 +345,7 @@
         "hours_other": "{count} Stunden",
         "hours_minutes": "{hours} {minutes}",
         "supernotify_present": "Supernotify ist installiert, daher haben Benachrichtigungen den Schnappschuss, Links zum Clip und alle seine Zustellungen.",
-        "supernotify_missing": "**Supernotify ist nicht installiert.** Es kann nur eine reine Textbenachrichtigung an jedes Handy mit der Home Assistant App gesendet werden, ohne Schnappschuss oder Links. Installiere Supernotify aus HACS für den vollen Umfang.",
+        "supernotify_missing": "**Supernotify ist nicht installiert.** Es kann nur eine reine Textbenachrichtigung an jedes Handy mit der Home Assistant App gesendet werden, ohne Schnappschuss oder Links. Installiere Supernotify aus Marketplace für den vollen Umfang.",
         "proxy_off": "**Frigates Benachrichtigungs-Proxy ist für {server} ausgeschaltet.** Benachrichtigungen haben keinen Schnappschuss, und Antippen spielt den Clip nicht ab. Schalte den Benachrichtigungs-Proxy in den Optionen der Frigate-Integration wieder ein.",
         "proxy_expires": "Frigates Benachrichtigungslinks für {server} funktionieren {seconds} Sekunden nach jeder Erkennung nicht mehr, daher verlieren ältere Benachrichtigungen Schnappschuss und Clip. Setze den Ablauf des Benachrichtigungs-Proxys in den Optionen der Frigate-Integration auf 0, um sie zu behalten.",
         "cameras_found": "Gefundene Kameras:",

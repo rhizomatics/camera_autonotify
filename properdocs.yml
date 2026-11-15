@@ -55,7 +55,7 @@ plugins:
       base_url: https://camera-autonotify.rhizomatics.org.uk/
       preprocess: docgen/llms_preprocess.py
       markdown_description: >-
-        Camera AutoNotify is a Home Assistant custom integration (installed via HACS) that
+        Camera AutoNotify is a Home Assistant custom integration (installed via Marketplace) that
         sends notifications for what security cameras see through Supernotify, with no
         blueprint, automations or YAML. It starts with Frigate review events, and cameras are
         discovered and added automatically, each with the same filters as the Frigate

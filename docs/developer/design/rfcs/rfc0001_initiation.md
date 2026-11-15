@@ -283,7 +283,7 @@ camera's or zone's entry has a `ReviewWatcher`:
 
 - README and docs site: install, what gets discovered, a table mapping each blueprint input to where it lives now
   (here, in Supernotify, or dropped) for people migrating
-- HACS `0.1.0` pre-release, with a feedback thread linked from the Supernotify discussion
+- Marketplace `0.1.0` pre-release, with a feedback thread linked from the Supernotify discussion
 
 ### Built (2026-10-22)
 
