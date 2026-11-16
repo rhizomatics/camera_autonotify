@@ -2,9 +2,13 @@
 title: What's New
 ---
 
+# 0.9.1
+## ✨ Enhancements
+- Smarter handling of when GIF option is available, e.g. not if camera has recording switched off, and not on first snapshot when not enough frames for Frigate to construct an animation.
+
 # 0.9.0
 ## ✨ Enhancements
-- *Image* can also be an animated GIF preview of the event, made by Frigate from the camera's recordings, so only for cameras that record
+- *Image* can also be an animated GIF preview of the event's first 20 seconds, made by Frigate from the camera's recordings. It has no bounding box or crop. The first notification shows the snapshot, before Frigate may have the frames for the preview, and updates switch to the preview, while a camera Frigate doesn't record always shows the snapshot
 ## 🌐 Translations
 - Spanish, Portuguese (European and Brazilian) and Hindi translations
 ## 🐞 Fixes

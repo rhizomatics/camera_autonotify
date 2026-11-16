@@ -161,7 +161,7 @@
                             "deliveries": "Deliveries"
                         },
                         "data_description": {
-                            "image": "The image of each notification. Frigate draws the box or crops the snapshot itself. The animated preview needs recording on for the camera. The View snapshot button always shows the whole snapshot.",
+                            "image": "The image of each notification. Frigate draws the box or crops the snapshot itself. The animated preview has no box or crop, and needs recording on for the camera, the snapshot being shown until it's ready, and always where the camera doesn't record. The View snapshot button always shows the whole snapshot.",
                             "targets": "Notify entities to send to. Leave empty for every phone with the Home Assistant app.",
                             "target": "Who or what to notify, as for any Supernotify notification. Leave empty for Supernotify to choose.",
                             "custom_target": "Targets outside of Home Assistant, such as e-mail addresses or phone numbers.",

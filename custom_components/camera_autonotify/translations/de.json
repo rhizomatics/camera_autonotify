@@ -161,7 +161,7 @@
                             "deliveries": "Zustellungen"
                         },
                         "data_description": {
-                            "image": "Das Bild jeder Benachrichtigung. Frigate zeichnet den Rahmen oder schneidet den Schnappschuss selbst zu. Die animierte Vorschau braucht eine Aufnahme der Kamera. Die Schaltfläche Schnappschuss ansehen zeigt immer den ganzen Schnappschuss.",
+                            "image": "Das Bild jeder Benachrichtigung. Frigate zeichnet den Rahmen oder schneidet den Schnappschuss selbst zu. Die animierte Vorschau hat keinen Rahmen und keinen Zuschnitt und braucht eine Aufnahme der Kamera; bis sie bereit ist, und immer ohne Aufnahme, wird der Schnappschuss gezeigt. Die Schaltfläche Schnappschuss ansehen zeigt immer den ganzen Schnappschuss.",
                             "targets": "Notify-Entitäten, an die gesendet wird. Leer lassen für jedes Handy mit der Home Assistant App.",
                             "target": "Wer oder was benachrichtigt wird, wie bei jeder Supernotify-Benachrichtigung. Leer lassen, damit Supernotify wählt.",
                             "custom_target": "Ziele außerhalb von Home Assistant, etwa E-Mail-Adressen oder Telefonnummern.",

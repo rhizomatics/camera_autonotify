@@ -161,7 +161,7 @@
                             "deliveries": "Entregas"
                         },
                         "data_description": {
-                            "image": "La imagen de cada notificación. Frigate dibuja el recuadro o recorta la instantánea por sí mismo. La vista previa animada necesita que la cámara grabe. El botón Ver instantánea siempre muestra la instantánea completa.",
+                            "image": "La imagen de cada notificación. Frigate dibuja el recuadro o recorta la instantánea por sí mismo. La vista previa animada no tiene recuadro ni recorte, y necesita que la cámara grabe; hasta que esté lista, y siempre si la cámara no graba, se muestra la instantánea. El botón Ver instantánea siempre muestra la instantánea completa.",
                             "targets": "Entidades de notificación a las que enviar. Déjalo vacío para todos los móviles con la app de Home Assistant.",
                             "target": "A quién o qué notificar, como en cualquier notificación de Supernotify. Déjalo vacío para que elija Supernotify.",
                             "custom_target": "Destinatarios fuera de Home Assistant, como direcciones de correo o números de teléfono.",

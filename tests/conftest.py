@@ -124,6 +124,7 @@ def add_frigate(
     client_id: str = "frigate",
     title: str = "frigate:5000",
     genai: bool = False,
+    record: bool = False,
 ) -> FakeFrigate:
     """A Frigate server registered as the Frigate integration does it, a device for the server, one for each camera
     with its camera entity, and one for each zone with only its occupancy sensors"""
@@ -140,6 +141,7 @@ def add_frigate(
                     "zones": {zone: {} for zone in zones},
                     "objects": {"track": ["person", "car"], "genai": {"enabled": genai}},
                     "audio": {"listen": ["bark"]},
+                    "record": {"enabled": record},
                     "review": {
                         "genai": {"enabled": genai},
                         "alerts": {"labels": ["person", "car"]},

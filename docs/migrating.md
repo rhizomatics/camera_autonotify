@@ -48,7 +48,7 @@ and deliveries in Supernotify itself, once, for every camera.
 | `critical`, `interruption_level`, `sound`, `volume` | Supernotify, from the priority of the notification |
 | `tts`, `tts_helper` | A Supernotify TTS delivery |
 | `group`, `tag` | Set by camera and by review, nothing to set |
-| `attachment` | *Image*, under *Image and targets*: the snapshot, the snapshot with its bounding box, the snapshot cropped to the object, the thumbnail, or an animated GIF preview |
+| `attachment` | *Image*, under *Image and targets*: the snapshot, the snapshot with its bounding box, the snapshot cropped to the object, the thumbnail, or an animated GIF preview, which has no bounding box or crop, and shows the snapshot until it's ready |
 | `attachment_2` | The same *Image* for the first notification and its updates |
 | `video`, `ios_live_view` | Not attached, see [Video on iPhones](index.md#video-on-iphones). Tapping the notification plays the clip |
 | `tap_action`, `button_1` to `button_3` | Tap for the clip, and a *View snapshot* button |

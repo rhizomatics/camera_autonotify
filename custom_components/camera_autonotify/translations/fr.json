@@ -161,7 +161,7 @@
                             "deliveries": "Livraisons"
                         },
                         "data_description": {
-                            "image": "L'image de chaque notification. Frigate dessine le cadre ou recadre l'instantané lui-même. L'aperçu animé nécessite l'enregistrement de la caméra. Le bouton Voir l'instantané affiche toujours l'instantané entier.",
+                            "image": "L'image de chaque notification. Frigate dessine le cadre ou recadre l'instantané lui-même. L'aperçu animé n'a ni cadre ni recadrage, et nécessite l'enregistrement de la caméra ; l'instantané est affiché tant qu'il n'est pas prêt, et toujours si la caméra n'enregistre pas. Le bouton Voir l'instantané affiche toujours l'instantané entier.",
                             "targets": "Entités de notification auxquelles envoyer. Laisser vide pour tous les téléphones avec l'application Home Assistant.",
                             "target": "Qui ou quoi notifier, comme pour toute notification Supernotify. Laisser vide pour laisser Supernotify choisir.",
                             "custom_target": "Cibles hors de Home Assistant, comme des adresses e-mail ou des numéros de téléphone.",

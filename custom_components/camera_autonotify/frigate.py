@@ -84,6 +84,12 @@ def camera_has_video(stats: dict[str, Any] | None, camera: str) -> bool | None:
     return float(found["camera_fps"]) > 0
 
 
+def camera_records(config: dict[str, Any] | None, camera: str) -> bool:
+    """Whether Frigate records a camera, by its config as the Frigate integration last read it, which has each camera's
+    settings with Frigate's own merged in, so not when that isn't known"""
+    return bool(((((config or {}).get("cameras") or {}).get(camera) or {}).get("record") or {}).get("enabled"))
+
+
 def camera_enabled(config: dict[str, Any] | None, camera: str) -> bool:
     """Whether a camera is enabled in Frigate's config, as the Frigate integration last read it"""
     return bool((((config or {}).get("cameras") or {}).get(camera) or {}).get("enabled", True))
@@ -131,7 +137,8 @@ IMAGE_PATHS = {
     IMAGE_SNAPSHOT_BOX: "snapshot.jpg?bbox=1",
     IMAGE_SNAPSHOT_CROP: "snapshot.jpg?crop=1",
     IMAGE_THUMBNAIL: "thumbnail.jpg",
-    # Frigate's animated GIF of the event, made from its recordings, so only where the camera records
+    # Frigate's animated GIF of the event's first 20 seconds, made from the frames it keeps for its recordings, so
+    # only where the camera records, and never with the box or crop
     IMAGE_PREVIEW: "event_preview.gif",
 }
 

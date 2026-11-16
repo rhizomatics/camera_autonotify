@@ -22,13 +22,23 @@ from .const import (
     CONF_TARGETS,
     CONF_THREAT_PRIORITIES,
     DOMAIN,
+    IMAGE_PREVIEW,
+    IMAGE_SNAPSHOT,
     SUBENTRY_RULE,
     SUPERNOTIFY_DOMAIN,
     THREAT_PRIORITY_DEFAULTS,
     TYPE_DISCOVERY,
     TYPE_ZONE,
 )
-from .frigate import camera_entity_id, hls_url, image_url, notifications_url, snapshot_url
+from .frigate import (
+    camera_entity_id,
+    camera_records,
+    frigate_config,
+    hls_url,
+    image_url,
+    notifications_url,
+    snapshot_url,
+)
 from .rules import Outcome, Rule, apply_rules, rank
 from .supernotify_api import supernotify_available
 from .texts import (
@@ -225,6 +235,17 @@ class Notifier:
             return PRIORITY_SILENT
         return priority
 
+    def image(self, decision: Decision) -> str | None:
+        """The image chosen, except the animated preview falls back to the snapshot where Frigate can't make it yet:
+        for a camera that doesn't record, since it's made from the frames kept for the recordings, and for the first
+        notification, which may come before Frigate has any frames of the event. An update takes the first
+        notification's place, so the preview follows as soon as there's one"""
+        image: str | None = self.entry.options.get(CONF_IMAGE)
+        if image != IMAGE_PREVIEW:
+            return image
+        records = camera_records(frigate_config(self.hass, self.source_entry_id), decision.review.camera)
+        return image if records and decision.is_update else IMAGE_SNAPSHOT
+
     def supernotify_data(self, decision: Decision, ruled: tuple[str, Outcome] | None = None) -> dict[str, Any]:
         """The `supernotify.notify` call: the snapshot, tapped for the clip as HLS, and never `clip_url`, which iOS
         fails to show, even the image"""
@@ -247,7 +268,12 @@ class Notifier:
         notifications = notifications_url(self.hass, self.source_entry_id)
         if notifications and decision.detection_id:
             # the image chosen, though the button is always for the whole snapshot
-            media["snapshot_url"] = image_url(notifications, decision.detection_id, self.entry.options.get(CONF_IMAGE))
+            image = self.image(decision)
+            media["snapshot_url"] = image_url(notifications, decision.detection_id, image)
+            if image == IMAGE_PREVIEW:
+                # Supernotify otherwise redraws the image it attaches, keeping only a GIF's first frame, read by it as
+                # `media.reprocess`, though its docs give `media.options.reprocess`
+                media["reprocess"] = "never"
             data["actions"] = [
                 {"level": "notification", "uri": hls_url(notifications, decision.detection_id, review.camera)},
                 {

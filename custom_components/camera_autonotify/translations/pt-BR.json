@@ -161,7 +161,7 @@
                             "deliveries": "Entregas"
                         },
                         "data_description": {
-                            "image": "A imagem de cada notificação. O Frigate desenha a moldura ou recorta a captura por conta própria. A pré-visualização animada precisa que a câmera grave. O botão Ver captura mostra sempre a captura inteira.",
+                            "image": "A imagem de cada notificação. O Frigate desenha a moldura ou recorta a captura por conta própria. A pré-visualização animada não tem moldura nem recorte, e precisa que a câmera grave; até estar pronta, e sempre se a câmera não gravar, é mostrada a captura. O botão Ver captura mostra sempre a captura inteira.",
                             "targets": "Entidades de notificação para onde enviar. Deixe vazio para todos os celulares com o app do Home Assistant.",
                             "target": "Quem ou o que notificar, como em qualquer notificação do Supernotify. Deixe vazio para o Supernotify escolher.",
                             "custom_target": "Destinatários fora do Home Assistant, como endereços de e-mail ou números de telefone.",

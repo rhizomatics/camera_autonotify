@@ -13,6 +13,7 @@ from homeassistant.helpers import entity_registry as er
 from custom_components.camera_autonotify.const import (
     CONF_CUSTOM_TARGET,
     CONF_DELIVERIES,
+    CONF_IMAGE,
     CONF_SOURCE_ENTRY_ID,
     CONF_SOURCE_NAME,
     CONF_TARGET,
@@ -357,3 +358,32 @@ async def test_unusable_rule_left_out(hass: HomeAssistant):
     add_rules(hass, {"name": "bad", "match": "regex", "pattern": "(", "silence": True})
     assert notification_rules(hass) == []
     assert notifier(hass).ruled(described("Anything"))[1].silence is False
+
+
+@pytest.mark.parametrize(
+    ("record", "reason", "previous", "image"),
+    [
+        # the first notification, before Frigate may have any frames of the event
+        (True, Reason.NEW, 0, "snapshot.jpg"),
+        # an update, or the last when it's over, by when it has
+        (True, Reason.NEW, 1, "event_preview.gif"),
+        (True, Reason.FINAL, 2, "event_preview.gif"),
+        # never for a camera Frigate doesn't record, having no frames to make it from
+        (False, Reason.NEW, 1, "snapshot.jpg"),
+        (False, Reason.FINAL, 2, "snapshot.jpg"),
+    ],
+)
+async def test_preview_falls_back_to_snapshot(
+    hass: HomeAssistant, external_url: None, record: bool, reason: Reason, previous: int, image: str
+):
+    add_frigate(hass, record=record)
+    data = notifier(hass, options={CONF_IMAGE: "preview"}).supernotify_data(decision(reason, previous))
+    assert data["media"]["snapshot_url"] == f"{BASE}/api/frigate/notifications/{DETECTION}/{image}"
+    # the GIF attached as it comes, not redrawn to its first frame
+    assert data["media"].get("reprocess") == ("never" if image.endswith(".gif") else None)
+
+
+async def test_preview_without_frigate_config(hass: HomeAssistant, external_url: None):
+    """Frigate's config not read yet, so not known to record"""
+    data = notifier(hass, options={CONF_IMAGE: "preview"}).supernotify_data(decision(Reason.NEW, 1))
+    assert data["media"]["snapshot_url"].endswith("/snapshot.jpg")

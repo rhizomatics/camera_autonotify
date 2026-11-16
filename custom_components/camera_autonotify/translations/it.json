@@ -161,7 +161,7 @@
                             "deliveries": "Delivery"
                         },
                         "data_description": {
-                            "image": "L'immagine di ogni notifica. Frigate disegna il riquadro o ritaglia l'istantanea da solo. L'anteprima animata richiede la registrazione della telecamera. Il pulsante Vedi istantanea mostra sempre l'istantanea intera.",
+                            "image": "L'immagine di ogni notifica. Frigate disegna il riquadro o ritaglia l'istantanea da solo. L'anteprima animata non ha riquadro né ritaglio, e richiede la registrazione della telecamera; finché non è pronta, e sempre se la telecamera non registra, viene mostrata l'istantanea. Il pulsante Vedi istantanea mostra sempre l'istantanea intera.",
                             "targets": "Entità di notifica a cui inviare. Lascia vuoto per tutti i telefoni con l'app Home Assistant.",
                             "target": "Chi o cosa notificare, come per qualsiasi notifica Supernotify. Lascia vuoto per far scegliere a Supernotify.",
                             "custom_target": "Destinazioni fuori da Home Assistant, come indirizzi e-mail o numeri di telefono.",
