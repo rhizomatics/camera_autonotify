@@ -13,3 +13,10 @@ See [RFCs](rfcs/index.md)
 - Plain email format for info
 - \u00b7 to plain ascii -
 - Submit to frigate+ action
+- Richer periodic GenAI report, in steps:
+    - *Plain or HTML* choice for e-mail. Frigate's report is Markdown, by its prompt's fixed layout (`# Security Summary`, `## Overview`, `## Timeline` of `**HH:MM** | Camera | ✓/⚠️/🔴` entries, `## Summary`), so HTML is that converted, sent as Supernotify's `message_html`, and plain is it with the Markdown stripped, rather than the raw `#` and `**` sent today. Don't parse the layout itself, since Frigate's prompt can change in any release
+    - The reviews of concern beside the report, the same ones Frigate chose (overlapping the hours, ended, with GenAI metadata, threat level or other concerns, see `summary.found`), each with camera, time, threat level, and its `review_thumbnail.webp` and `review_preview.gif` through the notification proxy, which needs no login. Frigate returns no review ids with its report, so matching an entry of the timeline to its review would be by camera and time, Frigate title-casing camera names and using its container's time zone
+    - A Supernotify template for the report, given the HTML and the reviews as data, rather than HTML built here
+    - Supernotify changes: every transport that can show rich HTML, not just e-mail, honouring `message_html`, and its HTML templates extended beyond e-mail
+    - Not Frigate's `preview.mp4` for the report's hours (Frigate integration v5.15.7 preview proxy): it needs a Home Assistant login, is per camera, and Frigate only uses the first hourly preview file of the range
+- Say in the docs that Frigate behind an authenticating reverse proxy (Basic or Bearer, Frigate integration v5.15.7 on) works, once tested, since the health check uses the Frigate integration's own client

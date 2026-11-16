@@ -37,13 +37,21 @@ CONF_TIMEOUT: Final[str] = "timeout"
 CONF_ALERT_ONCE: Final[str] = "alert_once"
 CONF_UPDATE_SUB_LABEL: Final[str] = "update_sub_label"
 # the image of each notification, served by Frigate through the Frigate integration's notification proxy, the snapshot
-# to begin with, which Frigate can draw the object's box on, or crop to the object, or else the smaller thumbnail
+# to begin with, which Frigate can draw the object's box on, or crop to the object, or else the smaller thumbnail, or an
+# animated preview made from the recordings
 CONF_IMAGE: Final[str] = "image"
 IMAGE_SNAPSHOT: Final[str] = "snapshot"
 IMAGE_SNAPSHOT_BOX: Final[str] = "snapshot_box"
 IMAGE_SNAPSHOT_CROP: Final[str] = "snapshot_crop"
 IMAGE_THUMBNAIL: Final[str] = "thumbnail"
-IMAGES: Final[tuple[str, ...]] = (IMAGE_SNAPSHOT, IMAGE_SNAPSHOT_BOX, IMAGE_SNAPSHOT_CROP, IMAGE_THUMBNAIL)
+IMAGE_PREVIEW: Final[str] = "preview"
+IMAGES: Final[tuple[str, ...]] = (
+    IMAGE_SNAPSHOT,
+    IMAGE_SNAPSHOT_BOX,
+    IMAGE_SNAPSHOT_CROP,
+    IMAGE_THUMBNAIL,
+    IMAGE_PREVIEW,
+)
 SEVERITIES: Final[tuple[str, ...]] = ("alert", "detection")
 # what Frigate's generative AI adds, the review summaries and object descriptions, named as the tracker's settings
 CONF_SUMMARIES: Final[str] = "summaries"

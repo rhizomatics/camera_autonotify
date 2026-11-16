@@ -44,6 +44,9 @@ CAMERA_UP = "camera_up"
 # a summary, named by the hours it covers, and by the server's title when there's more than one
 SUMMARY_TITLE = "summary_title"
 SUMMARY_SERVER_TITLE = "summary_server_title"
+# said instead of Frigate's own fixed English, when GenAI summarised no review in the hours, or none of concern
+SUMMARY_NO_ACTIVITY = "summary_no_activity"
+SUMMARY_NO_CONCERNS = "summary_no_concerns"
 PERIOD_TO_MIDNIGHT = "period_to_midnight"
 PERIOD_SAME_DAY = "period_same_day"
 PERIOD_DAYS = "period_days"

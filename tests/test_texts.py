@@ -119,6 +119,7 @@ async def test_object_names_in_headline(hass: HomeAssistant):
         ("snapshot_box", "snapshot.jpg?bbox=1"),
         ("snapshot_crop", "snapshot.jpg?crop=1"),
         ("thumbnail", "thumbnail.jpg"),
+        ("preview", "event_preview.gif"),
         ("unknown", "snapshot.jpg"),
     ],
 )
@@ -141,7 +142,7 @@ async def test_image_offered_and_stored(hass: HomeAssistant):
     entry = entry_titled(hass, "Courtyard")
     form = await open_settings(hass)
     image = fields_of(form)["notify.image"]
-    assert image.config["options"] == ["snapshot", "snapshot_box", "snapshot_crop", "thumbnail"]
+    assert image.config["options"] == ["snapshot", "snapshot_box", "snapshot_crop", "thumbnail", "preview"]
     result = await hass.config_entries.options.async_configure(
         form["flow_id"], {"severities": ["alert"], "timing": {}, "notify": {CONF_IMAGE: "thumbnail"}}
     )
@@ -199,7 +200,7 @@ def _placeholders(value: str) -> set[str]:
     return {name for _, name, _, _ in string.Formatter().parse(value) if name}
 
 
-@pytest.mark.parametrize("language", ["fr", "de", "it"])
+@pytest.mark.parametrize("language", ["fr", "de", "it", "es", "pt", "pt-BR", "hi"])
 def test_translation_complete(language: str):
     english = _flat(json.loads(EN_JSON.read_text()))
     translated = _flat(json.loads((EN_JSON.parent / f"{language}.json").read_text()))
@@ -213,3 +214,20 @@ async def test_notification_in_home_assistants_language(hass: HomeAssistant):
     assert notifier(hass).title(decision(zones=())) == "Détection : Person à Courtyard"
     assert texts.said_day(hass, date(2026, 11, 1)) == "dimanche 1 novembre"
     assert texts.said_duration(hass, 7380) == "2 heures 3 minutes"
+
+
+@pytest.mark.parametrize(
+    ("language", "title", "day", "duration"),
+    [
+        ("es", "Detección: Person en Courtyard", "domingo 1 de noviembre", "2 horas 3 minutos"),
+        ("pt", "Deteção: Person em Courtyard", "domingo, 1 de novembro", "2 horas 3 minutos"),
+        ("pt-BR", "Detecção: Person em Courtyard", "domingo, 1 de novembro", "2 horas 3 minutos"),
+        ("hi", "Courtyard पर Person का पता चला", "रविवार, 1 नवंबर", "2 घंटे 3 मिनट"),
+    ],
+)
+async def test_notification_in_more_languages(hass: HomeAssistant, language: str, title: str, day: str, duration: str):
+    hass.config.language = language
+    await async_load_texts(hass)
+    assert notifier(hass).title(decision(zones=())) == title
+    assert texts.said_day(hass, date(2026, 11, 1)) == day
+    assert texts.said_duration(hass, 7380) == duration

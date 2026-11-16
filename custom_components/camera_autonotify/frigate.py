@@ -12,6 +12,7 @@ from homeassistant.util import slugify
 from .const import (
     DOMAIN,
     FRIGATE_DOMAIN,
+    IMAGE_PREVIEW,
     IMAGE_SNAPSHOT,
     IMAGE_SNAPSHOT_BOX,
     IMAGE_SNAPSHOT_CROP,
@@ -130,6 +131,8 @@ IMAGE_PATHS = {
     IMAGE_SNAPSHOT_BOX: "snapshot.jpg?bbox=1",
     IMAGE_SNAPSHOT_CROP: "snapshot.jpg?crop=1",
     IMAGE_THUMBNAIL: "thumbnail.jpg",
+    # Frigate's animated GIF of the event, made from its recordings, so only where the camera records
+    IMAGE_PREVIEW: "event_preview.gif",
 }
 
 

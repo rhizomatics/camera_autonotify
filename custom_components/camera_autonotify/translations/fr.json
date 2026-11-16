@@ -161,7 +161,7 @@
                             "deliveries": "Livraisons"
                         },
                         "data_description": {
-                            "image": "L'image de chaque notification. Frigate dessine le cadre ou recadre l'instantané lui-même. Le bouton Voir l'instantané affiche toujours l'instantané entier.",
+                            "image": "L'image de chaque notification. Frigate dessine le cadre ou recadre l'instantané lui-même. L'aperçu animé nécessite l'enregistrement de la caméra. Le bouton Voir l'instantané affiche toujours l'instantané entier.",
                             "targets": "Entités de notification auxquelles envoyer. Laisser vide pour tous les téléphones avec l'application Home Assistant.",
                             "target": "Qui ou quoi notifier, comme pour toute notification Supernotify. Laisser vide pour laisser Supernotify choisir.",
                             "custom_target": "Cibles hors de Home Assistant, comme des adresses e-mail ou des numéros de téléphone.",
@@ -222,7 +222,8 @@
                 "snapshot": "Instantané",
                 "snapshot_box": "Instantané avec le cadre de l'objet",
                 "snapshot_crop": "Instantané recadré sur l'objet",
-                "thumbnail": "Miniature"
+                "thumbnail": "Miniature",
+                "preview": "Aperçu animé (GIF)"
             }
         },
         "object_names": {
@@ -314,6 +315,8 @@
         "camera_up": "Frigate a de nouveau la vidéo de {camera}, après {duration}.",
         "summary_title": "Rapport Frigate : {period}",
         "summary_server_title": "Rapport Frigate de {server} : {period}",
+        "summary_no_activity": "Aucune activité n'a été résumée par GenAI pendant ces heures.",
+        "summary_no_concerns": "Rien de préoccupant n'a été trouvé pendant ces heures.",
         "period_to_midnight": "{day}, de {start} à minuit",
         "period_same_day": "{day}, de {start} à {end}",
         "period_days": "du {start_day} {start} au {end_day} {end}",

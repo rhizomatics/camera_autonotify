@@ -2,6 +2,15 @@
 title: What's New
 ---
 
+# 0.9.0
+## ✨ Enhancements
+- *Image* can also be an animated GIF preview of the event, made by Frigate from the camera's recordings, so only for cameras that record
+## 🌐 Translations
+- Spanish, Portuguese (European and Brazilian) and Hindi translations
+## 🐞 Fixes
+- *Only when there's a concern* for periodic reports counts a review that began before the hours reported and went on into them, as Frigate's own report does, and no longer one still going on, which Frigate leaves out
+- A periodic report of hours with nothing of concern, or no GenAI summaries at all, says so in Home Assistant's language, rather than sending Frigate's fixed English sentence
+
 # 0.8.0
 ## ✨ Enhancements
 - *Object names* in *Global Settings* gives any of Frigate's objects a name of its own in every notification, such as `car` as "Vehicle", or a translation

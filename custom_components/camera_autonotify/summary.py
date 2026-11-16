@@ -7,6 +7,11 @@ over MQTT in the hours summarised, or else always or never, as chosen. It can be
 worry about: Frigate is always asked for the summary, but it's only sent when one of the reviews in those hours was
 given a threat level, or other concerns, by GenAI. A summary Frigate can't make is logged and nothing sent.
 
+The reviews are chosen as Frigate chooses them for its summary: those overlapping the hours, over by their end, with a
+GenAI review summary. With none of concern, Frigate answers with a fixed sentence in English instead of a summary, so
+that's said here in Home Assistant's language instead. The reviews are asked for after the summary, so there can only be
+more of them than Frigate saw, and a summary it did make is never taken for one of those sentences.
+
 Too long for a phone's notification or a voice assistant, so only sent through Supernotify, by one of its e-mail
 deliveries unless others are chosen, such as Telegram, and not at all when it has none.
 """
@@ -55,6 +60,8 @@ from .texts import (
     PERIOD_DAYS,
     PERIOD_SAME_DAY,
     PERIOD_TO_MIDNIGHT,
+    SUMMARY_NO_ACTIVITY,
+    SUMMARY_NO_CONCERNS,
     SUMMARY_SERVER_TITLE,
     SUMMARY_TITLE,
     async_load_texts,
@@ -139,6 +146,29 @@ def summary_text(response: dict[str, Any] | str | None) -> str | None:
     return None
 
 
+@dataclass(frozen=True)
+class Found:
+    """How many of the reviews in the hours summarised GenAI summarised, and how many of those were of concern"""
+
+    summarised: int
+    concerns: int
+
+
+def found(reviews: list[dict[str, Any]] | None, start: datetime, end: datetime) -> Found:
+    """The reviews as Frigate chooses them for its summary: overlapping the hours, over by their end, and summarised by
+    GenAI, an ongoing one being left out"""
+    chosen = [
+        review
+        for review in reviews or []
+        if isinstance(review, dict)
+        and review.get("end_time") is not None
+        and float(review.get("start_time") or 0) < end.timestamp()
+        and float(review["end_time"]) > start.timestamp()
+        and (review.get("data") or {}).get("metadata")
+    ]
+    return Found(len(chosen), sum(1 for review in chosen if concerning(review)))
+
+
 @dataclass
 class Summaries:
     hass: HomeAssistant
@@ -203,29 +233,28 @@ class Summaries:
             if (report := summary_text(response)) is None:
                 _LOGGER.warning("CAMERA_AUTONOTIFY Frigate %s made no summary of %s: %s", server.title, said, response)
                 continue
-            if self.settings.concerns_only and not await self._async_concerned(client, server.title, start, end):
+            seen = await self._async_found(client, server.title, start, end)
+            if seen is None and self.settings.concerns_only:
                 continue
+            if seen is not None and not seen.concerns:
+                if self.settings.concerns_only:
+                    _LOGGER.debug("CAMERA_AUTONOTIFY Nothing of concern from Frigate %s, so summary not sent", server.title)
+                    continue
+                report = text(self.hass, SUMMARY_NO_CONCERNS if seen.summarised else SUMMARY_NO_ACTIVITY)
             names = {"period": said, "server": server.title}
             title = text(self.hass, SUMMARY_SERVER_TITLE if len(servers) > 1 else SUMMARY_TITLE, **names)
             await async_notify_message(
                 self.hass, title, report, PRIORITY, f"{DOMAIN}_summary_{server.entry_id}", {CONF_DELIVERIES: deliveries}
             )
 
-    async def _async_concerned(self, client: FrigateApiClient, server: str, start: datetime, end: datetime) -> bool:
-        """Whether any review starting in the hours given raised a concern, by what GenAI made of it"""
+    async def _async_found(self, client: FrigateApiClient, server: str, start: datetime, end: datetime) -> Found | None:
+        """What GenAI made of the reviews in the hours given, or nothing when Frigate couldn't give them"""
         try:
             reviews = await client.async_get_reviews(after=start.timestamp(), before=end.timestamp())
         except Exception as error:
             _LOGGER.warning("CAMERA_AUTONOTIFY Frigate %s couldn't give its reviews: %s", server, error)
-            return False
-        found = any(
-            concerning(review) and start.timestamp() <= float(review.get("start_time") or 0) < end.timestamp()
-            for review in reviews or []
-            if isinstance(review, dict)
-        )
-        if not found:
-            _LOGGER.debug("CAMERA_AUTONOTIFY Nothing of concern from Frigate %s, so summary not sent", server)
-        return found
+            return None
+        return found(reviews, start, end)
 
 
 @callback

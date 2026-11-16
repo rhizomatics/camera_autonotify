@@ -87,7 +87,10 @@ It's in the *Frigate GenAI Periodic Report* section of *Global Settings*:
 
 Frigate is asked for the report every time it's due, whatever reviews came over MQTT. Whether it's then sent, with
 *Only when there's a concern* on, is read from the threat level and other concerns Frigate's GenAI already gave each
-review in those hours. Each report goes at `medium` priority, and rules apply to it as to
+review in those hours, counting a review that began before them and went on into them, as Frigate's report does, but
+not one still going on. When nothing in those hours was of concern, Frigate writes no report, and with *Only when
+there's a concern* off, a single line saying so is sent instead, in Home Assistant's language. Each report goes at
+`medium` priority, and rules apply to it as to
 any other notification. Frigate needs to be 0.17 or later.
 
 ### Two Ways to Use It

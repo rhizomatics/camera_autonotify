@@ -161,7 +161,7 @@
                             "deliveries": "Delivery"
                         },
                         "data_description": {
-                            "image": "L'immagine di ogni notifica. Frigate disegna il riquadro o ritaglia l'istantanea da solo. Il pulsante Vedi istantanea mostra sempre l'istantanea intera.",
+                            "image": "L'immagine di ogni notifica. Frigate disegna il riquadro o ritaglia l'istantanea da solo. L'anteprima animata richiede la registrazione della telecamera. Il pulsante Vedi istantanea mostra sempre l'istantanea intera.",
                             "targets": "Entità di notifica a cui inviare. Lascia vuoto per tutti i telefoni con l'app Home Assistant.",
                             "target": "Chi o cosa notificare, come per qualsiasi notifica Supernotify. Lascia vuoto per far scegliere a Supernotify.",
                             "custom_target": "Destinazioni fuori da Home Assistant, come indirizzi e-mail o numeri di telefono.",
@@ -222,7 +222,8 @@
                 "snapshot": "Istantanea",
                 "snapshot_box": "Istantanea con il riquadro dell'oggetto",
                 "snapshot_crop": "Istantanea ritagliata sull'oggetto",
-                "thumbnail": "Miniatura"
+                "thumbnail": "Miniatura",
+                "preview": "Anteprima animata (GIF)"
             }
         },
         "object_names": {
@@ -314,6 +315,8 @@
         "camera_up": "Frigate riceve di nuovo video da {camera}, dopo {duration}.",
         "summary_title": "Rapporto Frigate: {period}",
         "summary_server_title": "Rapporto Frigate di {server}: {period}",
+        "summary_no_activity": "Nessuna attività è stata riassunta da GenAI in queste ore.",
+        "summary_no_concerns": "Non è stato trovato nulla di preoccupante in queste ore.",
         "period_to_midnight": "{day}, dalle {start} a mezzanotte",
         "period_same_day": "{day}, dalle {start} alle {end}",
         "period_days": "da {start_day} {start} a {end_day} {end}",

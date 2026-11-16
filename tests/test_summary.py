@@ -42,6 +42,8 @@ def loaded_frigate(hass: HomeAssistant, genai: bool = True, **kwargs: Any) -> As
     frigate.entry.mock_state(hass, ConfigEntryState.LOADED)
     client = AsyncMock()
     client.async_review_summarize.return_value = {"success": True, "summary": SUMMARY}
+    # one of concern, over the whole of any hours summarised, so Frigate's summary is what's sent
+    client.async_get_reviews.return_value = [concern("2026-11-01 00:00", level=1, end="2026-12-01 00:00")]
     hass.data["frigate"][frigate.entry.entry_id]["client"] = client
     return client
 
@@ -259,13 +261,21 @@ async def test_said_period(hass: HomeAssistant, start: str, end: str, said: str)
     assert said_period(hass, datetime.fromisoformat(start), datetime.fromisoformat(end)) == said
 
 
-def concern(start: str, level: int = 0, other: list[str] | None = None) -> dict[str, Any]:
-    started = datetime.fromisoformat(start).replace(tzinfo=dt_util.get_default_time_zone()).timestamp()
+def local(when: str) -> float:
+    return datetime.fromisoformat(when).replace(tzinfo=dt_util.get_default_time_zone()).timestamp()
+
+
+def concern(
+    start: str, level: int = 0, other: list[str] | None = None, end: str | None = "", genai: bool = True
+) -> dict[str, Any]:
+    """A review, a minute long unless its end is given, or ongoing when it's None"""
+    metadata = {"title": "Person at the door", "potential_threat_level": level, "other_concerns": other}
     return {
         "id": start,
         "camera": "courtyard",
-        "start_time": started,
-        "data": {"metadata": {"title": "Person at the door", "potential_threat_level": level, "other_concerns": other}},
+        "start_time": local(start),
+        "end_time": None if end is None else local(end) if end else local(start) + 60,
+        "data": {"metadata": metadata} if genai else {},
     }
 
 
@@ -309,6 +319,49 @@ async def test_summary_only_with_concerns(hass: HomeAssistant, freezer: FrozenDa
     client.async_get_reviews.return_value = [concern("2026-11-11 13:00", other=["Gate left open"])]
     await at(hass, freezer, "2026-11-11 16:05:00")
     assert len(calls) == 2
+
+    # one that started before the hours, but went on into them, as Frigate's summary has it
+    client.async_get_reviews.return_value = [concern("2026-11-11 15:50", level=2, end="2026-11-11 16:10")]
+    await at(hass, freezer, "2026-11-11 20:05:00")
+    assert len(calls) == 3
+
+    # but not one still going on, which Frigate leaves out of its summary
+    client.async_get_reviews.return_value = [concern("2026-11-11 23:50", level=2, end=None)]
+    await at(hass, freezer, "2026-11-12 00:05:00")
+    assert len(calls) == 3
+
+
+@pytest.mark.parametrize(
+    ("reviews", "said"),
+    [
+        ([], "No activity was summarised by GenAI in these hours."),
+        ([concern("2026-11-10 09:00", level=2, genai=False)], "No activity was summarised by GenAI in these hours."),
+        ([concern("2026-11-10 09:00")], "Nothing of concern was found in these hours."),
+    ],
+)
+async def test_summary_of_nothing_said_in_own_words(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, reviews: list[dict[str, Any]], said: str
+):
+    """Frigate's fixed English sentence, for hours with nothing to summarise, said in Home Assistant's language"""
+    client = loaded_frigate(hass)
+    client.async_review_summarize.return_value = {"success": True, "summary": "No concerns were found during this time period."}
+    client.async_get_reviews.return_value = reviews
+    calls = mock_supernotify(hass)
+    await set_up(hass)
+    await at(hass, freezer, "2026-11-11 00:05:00")
+    assert [call.data["message"] for call in calls] == [said]
+
+
+async def test_summary_sent_as_made_when_reviews_fail(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, caplog: pytest.LogCaptureFixture
+):
+    client = loaded_frigate(hass)
+    client.async_get_reviews.side_effect = Exception("Connection refused")
+    calls = mock_supernotify(hass)
+    await set_up(hass)
+    await at(hass, freezer, "2026-11-11 00:05:00")
+    assert [call.data["message"] for call in calls] == [SUMMARY]
+    assert "couldn't give its reviews: Connection refused" in caplog.text
 
 
 async def test_no_summary_when_reviews_fail(

@@ -161,7 +161,7 @@
                             "deliveries": "Deliveries"
                         },
                         "data_description": {
-                            "image": "The image of each notification. Frigate draws the box or crops the snapshot itself. The View snapshot button always shows the whole snapshot.",
+                            "image": "The image of each notification. Frigate draws the box or crops the snapshot itself. The animated preview needs recording on for the camera. The View snapshot button always shows the whole snapshot.",
                             "targets": "Notify entities to send to. Leave empty for every phone with the Home Assistant app.",
                             "target": "Who or what to notify, as for any Supernotify notification. Leave empty for Supernotify to choose.",
                             "custom_target": "Targets outside of Home Assistant, such as e-mail addresses or phone numbers.",
@@ -222,7 +222,8 @@
                 "snapshot": "Snapshot",
                 "snapshot_box": "Snapshot with bounding box",
                 "snapshot_crop": "Snapshot cropped to the object",
-                "thumbnail": "Thumbnail"
+                "thumbnail": "Thumbnail",
+                "preview": "Animated preview (GIF)"
             }
         },
         "object_names": {
@@ -314,6 +315,8 @@
         "camera_up": "Frigate has video from {camera} again, after {duration}.",
         "summary_title": "Frigate report for {period}",
         "summary_server_title": "Frigate report for {period} from {server}",
+        "summary_no_activity": "No activity was summarised by GenAI in these hours.",
+        "summary_no_concerns": "Nothing of concern was found in these hours.",
         "period_to_midnight": "{day}, {start} to midnight",
         "period_same_day": "{day}, {start} to {end}",
         "period_days": "{start_day} {start} to {end_day} {end}",
