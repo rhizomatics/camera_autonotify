@@ -112,12 +112,42 @@ async def test_facts_from_mqtt_said_under_headline(hass: HomeAssistant, fake_mqt
     assert outcome.message == "48 km/h · AB12CDE · Royal Mail · Face not recognised · Not moving · Gate: open"
 
 
-async def test_facts_in_mph(hass: HomeAssistant, fake_mqtt: FakeMQTT):
+@pytest.mark.parametrize(
+    ("frigate_units", "country", "chosen", "said"),
+    [
+        # Frigate's own unit converted to Home Assistant's, metric with no country here
+        ("imperial", None, None, "49 km/h"),
+        ("metric", None, None, "48 km/h"),
+        # miles an hour where roads are signed in them, though Home Assistant is metric
+        ("metric", "GB", None, "30 mph"),
+        ("imperial", "GB", None, "30 mph"),
+        # or as chosen in the global settings
+        ("metric", "GB", "kmh", "48 km/h"),
+        ("metric", "FR", "mph", "30 mph"),
+    ],
+)
+async def test_speed_in_preferred_unit(
+    hass: HomeAssistant, fake_mqtt: FakeMQTT, frigate_units: str, country: str | None, chosen: str | None, said: str
+):
     add_frigate(hass)
-    hass.data["frigate"]["01FRIGATE"]["config"]["ui"] = {"unit_system": "imperial"}
+    hass.data["frigate"]["01FRIGATE"]["config"]["ui"] = {"unit_system": frigate_units}
+    await hass.config.async_update(country=country)
+    await set_up_discovery(hass)
+    if chosen:
+        settings = next(e for e in hass.config_entries.async_entries("camera_autonotify") if e.data.get("type") == "discovery")
+        hass.config_entries.async_update_entry(settings, options={**settings.options, "speed_unit": chosen})
+    await async_load_texts(hass)
+    speed = 30.2 if frigate_units == "imperial" else 48.4
+    fake_mqtt.publish("frigate/events", event(current_estimated_speed=speed))
+    assert notifier(hass).ruled(decision())[1].message == said
+
+
+async def test_speed_in_mph_with_us_units(hass: HomeAssistant, fake_mqtt: FakeMQTT):
+    add_frigate(hass)
+    await hass.config.async_update(unit_system="us_customary")
     await set_up_discovery(hass)
     await async_load_texts(hass)
-    fake_mqtt.publish("frigate/events", event(current_estimated_speed=30.2))
+    fake_mqtt.publish("frigate/events", event(current_estimated_speed=48.4))
     assert notifier(hass).ruled(decision())[1].message == "30 mph"
 
 

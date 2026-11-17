@@ -34,14 +34,16 @@
                     "discover_zones": "Trouver aussi les zones",
                     "object_names": "Noms des objets",
                     "genai_image": "Image GenAI",
-                    "actions": "Actions"
+                    "actions": "Actions",
+                    "speed_unit": "Unité de vitesse"
                 },
                 "data_description": {
                     "auto_discover": "Ajoute chaque caméra Frigate dès qu'elle est trouvée. Désactivez pour que chacune vous soit proposée à la place",
                     "discover_zones": "Propose chaque zone Frigate comme une caméra, pour des notifications sur cette zone seule",
                     "object_names": "Comment appeler chaque objet Frigate dans toutes les notifications, par exemple car en Véhicule, ou une traduction. Les objets non nommés ici gardent le nom que leur donne Frigate.",
                     "genai_image": "L'image de ce qu'ajoute la GenAI de Frigate, un résumé de revue ou une description d'objet, pour chaque caméra et zone qui ne choisit pas la sienne. L'aperçu animé montre ce que la GenAI a regardé, là où la caméra enregistre, sinon l'image de la caméra.",
-                    "actions": "Les boutons de chaque notification sur un téléphone, parmi ce que Frigate peut faire : garder le clip de la rétention de Frigate, marquer la revue comme vue dans Frigate, envoyer l'instantané à Frigate+, ou exporter l'enregistrement autour. Pas encore dans les e-mails."
+                    "actions": "Les boutons de chaque notification sur un téléphone, parmi ce que Frigate peut faire : garder le clip de la rétention de Frigate, marquer la revue comme vue dans Frigate, envoyer l'instantané à Frigate+, ou exporter l'enregistrement autour. Pas encore dans les e-mails.",
+                    "speed_unit": "L'unité dans laquelle les vitesses sont dites. Automatique donne des miles par heure là où les routes sont signalées ainsi, selon le pays de Home Assistant, comme le Royaume-Uni et les États-Unis, ou là où son système d'unités n'est pas métrique, et des kilomètres par heure sinon."
                 },
                 "sections": {
                     "health": {
@@ -318,6 +320,13 @@
                 "low": "Basse",
                 "minimum": "Minimale",
                 "none": "Ne pas notifier"
+            }
+        },
+        "speed_unit": {
+            "options": {
+                "auto": "Automatique",
+                "kmh": "km/h",
+                "mph": "mph"
             }
         }
     },

@@ -85,6 +85,15 @@ CONF_GENAI_IMAGE: Final[str] = "genai_image"
 DEFAULT_GENAI_IMAGE: Final[str] = IMAGE_PREVIEW
 GENAI_IMAGE_GLOBAL: Final[str] = "global"
 GENAI_IMAGES: Final[tuple[str, ...]] = (GENAI_IMAGE_GLOBAL, *IMAGES)
+# the unit speeds are said in, chosen in the global settings, by Home Assistant's own to begin with
+CONF_SPEED_UNIT: Final[str] = "speed_unit"
+SPEED_AUTO: Final[str] = "auto"
+SPEED_KMH: Final[str] = "kmh"
+SPEED_MPH: Final[str] = "mph"
+SPEED_UNITS: Final[tuple[str, ...]] = (SPEED_AUTO, SPEED_KMH, SPEED_MPH)
+# countries whose roads are signed in miles an hour, whatever Home Assistant's own unit system, which in the UK is
+# mostly metric
+MPH_COUNTRIES: Final[frozenset[str]] = frozenset({"GB", "US", "LR", "MM", "IM", "JE", "GG"})
 # the actions on a notification, as buttons on a phone, chosen in the global settings, or by each camera or zone
 CONF_ACTIONS: Final[str] = "actions"
 CONF_ACTIONS_GLOBAL: Final[str] = "actions_global"

@@ -34,14 +34,16 @@
                     "discover_zones": "Trova anche le zone",
                     "object_names": "Nomi degli oggetti",
                     "genai_image": "Immagine GenAI",
-                    "actions": "Azioni"
+                    "actions": "Azioni",
+                    "speed_unit": "Unità di velocità"
                 },
                 "data_description": {
                     "auto_discover": "Aggiunge ogni telecamera Frigate appena trovata. Disattiva per ricevere invece la proposta di ciascuna",
                     "discover_zones": "Propone ogni zona Frigate come una telecamera, per notifiche solo su quella zona",
                     "object_names": "Come chiamare ogni oggetto di Frigate in tutte le notifiche, ad esempio car come Veicolo, o una traduzione. Gli oggetti non nominati qui mantengono il nome che dà loro Frigate.",
                     "genai_image": "L'immagine di ciò che aggiunge la GenAI di Frigate, un riepilogo di revisione o una descrizione di oggetto, per ogni telecamera e zona che non sceglie la propria. L'anteprima animata mostra ciò che la GenAI ha guardato, dove la telecamera registra, altrimenti l'immagine della telecamera.",
-                    "actions": "I pulsanti di ogni notifica sul telefono, tra quelli che Frigate può fare: tenere la clip dalla conservazione di Frigate, segnare la revisione come vista in Frigate, inviare l'istantanea a Frigate+, o esportare la registrazione attorno. Non ancora nelle e-mail."
+                    "actions": "I pulsanti di ogni notifica sul telefono, tra quelli che Frigate può fare: tenere la clip dalla conservazione di Frigate, segnare la revisione come vista in Frigate, inviare l'istantanea a Frigate+, o esportare la registrazione attorno. Non ancora nelle e-mail.",
+                    "speed_unit": "L'unità in cui sono dette le velocità. Automatica è miglia orarie dove le strade sono segnalate così, secondo il paese di Home Assistant, come Regno Unito e Stati Uniti, o dove il suo sistema di unità non è metrico, e chilometri orari altrimenti."
                 },
                 "sections": {
                     "health": {
@@ -318,6 +320,13 @@
                 "low": "Bassa",
                 "minimum": "Minima",
                 "none": "Non notificare"
+            }
+        },
+        "speed_unit": {
+            "options": {
+                "auto": "Automatica",
+                "kmh": "km/h",
+                "mph": "mph"
             }
         }
     },

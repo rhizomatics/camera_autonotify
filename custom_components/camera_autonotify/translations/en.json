@@ -34,14 +34,16 @@
                     "discover_zones": "Find zones too",
                     "object_names": "Object names",
                     "genai_image": "GenAI image",
-                    "actions": "Actions"
+                    "actions": "Actions",
+                    "speed_unit": "Speed unit"
                 },
                 "data_description": {
                     "auto_discover": "Add every Frigate camera as it's found. Switch off to be offered each one instead",
                     "discover_zones": "Offer each Frigate zone like a camera, for notifications about that zone alone",
                     "object_names": "What to call each of Frigate's objects in every notification, such as car as Vehicle, or a translation. Objects not named here are called as Frigate names them.",
                     "genai_image": "The image of what Frigate's GenAI adds, a review summary or an object description, for every camera and zone that doesn't choose its own. The animated preview is what GenAI looked at, shown where the camera records, and otherwise the camera's own image.",
-                    "actions": "The buttons on each notification on a phone, of those Frigate can do: keep the clip from Frigate's retention, mark the review as seen in Frigate, submit the snapshot to Frigate+, or export the recording around it. Not yet in e-mail."
+                    "actions": "The buttons on each notification on a phone, of those Frigate can do: keep the clip from Frigate's retention, mark the review as seen in Frigate, submit the snapshot to Frigate+, or export the recording around it. Not yet in e-mail.",
+                    "speed_unit": "The unit speeds are said in. Automatic is miles an hour where roads are signed in them, by Home Assistant's country, such as the UK and US, or where its unit system isn't metric, and kilometres an hour otherwise."
                 },
                 "sections": {
                     "health": {
@@ -318,6 +320,13 @@
                 "low": "Low",
                 "minimum": "Minimum",
                 "none": "Don't notify"
+            }
+        },
+        "speed_unit": {
+            "options": {
+                "auto": "Automatic",
+                "kmh": "km/h",
+                "mph": "mph"
             }
         }
     },

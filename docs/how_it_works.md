@@ -36,7 +36,7 @@ and says so over MQTT as the object moves, which is kept and said under the head
 
 | Fact | From | Said as |
 |------|------|---------|
-| Speed | A zone with `distances` set, in Frigate's own unit system | The highest speed seen, such as "48 km/h", since Frigate's own speeds at the end are of the object slowing to a stop |
+| Speed | A zone with `distances` set | The highest speed seen, such as "48 km/h" or "30 mph", since Frigate's own speeds at the end are of the object slowing to a stop. Said in *Speed unit*, in *Global Settings*: automatically mph where roads are signed in it, by Home Assistant's country, such as the UK and US, or where its units aren't metric, and km/h otherwise, whatever unit Frigate uses |
 | A plate read | Frigate's licence plate recognition | The plate, where Frigate doesn't know it. A known plate is the review's sub label already |
 | Attributes | Such as a delivery company's logo, with a Frigate+ model whose attributes the camera tracks, or object classification | "Royal Mail", named by *Object names* where given |
 | A face not recognised | Face recognition, a person whose face Frigate saw but didn't recognise, at its own `recognition_threshold` | "Face not recognised". A person whose face it never saw says nothing |

@@ -20,6 +20,7 @@ from .const import (
     CONF_OBJECT,
     CONF_OBJECT_NAMES,
     CONF_SOURCE_ENTRY_ID,
+    CONF_SPEED_UNIT,
     CONF_TARGET,
     CONF_TARGETS,
     CONF_THREAT_PRIORITIES,
@@ -43,6 +44,8 @@ from .frigate import (
     hls_url,
     image_url,
     notifications_url,
+    preferred_speed_unit,
+    said_speed,
     snapshot_url,
     speed_unit,
 )
@@ -234,7 +237,9 @@ class Notifier:
         names = object_names(self.hass)
         said: list[str] = []
         if found.speed >= 1:
-            said.append(f"{round(found.speed)} {speed_unit(config)}")
+            settings = global_settings(self.hass)
+            unit = preferred_speed_unit(self.hass, settings.options.get(CONF_SPEED_UNIT) if settings else None)
+            said.append(said_speed(found.speed, speed_unit(config), unit))
         said.extend(found.plates)
         said.extend(names.get(label) or _friendly(label) for label in found.attributes)
         if found.face_unknown:

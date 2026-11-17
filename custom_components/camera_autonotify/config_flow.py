@@ -81,6 +81,7 @@ from .const import (
     CONF_SOURCE,
     CONF_SOURCE_ENTRY_ID,
     CONF_SOURCE_NAME,
+    CONF_SPEED_UNIT,
     CONF_STATUS_CHECK,
     CONF_SUMMARIES,
     CONF_SUMMARY_CONCERNS,
@@ -119,6 +120,8 @@ from .const import (
     PRIORITIES,
     SEVERITIES,
     SOURCE_ANPR2MQTT,
+    SPEED_AUTO,
+    SPEED_UNITS,
     SUBENTRY_RULE,
     SUMMARY_AUTO,
     SUMMARY_INTERVALS,
@@ -253,6 +256,10 @@ def discovery_schema(
     if actions is not None:
         # the buttons on a phone, of those Frigate can do
         fields_[vol.Optional(CONF_ACTIONS)] = _choose(actions, CONF_ACTIONS)
+    if labels is not None:
+        fields_[vol.Required(CONF_SPEED_UNIT, default=SPEED_AUTO)] = SelectSelector(
+            SelectSelectorConfig(options=list(SPEED_UNITS), mode=SelectSelectorMode.DROPDOWN, translation_key=CONF_SPEED_UNIT)
+        )
     if health:
         fields_[vol.Required(SECTION_HEALTH)] = section(vol.Schema(health_schema()), {"collapsed": True})
         if deliveries is not None:

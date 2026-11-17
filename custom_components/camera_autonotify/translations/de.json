@@ -34,14 +34,16 @@
                     "discover_zones": "Auch Zonen finden",
                     "object_names": "Objektnamen",
                     "genai_image": "GenAI-Bild",
-                    "actions": "Aktionen"
+                    "actions": "Aktionen",
+                    "speed_unit": "Geschwindigkeitseinheit"
                 },
                 "data_description": {
                     "auto_discover": "Jede Frigate-Kamera hinzufügen, sobald sie gefunden wird. Ausschalten, um stattdessen jede einzeln angeboten zu bekommen",
                     "discover_zones": "Jede Frigate-Zone wie eine Kamera anbieten, für Benachrichtigungen nur zu dieser Zone",
                     "object_names": "Wie jedes Frigate-Objekt in allen Benachrichtigungen genannt wird, etwa car als Fahrzeug, oder eine Übersetzung. Hier nicht benannte Objekte behalten den Namen, den Frigate ihnen gibt.",
                     "genai_image": "Das Bild zu dem, was Frigates GenAI hinzufügt, einer Review-Zusammenfassung oder Objektbeschreibung, für jede Kamera und Zone ohne eigene Wahl. Die animierte Vorschau zeigt, was GenAI angesehen hat, wo die Kamera aufnimmt, sonst das eigene Bild der Kamera.",
-                    "actions": "Die Schaltflächen jeder Benachrichtigung auf dem Telefon, von denen, die Frigate kann: den Clip vor Frigates Aufbewahrungsfrist schützen, das Review in Frigate als gesehen markieren, den Schnappschuss an Frigate+ senden oder die Aufnahme darum exportieren. Noch nicht in E-Mails."
+                    "actions": "Die Schaltflächen jeder Benachrichtigung auf dem Telefon, von denen, die Frigate kann: den Clip vor Frigates Aufbewahrungsfrist schützen, das Review in Frigate als gesehen markieren, den Schnappschuss an Frigate+ senden oder die Aufnahme darum exportieren. Noch nicht in E-Mails.",
+                    "speed_unit": "Die Einheit, in der Geschwindigkeiten angegeben werden. Automatisch ist Meilen pro Stunde, wo Straßen danach beschildert sind, nach dem Land von Home Assistant, etwa Großbritannien und die USA, oder wo sein Einheitensystem nicht metrisch ist, und sonst Kilometer pro Stunde."
                 },
                 "sections": {
                     "health": {
@@ -318,6 +320,13 @@
                 "low": "Niedrig",
                 "minimum": "Minimal",
                 "none": "Nicht benachrichtigen"
+            }
+        },
+        "speed_unit": {
+            "options": {
+                "auto": "Automatisch",
+                "kmh": "km/h",
+                "mph": "mph"
             }
         }
     },

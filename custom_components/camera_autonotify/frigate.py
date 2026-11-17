@@ -4,10 +4,13 @@ from __future__ import annotations
 
 from typing import Any, Protocol
 
+from homeassistant.const import UnitOfSpeed
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.util import slugify
+from homeassistant.util.unit_conversion import SpeedConverter
+from homeassistant.util.unit_system import METRIC_SYSTEM
 
 from .const import (
     DOMAIN,
@@ -17,6 +20,9 @@ from .const import (
     IMAGE_SNAPSHOT_BOX,
     IMAGE_SNAPSHOT_CROP,
     IMAGE_THUMBNAIL,
+    MPH_COUNTRIES,
+    SPEED_KMH,
+    SPEED_MPH,
 )
 from .facts import FactStore
 
@@ -309,7 +315,29 @@ def fact_store(hass: HomeAssistant, source_entry_id: str) -> FactStore | None:
 
 def speed_unit(config: dict[str, Any] | None) -> str:
     """Frigate's unit for speed, by its own unit system"""
-    return "mph" if ((config or {}).get("ui") or {}).get("unit_system") == "imperial" else "km/h"
+    return (
+        UnitOfSpeed.MILES_PER_HOUR
+        if ((config or {}).get("ui") or {}).get("unit_system") == "imperial"
+        else UnitOfSpeed.KILOMETERS_PER_HOUR
+    )
+
+
+@callback
+def preferred_speed_unit(hass: HomeAssistant, chosen: str | None = None) -> str:
+    """The unit speeds are said in: as chosen in the global settings, or else miles an hour where roads are signed in
+    them, by Home Assistant's country, or where its unit system isn't metric, and kilometres an hour otherwise"""
+    if chosen == SPEED_MPH:
+        return UnitOfSpeed.MILES_PER_HOUR
+    if chosen == SPEED_KMH:
+        return UnitOfSpeed.KILOMETERS_PER_HOUR
+    if hass.config.country in MPH_COUNTRIES or hass.config.units is not METRIC_SYSTEM:
+        return UnitOfSpeed.MILES_PER_HOUR
+    return UnitOfSpeed.KILOMETERS_PER_HOUR
+
+
+def said_speed(speed: float, frigate_unit: str, unit: str) -> str:
+    """A speed in Frigate's unit, said in the unit given, as a whole number"""
+    return f"{round(SpeedConverter.convert(speed, frigate_unit, unit))} {unit}"
 
 
 def face_threshold(config: dict[str, Any] | None) -> float:
