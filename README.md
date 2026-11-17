@@ -114,15 +114,12 @@ Not yet: a plate isn't joined to the Frigate review of the same car, so the same
 
 #### Avoiding Duplicate Notifications
 
-Until then, one car arriving can be notified up to three ways, so switch off those you don't need:
+Until then, the same car arriving can be notified twice: by the Frigate camera's review, *Car detected at Driveway*, updated with the plate where Frigate knows it, and by anpr2mqtt's sighting, *Jey's Outlander at Driveway*, with the DVLA's details. anpr2mqtt itself, and Frigate's plate recognition, carry on as they are, since it's only the notification that's to be switched off.
 
-| Notified by | What it says | To switch it off |
-| ----------- | ------------ | ---------------- |
-| The Frigate camera's review | *Car detected at Driveway*, updated with the plate where Frigate knows it | In the Frigate camera's settings here, leave `car` out of *Objects*, choosing the others you want, or switch off *Notify recognised faces and plates* to keep the review but not its plate update, though that stops faces too |
-| anpr2mqtt, from Frigate's plates | *Jey's Outlander at Driveway*, with the DVLA's details | In anpr2mqtt's config, `frigate: enabled: false`, or leave the camera out of `frigate: cameras` |
-| anpr2mqtt, from an ANPR camera's images | The same as from Frigate's plates | Nothing to switch off here, being the reason to have anpr2mqtt |
+anpr2mqtt reading the same plate from both Frigate and an ANPR camera's images is already notified once, as the same plate in the same visit. So it's the Frigate camera's notification of the car to switch off, in the Frigate camera's settings here, by either:
 
-With an ANPR camera of its own, the simplest is usually to keep anpr2mqtt's sightings, which say most, and leave `car` out of the Frigate camera's *Objects*. Without one, keep anpr2mqtt reading Frigate's plates for the DVLA's details, and leave `car` out of *Objects* likewise, so only anpr2mqtt notifies the car.
+- leaving `car` out of *Objects*, choosing the others you still want notified, so the camera notifies people and the rest but not cars, which anpr2mqtt notifies instead
+- or switching off *Notify recognised faces and plates*, in *Timing*, to keep the camera's car notification, but not its update when Frigate recognises the plate. This stops the update for a recognised face too
 
 
 ## Moving From the Frigate Blueprint
