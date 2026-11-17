@@ -1,6 +1,6 @@
 # RFC 0004 - Richer Frigate Integration
 
-**Status**: Ready for Review
+**Status**: Built in 0.10.0, but for what's listed under [As built](#as-built)
 Reviewed 2026-11-13 against the Frigate integration's source, spiked against live MQTT messages, not yet built.
 Rescoped 2026-11-17: priority by what's recognised moved to [RFC 0005](rfc0005_rules.md), and one visit across
 cameras to [RFC 0008](rfc0008_visits.md), which isn't Frigate specific
@@ -167,6 +167,24 @@ enrichment here gives that RFC's semantic richness levels something to compare.
 6. **Moved**: priority by what's recognised to [RFC 0005](rfc0005_rules.md); one visit across cameras to
    [RFC 0008](rfc0008_visits.md)
 7. **Left out**: PTZ info and PTZ actions, until someone asks
+
+## As built
+
+Built 2026-11-17, with these decisions, and what's left:
+
+- **Facts not passed on as data yet**: Supernotify merges a notification's extra `data` into what it sends each
+  transport, so facts there could swell a phone's push payload. They go in the message only, until Supernotify has
+  a field that isn't passed on, as asked for `source` in Supernotify #293
+- **No new updates for facts**: a plate read or a face not recognised doesn't send an update of its own, the facts
+  being said in each notification as it goes. *Notify when over* says most
+- **Gating by config, not version**: each fact and action comes only where Frigate's config says it's set up, such as
+  `face_recognition`, `lpr`, `plus.enabled` or a camera's `snapshots` and `record`, which older Frigate versions
+  don't have, so no version numbers are read
+- **Export off to begin with**: heavier than the others, and a button fewer where a phone has few
+- **Spike 2**: settled by the tracked object's own `has_snapshot`, so *Submit to Frigate+* is offered only for a
+  detection Frigate has a snapshot of, once that's known
+- **Not yet**: the speed of an object passing several speed zones is the highest of any, and `velocity_angle` isn't
+  read, being for [RFC 0008](rfc0008_visits.md)
 
 ## Spikes, against a real Frigate with `ha-repl`
 

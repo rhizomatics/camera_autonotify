@@ -50,7 +50,7 @@ and deliveries in Supernotify itself, once, for every camera.
 | `group`, `tag` | Set by camera and by review, nothing to set |
 | `attachment` | *Image*, under *Image and targets*: the snapshot, the snapshot with its bounding box, the snapshot cropped to the object, the thumbnail, or an animated GIF preview, which has no bounding box or crop, and shows the snapshot until it's ready |
 | `attachment_2` | The same *Image* for the first notification and its updates, and *GenAI image* for what GenAI adds, the animated preview to begin with |
-| `video`, `ios_live_view` | Not attached, see [Video on iPhones](index.md#video-on-iphones). Tapping the notification plays the clip |
+| `video`, `ios_live_view` | Not attached, see [Video on iPhones](how_it_works.md#video-on-iphones). Tapping the notification plays the clip |
 | `tap_action`, `button_1` to `button_3` | Tap for the clip, and a *View snapshot* button |
 | `button_3` silence, `silence_timer` | Supernotify's camera snooze |
 | `title`, `message`, `subtitle` | Fixed wording, not editable, translated into Home Assistant's language where there's a translation |

@@ -59,6 +59,16 @@ CONF_GENAI_IMAGE: Final[str] = "genai_image"
 DEFAULT_GENAI_IMAGE: Final[str] = IMAGE_PREVIEW
 GENAI_IMAGE_GLOBAL: Final[str] = "global"
 GENAI_IMAGES: Final[tuple[str, ...]] = (GENAI_IMAGE_GLOBAL, *IMAGES)
+# the actions on a notification, as buttons on a phone, chosen in the global settings, or by each camera or zone
+CONF_ACTIONS: Final[str] = "actions"
+CONF_ACTIONS_GLOBAL: Final[str] = "actions_global"
+ACTION_KEEP: Final[str] = "keep"
+ACTION_SEEN: Final[str] = "seen"
+ACTION_PLUS: Final[str] = "plus"
+ACTION_EXPORT: Final[str] = "export"
+ACTIONS: Final[tuple[str, ...]] = (ACTION_KEEP, ACTION_SEEN, ACTION_PLUS, ACTION_EXPORT)
+# exporting a recording only when chosen, being heavier than the others, and a button fewer where a phone has few
+DEFAULT_ACTIONS: Final[tuple[str, ...]] = (ACTION_KEEP, ACTION_SEEN, ACTION_PLUS)
 SEVERITIES: Final[tuple[str, ...]] = ("alert", "detection")
 # what Frigate's generative AI adds, the review summaries and object descriptions, named as the tracker's settings
 CONF_SUMMARIES: Final[str] = "summaries"

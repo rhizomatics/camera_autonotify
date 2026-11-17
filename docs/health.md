@@ -1,7 +1,7 @@
 ---
 description: Notifications when a Frigate server stops responding or a camera stops sending video, with retries before anything is said, and how to keep cameras switched off on purpose quiet.
 ---
-# Health Check
+# Health Checks
 
 Camera AutoNotify also notifies when a Frigate server stops responding, and when a camera stops sending Frigate video. Neither adds anything to Frigate's load: both are read from what the Frigate integration already asks Frigate for every few seconds, its stats, and only where those aren't there to read is Frigate asked for its version, as its own container health check does.
 

@@ -2,6 +2,24 @@
 title: What's New
 ---
 
+## Early Access
+
+> Camera Autonotify was first released in October 2026 with support only for Frigate notifications. Its intended to be a `1.0.0` release by the end of 2026, with [ANPR2MQTT](https://anpr2mqtt.rhizomatics.org.uk) as the second integration. Ideas, improvements and other feedback very welcome - use the [Github Issues](https://github.com/rhizomatics/camera_autonotify/issues) to add them.
+
+# 0.10.0
+## ✨ Enhancements
+### Mobile Actions
+- Buttons on each notification on a phone, with Supernotify:
+  - *Keep* the clip from Frigate's retention
+  - Mark the review *Seen* in Frigate
+  - Submit the snapshot to *Frigate+*
+  - *Export* the recording around it.
+- Chosen by *Actions* in *Global Settings*, keep, seen and Frigate+ to begin with, or by each camera or zone, and offered only where Frigate can do them: Frigate+ where it's set up and the camera saves snapshots, and only for a detection Frigate has a snapshot of, exporting where the camera records
+### Enriched Message
+- What Frigate knows of the review's objects beyond the review is said under the headline: the highest speed through a speed zone, a plate read that Frigate doesn't know, attributes such as a delivery company's logo, a face seen but not recognised, an object that has stopped, and the camera's state classifications, such as a gate open
+### Autotracking Warning
+- A warning in the settings of a camera that autotracks, or a zone on one, since its zones move with it
+
 # 0.9.1
 ## ✨ Enhancements
 - Smarter handling of when GIF option is available, e.g. not if camera has recording switched off, and not on first snapshot when not enough frames for Frigate to construct an animation.

@@ -125,6 +125,9 @@ def add_frigate(
     title: str = "frigate:5000",
     genai: bool = False,
     record: bool = False,
+    snapshots: bool = False,
+    plus: bool = False,
+    autotracking: bool = False,
 ) -> FakeFrigate:
     """A Frigate server registered as the Frigate integration does it, a device for the server, one for each camera
     with its camera entity, and one for each zone with only its occupancy sensors"""
@@ -136,12 +139,15 @@ def add_frigate(
     hass.data.setdefault("frigate", {})[entry.entry_id] = {
         "config": {
             "mqtt": {"topic_prefix": "frigate", "client_id": client_id},
+            "plus": {"enabled": plus},
             "cameras": {
                 name: {
                     "zones": {zone: {} for zone in zones},
                     "objects": {"track": ["person", "car"], "genai": {"enabled": genai}},
                     "audio": {"listen": ["bark"]},
                     "record": {"enabled": record},
+                    "snapshots": {"enabled": snapshots},
+                    "onvif": {"autotracking": {"enabled_in_config": autotracking and name == "driveway"}},
                     "review": {
                         "genai": {"enabled": genai},
                         "alerts": {"labels": ["person", "car"]},

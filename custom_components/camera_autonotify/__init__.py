@@ -9,6 +9,7 @@ from homeassistant.const import CONF_TYPE
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
 
+from .actions import async_listen
 from .const import CONF_SOURCE_ENTRY_ID, DISCOVERY_TITLE, DISCOVERY_TITLE_BEFORE, DOMAIN, TYPE_DISCOVERY
 from .device import async_register_device
 from .discovery import async_discover, async_start_discovery
@@ -32,6 +33,8 @@ type CameraAutoNotifyConfigEntry = ConfigEntry[ReviewWatcher | HealthMonitor | N
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     await async_load_texts(hass)
     async_start_discovery(hass)
+    # the buttons of notifications, for as long as Home Assistant runs
+    async_listen(hass)
     return True
 
 

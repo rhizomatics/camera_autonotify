@@ -31,6 +31,17 @@ HEADLINE_ENDED = "headline_ended"
 OBJECTS_JOINED = "objects_joined"
 OBJECTS_NONE = "objects_none"
 ACTION_VIEW_SNAPSHOT = "action_view_snapshot"
+# the buttons of the actions on a notification
+BUTTON_KEEP = "action_keep"
+BUTTON_SEEN = "action_seen"
+BUTTON_PLUS = "action_plus"
+BUTTON_EXPORT = "action_export"
+# a camera that follows what it sees, so its zones move
+AUTOTRACKING = "autotracking"
+# what's known of a review's objects beyond the review, as said under the headline
+FACT_FACE_UNKNOWN = "fact_face_unknown"
+FACT_STATIONARY = "fact_stationary"
+FACT_STATE = "fact_state"
 # a Frigate server failing its health check, and answering again, named by its title
 HEALTH_DOWN_TITLE = "health_down_title"
 HEALTH_DOWN = "health_down"

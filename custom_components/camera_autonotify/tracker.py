@@ -172,6 +172,8 @@ class Review:
     detections: tuple[str, ...]
     ended: bool
     summary: Summary | None = None
+    # a stand-in for an object described in no review, which Frigate has no review of
+    standalone: bool = False
 
     @classmethod
     def from_payload(cls, after: dict[str, Any]) -> Review:
@@ -203,6 +205,7 @@ class Review:
             (),
             (description.object_id,),
             ended=True,
+            standalone=True,
         )
 
     @property

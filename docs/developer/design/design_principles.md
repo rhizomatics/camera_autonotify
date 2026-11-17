@@ -1,7 +1,7 @@
 
 # Home Assistant Integration
 
-Follow the [policy from HQ on Home Assistant usage](https://github.com/rhizomatics/hq/blob/main/policies/hass-alignment.md).
+Follow the [policy from HQ on Home Assistant usage](./rfcs/index.md).
 
 # Auto Notify vs Supernotify
 

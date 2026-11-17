@@ -33,13 +33,15 @@
                     "auto_discover": "Configura le telecamere automaticamente",
                     "discover_zones": "Trova anche le zone",
                     "object_names": "Nomi degli oggetti",
-                    "genai_image": "Immagine GenAI"
+                    "genai_image": "Immagine GenAI",
+                    "actions": "Azioni"
                 },
                 "data_description": {
                     "auto_discover": "Aggiunge ogni telecamera Frigate appena trovata. Disattiva per ricevere invece la proposta di ciascuna",
                     "discover_zones": "Propone ogni zona Frigate come una telecamera, per notifiche solo su quella zona",
                     "object_names": "Come chiamare ogni oggetto di Frigate in tutte le notifiche, ad esempio car come Veicolo, o una traduzione. Gli oggetti non nominati qui mantengono il nome che dà loro Frigate.",
-                    "genai_image": "L'immagine di ciò che aggiunge la GenAI di Frigate, un riepilogo di revisione o una descrizione di oggetto, per ogni telecamera e zona che non sceglie la propria. L'anteprima animata mostra ciò che la GenAI ha guardato, dove la telecamera registra, altrimenti l'immagine della telecamera."
+                    "genai_image": "L'immagine di ciò che aggiunge la GenAI di Frigate, un riepilogo di revisione o una descrizione di oggetto, per ogni telecamera e zona che non sceglie la propria. L'anteprima animata mostra ciò che la GenAI ha guardato, dove la telecamera registra, altrimenti l'immagine della telecamera.",
+                    "actions": "I pulsanti di ogni notifica sul telefono, tra quelli che Frigate può fare: tenere la clip dalla conservazione di Frigate, segnare la revisione come vista in Frigate, inviare l'istantanea a Frigate+, o esportare la registrazione attorno. Non ancora nelle e-mail."
                 },
                 "sections": {
                     "health": {
@@ -86,7 +88,7 @@
             },
             "settings": {
                 "title": "Notifiche per {name}",
-                "description": "Tutto qui è facoltativo.\n\n{supernotify}{proxy}",
+                "description": "Tutto qui è facoltativo.\n\n{supernotify}{proxy}{autotracking}",
                 "data": {
                     "severities": "Gravità",
                     "labels": "Oggetti",
@@ -164,14 +166,18 @@
                             "targets": "Destinazioni",
                             "target": "Destinazioni",
                             "custom_target": "Destinazioni personalizzate",
-                            "deliveries": "Delivery"
+                            "deliveries": "Delivery",
+                            "actions_global": "Azioni come Impostazioni globali",
+                            "actions": "Azioni"
                         },
                         "data_description": {
                             "image": "L'immagine di ogni notifica. Frigate disegna il riquadro o ritaglia l'istantanea da solo. L'anteprima animata non ha riquadro né ritaglio, e richiede la registrazione della telecamera; finché non è pronta, e sempre se la telecamera non registra, viene mostrata l'istantanea. Il pulsante Vedi istantanea mostra sempre l'istantanea intera.",
                             "targets": "Entità di notifica a cui inviare. Lascia vuoto per tutti i telefoni con l'app Home Assistant.",
                             "target": "Chi o cosa notificare, come per qualsiasi notifica Supernotify. Lascia vuoto per far scegliere a Supernotify.",
                             "custom_target": "Destinazioni fuori da Home Assistant, come indirizzi e-mail o numeri di telefono.",
-                            "deliveries": "Limita le notifiche a queste delivery Supernotify. Lascia vuoto per far scegliere a Supernotify."
+                            "deliveries": "Limita le notifiche a queste delivery Supernotify. Lascia vuoto per far scegliere a Supernotify.",
+                            "actions_global": "Usa le Azioni scelte nelle Impostazioni globali. Disattiva per scegliere qui sotto quelle di questa telecamera o zona, o nessuna.",
+                            "actions": "I pulsanti delle notifiche di questa telecamera o zona, quando non come le Impostazioni globali. Lascia vuoto per nessuno."
                         }
                     }
                 }
@@ -247,6 +253,14 @@
                 "thumbnail": "Miniatura",
                 "preview": "Anteprima animata (GIF)"
             }
+        },
+        "actions": {
+            "options": {
+                "keep": "Tieni la clip",
+                "seen": "Segna come vista",
+                "plus": "Invia a Frigate+",
+                "export": "Esporta la registrazione"
+            }
         }
     },
     "config_subentries": {
@@ -321,6 +335,14 @@
         "objects_joined": "{first} e {second}",
         "objects_none": "Qualcosa",
         "action_view_snapshot": "Vedi istantanea",
+        "action_keep": "Tieni",
+        "action_seen": "Vista",
+        "action_plus": "Frigate+",
+        "action_export": "Esporta",
+        "autotracking": "**{cameras} segue ciò che vede.** Le zone sono disegnate sull'immagine della telecamera, quindi mentre si muove, Zone, Ogni zona e Zone in ordine potrebbero non dire ciò che dicono.",
+        "fact_face_unknown": "Volto non riconosciuto",
+        "fact_stationary": "Fermo",
+        "fact_state": "{model}: {state}",
         "health_down_title": "Frigate non risponde",
         "health_down": "{server} non supera il controllo dello stato dalle {since}, quindi le notifiche delle telecamere potrebbero essersi fermate.",
         "health_up_title": "Frigate è tornato",

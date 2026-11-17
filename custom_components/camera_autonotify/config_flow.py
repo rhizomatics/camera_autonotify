@@ -37,8 +37,11 @@ from homeassistant.helpers.selector import (
     TimeSelector,
 )
 
+from .actions import offered
 from .compat import vol
 from .const import (
+    CONF_ACTIONS,
+    CONF_ACTIONS_GLOBAL,
     CONF_ALERT_ONCE,
     CONF_AUTO_DISCOVER,
     CONF_COOLDOWN,
@@ -89,6 +92,7 @@ from .const import (
     CONF_ZONE_MULTI,
     CONF_ZONE_ORDER,
     CONF_ZONES,
+    DEFAULT_ACTIONS,
     DEFAULT_GENAI_IMAGE,
     DEFAULT_IMAGE,
     DEFAULT_POWER_GRACE,
@@ -97,6 +101,7 @@ from .const import (
     DEFAULT_SUMMARY_TIME,
     DISCOVERY_TITLE,
     DOMAIN,
+    FRIGATE_DOMAIN,
     GENAI_IMAGE_GLOBAL,
     GENAI_IMAGES,
     IMAGES,
@@ -116,11 +121,21 @@ from .const import (
     TYPE_ZONE,
 )
 from .discovery import find_cameras
-from .frigate import all_labels, camera_choices, frigate_config, genai_features, proxy_problems, zone_labels
+from .frigate import (
+    all_labels,
+    camera_autotracks,
+    camera_choices,
+    frigate_config,
+    genai_features,
+    proxy_problems,
+    zone_cameras,
+    zone_labels,
+)
 from .health import HealthSettings
 from .rules import compile_pattern
 from .supernotify_api import deliveries_by_transport, email_deliveries, scenario_names, supernotify_available
 from .texts import (
+    AUTOTRACKING,
     CAMERAS_FOUND,
     CAMERAS_NONE,
     PROXY_EXPIRES,
@@ -151,6 +166,7 @@ DEFAULTS: dict[str, Any] = (
         CONF_POWER_GRACE: DEFAULT_POWER_GRACE,
         CONF_IMAGE: DEFAULT_IMAGE,
         CONF_GENAI_IMAGE: GENAI_IMAGE_GLOBAL,
+        CONF_ACTIONS_GLOBAL: True,
     }
 )
 SUMMARY_OPTIONS = (
@@ -191,6 +207,7 @@ def discovery_schema(
     health: bool = False,
     deliveries: list[str] | None = None,
     labels: list[str] | None = None,
+    actions: list[str] | None = None,
 ) -> vol.Schema:
     """What's found, and once set up, what every notification calls each object, the labels of every Frigate server
     being given, and the health check of each Frigate server and the daily summary, out of the way until wanted, the
@@ -204,6 +221,9 @@ def discovery_schema(
         fields_[vol.Required(CONF_GENAI_IMAGE, default=DEFAULT_GENAI_IMAGE)] = SelectSelector(
             SelectSelectorConfig(options=list(IMAGES), mode=SelectSelectorMode.DROPDOWN, translation_key=CONF_IMAGE)
         )
+    if actions is not None:
+        # the buttons on a phone, of those Frigate can do
+        fields_[vol.Optional(CONF_ACTIONS)] = _choose(actions, CONF_ACTIONS)
     if health:
         fields_[vol.Required(SECTION_HEALTH)] = section(vol.Schema(health_schema()), {"collapsed": True})
         if deliveries is not None:
@@ -327,7 +347,11 @@ def genai_schema(summaries: bool, descriptions: bool, camera: bool) -> dict[vol.
 
 
 async def settings_schema(
-    hass: HomeAssistant, labels: list[str], zones: list[str] | None, genai: dict[vol.Marker, Any] | None = None
+    hass: HomeAssistant,
+    labels: list[str],
+    zones: list[str] | None,
+    genai: dict[vol.Marker, Any] | None = None,
+    actions: list[str] | None = None,
 ) -> vol.Schema:
     """The blueprint's filters, then its timing, what GenAI adds and who is told, out of the way until wanted. Zones
     only for a camera, since a zone's entry is the zone"""
@@ -357,6 +381,10 @@ async def settings_schema(
             SelectSelectorConfig(options=list(IMAGES), mode=SelectSelectorMode.DROPDOWN, translation_key=CONF_IMAGE)
         )
     }
+    if supernotify_available(hass) and actions:
+        # the buttons on a phone, as the global settings unless chosen here, of those Frigate can do for the camera
+        notify[vol.Required(CONF_ACTIONS_GLOBAL, default=DEFAULTS[CONF_ACTIONS_GLOBAL])] = BooleanSelector()
+        notify[vol.Optional(CONF_ACTIONS)] = _choose(actions, CONF_ACTIONS)
     if supernotify_available(hass):
         # the same pair of target fields as supernotify.notify itself
         notify[vol.Optional(CONF_TARGET)] = TargetSelector()
@@ -496,13 +524,18 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
     async def _show_discovery(
         self, shown: dict[str, Any], shown_as_is: bool = False, errors: dict[str, str] | None = None
     ) -> ConfigFlowResult:
+        servers = self.hass.config_entries.async_entries(FRIGATE_DOMAIN)
+        actions = offered([frigate_config(self.hass, server.entry_id) for server in servers])
         schema = discovery_schema(
             shown.get(CONF_AUTO_DISCOVER, True),
             shown.get(CONF_DISCOVER_ZONES, False),
             health=True,
             deliveries=await supernotify_deliveries(self.hass),
             labels=all_labels(self.hass),
+            actions=actions,
         )
+        # only those still offered, so the form can be saved as shown
+        shown[CONF_ACTIONS] = [kind for kind in shown.get(CONF_ACTIONS, DEFAULT_ACTIONS) if kind in actions]
         if not shown_as_is and not shown.get(CONF_SUMMARY_DELIVERIES) and supernotify_available(self.hass):
             shown[CONF_SUMMARY_DELIVERIES] = await email_deliveries(self.hass)
         return self.async_show_form(
@@ -536,14 +569,24 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
             labels, zones = camera_choices(config, data[CONF_SOURCE_NAME])
             summaries, descriptions = genai_features(config, camera=data[CONF_SOURCE_NAME])
         genai = genai_schema(summaries, descriptions, camera=not is_zone)
-        schema = await settings_schema(self.hass, labels, zones, genai)
+        name = data[CONF_SOURCE_NAME]
+        cameras = zone_cameras(config, name) if is_zone else [name]
+        actions = offered([config], cameras)
+        schema = await settings_schema(self.hass, labels, zones, genai, actions)
+        await async_load_texts(self.hass)
+        shown = dict(self.config_entry.options)
+        if CONF_ACTIONS in shown:
+            shown[CONF_ACTIONS] = [kind for kind in shown[CONF_ACTIONS] if kind in actions]
+        moving = [camera for camera in cameras if camera_autotracks(config, camera)]
+        autotracking = f"\n\n{text(self.hass, AUTOTRACKING, cameras=', '.join(moving))}" if moving else ""
         return self.async_show_form(
             step_id=STEP_SETTINGS,
-            data_schema=self.add_suggested_values_to_schema(schema, sectioned(schema, dict(self.config_entry.options))),
+            data_schema=self.add_suggested_values_to_schema(schema, sectioned(schema, shown)),
             description_placeholders={
                 "name": self.config_entry.title,
                 "supernotify": await supernotify_status(self.hass),
                 "proxy": await proxy_status(self.hass, data[CONF_SOURCE_ENTRY_ID]),
+                "autotracking": autotracking,
             },
         )
 

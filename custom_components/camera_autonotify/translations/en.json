@@ -33,13 +33,15 @@
                     "auto_discover": "Set up cameras automatically",
                     "discover_zones": "Find zones too",
                     "object_names": "Object names",
-                    "genai_image": "GenAI image"
+                    "genai_image": "GenAI image",
+                    "actions": "Actions"
                 },
                 "data_description": {
                     "auto_discover": "Add every Frigate camera as it's found. Switch off to be offered each one instead",
                     "discover_zones": "Offer each Frigate zone like a camera, for notifications about that zone alone",
                     "object_names": "What to call each of Frigate's objects in every notification, such as car as Vehicle, or a translation. Objects not named here are called as Frigate names them.",
-                    "genai_image": "The image of what Frigate's GenAI adds, a review summary or an object description, for every camera and zone that doesn't choose its own. The animated preview is what GenAI looked at, shown where the camera records, and otherwise the camera's own image."
+                    "genai_image": "The image of what Frigate's GenAI adds, a review summary or an object description, for every camera and zone that doesn't choose its own. The animated preview is what GenAI looked at, shown where the camera records, and otherwise the camera's own image.",
+                    "actions": "The buttons on each notification on a phone, of those Frigate can do: keep the clip from Frigate's retention, mark the review as seen in Frigate, submit the snapshot to Frigate+, or export the recording around it. Not yet in e-mail."
                 },
                 "sections": {
                     "health": {
@@ -86,7 +88,7 @@
             },
             "settings": {
                 "title": "Notifications for {name}",
-                "description": "Everything here is optional.\n\n{supernotify}{proxy}",
+                "description": "Everything here is optional.\n\n{supernotify}{proxy}{autotracking}",
                 "data": {
                     "severities": "Severity",
                     "labels": "Objects",
@@ -164,14 +166,18 @@
                             "targets": "Targets",
                             "target": "Targets",
                             "custom_target": "Custom targets",
-                            "deliveries": "Deliveries"
+                            "deliveries": "Deliveries",
+                            "actions_global": "Actions as Global Settings",
+                            "actions": "Actions"
                         },
                         "data_description": {
                             "image": "The image of each notification. Frigate draws the box or crops the snapshot itself. The animated preview has no box or crop, and needs recording on for the camera, the snapshot being shown until it's ready, and always where the camera doesn't record. The View snapshot button always shows the whole snapshot.",
                             "targets": "Notify entities to send to. Leave empty for every phone with the Home Assistant app.",
                             "target": "Who or what to notify, as for any Supernotify notification. Leave empty for Supernotify to choose.",
                             "custom_target": "Targets outside of Home Assistant, such as e-mail addresses or phone numbers.",
-                            "deliveries": "Limit notifications to these Supernotify deliveries. Leave empty for Supernotify to choose."
+                            "deliveries": "Limit notifications to these Supernotify deliveries. Leave empty for Supernotify to choose.",
+                            "actions_global": "Use the Actions chosen in Global Settings. Switch off to choose this camera's or zone's own below, or none.",
+                            "actions": "The buttons on this camera's or zone's notifications, when not as Global Settings. Leave empty for none."
                         }
                     }
                 }
@@ -247,6 +253,14 @@
                 "thumbnail": "Thumbnail",
                 "preview": "Animated preview (GIF)"
             }
+        },
+        "actions": {
+            "options": {
+                "keep": "Keep the clip",
+                "seen": "Mark as seen",
+                "plus": "Submit to Frigate+",
+                "export": "Export the recording"
+            }
         }
     },
     "config_subentries": {
@@ -321,6 +335,14 @@
         "objects_joined": "{first} and {second}",
         "objects_none": "Something",
         "action_view_snapshot": "View snapshot",
+        "action_keep": "Keep",
+        "action_seen": "Seen",
+        "action_plus": "Frigate+",
+        "action_export": "Export",
+        "autotracking": "**{cameras} follows what it sees.** Zones are drawn on the camera's frame, so while it moves, Zones, Every zone and Zones in order may not mean what they say.",
+        "fact_face_unknown": "Face not recognised",
+        "fact_stationary": "Not moving",
+        "fact_state": "{model}: {state}",
         "health_down_title": "Frigate is not responding",
         "health_down": "{server} has failed its health check since {since}, so camera notifications may have stopped.",
         "health_up_title": "Frigate is back",

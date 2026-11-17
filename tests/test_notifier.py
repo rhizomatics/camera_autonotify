@@ -55,11 +55,15 @@ def notifier(
     entry = MockConfigEntry(
         domain=DOMAIN,
         title=title,
+        entry_id=ENTRY_ID,
         data={CONF_DEVICE_ID: "x", CONF_TYPE: kind, CONF_SOURCE_ENTRY_ID: FRIGATE_ENTRY_ID, CONF_SOURCE_NAME: "x"},
         options=options or {},
     )
     entry.add_to_hass(hass)
     return Notifier(hass, entry)
+
+
+ENTRY_ID = "camera_entry"
 
 
 @pytest.fixture
@@ -89,6 +93,9 @@ async def test_new_alert(hass: HomeAssistant, external_url: None):
                 "title": "View snapshot",
                 "uri": f"{BASE}/api/frigate/notifications/{DETECTION}/snapshot.jpg",
             },
+            # the actions of the global settings, to begin with, of those Frigate can do here
+            {"action": f"CAMERA_AUTONOTIFY_KEEP|{ENTRY_ID}|{DETECTION}", "title": "Keep"},
+            {"action": f"CAMERA_AUTONOTIFY_SEEN|{ENTRY_ID}|{REVIEW_ID}", "title": "Seen"},
         ],
     }
 
@@ -128,13 +135,15 @@ async def test_no_links_without_a_url(hass: HomeAssistant):
     add_frigate(hass)
     data = notifier(hass).supernotify_data(decision())
     assert data["media"] == {"camera_entity_id": "camera.courtyard"}
-    assert "actions" not in data
+    # only the actions, which need no link
+    assert all("uri" not in action for action in data["actions"])
 
 
 async def test_no_media_without_camera_or_detection(hass: HomeAssistant, external_url: None):
     data = notifier(hass).supernotify_data(decision(detections=()))
     assert "media" not in data
-    assert "actions" not in data
+    # only seen, the others needing a detection
+    assert [action["title"] for action in data["actions"]] == ["Seen"]
 
 
 async def test_deliveries_and_targets(hass: HomeAssistant):

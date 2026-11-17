@@ -33,13 +33,15 @@
                     "auto_discover": "Configurer les caméras automatiquement",
                     "discover_zones": "Trouver aussi les zones",
                     "object_names": "Noms des objets",
-                    "genai_image": "Image GenAI"
+                    "genai_image": "Image GenAI",
+                    "actions": "Actions"
                 },
                 "data_description": {
                     "auto_discover": "Ajoute chaque caméra Frigate dès qu'elle est trouvée. Désactivez pour que chacune vous soit proposée à la place",
                     "discover_zones": "Propose chaque zone Frigate comme une caméra, pour des notifications sur cette zone seule",
                     "object_names": "Comment appeler chaque objet Frigate dans toutes les notifications, par exemple car en Véhicule, ou une traduction. Les objets non nommés ici gardent le nom que leur donne Frigate.",
-                    "genai_image": "L'image de ce qu'ajoute la GenAI de Frigate, un résumé de revue ou une description d'objet, pour chaque caméra et zone qui ne choisit pas la sienne. L'aperçu animé montre ce que la GenAI a regardé, là où la caméra enregistre, sinon l'image de la caméra."
+                    "genai_image": "L'image de ce qu'ajoute la GenAI de Frigate, un résumé de revue ou une description d'objet, pour chaque caméra et zone qui ne choisit pas la sienne. L'aperçu animé montre ce que la GenAI a regardé, là où la caméra enregistre, sinon l'image de la caméra.",
+                    "actions": "Les boutons de chaque notification sur un téléphone, parmi ce que Frigate peut faire : garder le clip de la rétention de Frigate, marquer la revue comme vue dans Frigate, envoyer l'instantané à Frigate+, ou exporter l'enregistrement autour. Pas encore dans les e-mails."
                 },
                 "sections": {
                     "health": {
@@ -86,7 +88,7 @@
             },
             "settings": {
                 "title": "Notifications pour {name}",
-                "description": "Tout ici est facultatif.\n\n{supernotify}{proxy}",
+                "description": "Tout ici est facultatif.\n\n{supernotify}{proxy}{autotracking}",
                 "data": {
                     "severities": "Gravité",
                     "labels": "Objets",
@@ -164,14 +166,18 @@
                             "targets": "Cibles",
                             "target": "Cibles",
                             "custom_target": "Cibles personnalisées",
-                            "deliveries": "Livraisons"
+                            "deliveries": "Livraisons",
+                            "actions_global": "Actions comme les Paramètres globaux",
+                            "actions": "Actions"
                         },
                         "data_description": {
                             "image": "L'image de chaque notification. Frigate dessine le cadre ou recadre l'instantané lui-même. L'aperçu animé n'a ni cadre ni recadrage, et nécessite l'enregistrement de la caméra ; l'instantané est affiché tant qu'il n'est pas prêt, et toujours si la caméra n'enregistre pas. Le bouton Voir l'instantané affiche toujours l'instantané entier.",
                             "targets": "Entités de notification auxquelles envoyer. Laisser vide pour tous les téléphones avec l'application Home Assistant.",
                             "target": "Qui ou quoi notifier, comme pour toute notification Supernotify. Laisser vide pour laisser Supernotify choisir.",
                             "custom_target": "Cibles hors de Home Assistant, comme des adresses e-mail ou des numéros de téléphone.",
-                            "deliveries": "Limiter les notifications à ces livraisons Supernotify. Laisser vide pour laisser Supernotify choisir."
+                            "deliveries": "Limiter les notifications à ces livraisons Supernotify. Laisser vide pour laisser Supernotify choisir.",
+                            "actions_global": "Utiliser les Actions choisies dans les Paramètres globaux. Désactiver pour choisir ci-dessous celles de cette caméra ou zone, ou aucune.",
+                            "actions": "Les boutons des notifications de cette caméra ou zone, quand ce n'est pas comme les Paramètres globaux. Laisser vide pour aucun."
                         }
                     }
                 }
@@ -247,6 +253,14 @@
                 "thumbnail": "Miniature",
                 "preview": "Aperçu animé (GIF)"
             }
+        },
+        "actions": {
+            "options": {
+                "keep": "Garder le clip",
+                "seen": "Marquer comme vue",
+                "plus": "Envoyer à Frigate+",
+                "export": "Exporter l'enregistrement"
+            }
         }
     },
     "config_subentries": {
@@ -321,6 +335,14 @@
         "objects_joined": "{first} et {second}",
         "objects_none": "Quelque chose",
         "action_view_snapshot": "Voir l'instantané",
+        "action_keep": "Garder",
+        "action_seen": "Vue",
+        "action_plus": "Frigate+",
+        "action_export": "Exporter",
+        "autotracking": "**{cameras} suit ce qu'elle voit.** Les zones sont dessinées sur l'image de la caméra, donc quand elle bouge, Zones, Chaque zone et Zones dans l'ordre peuvent ne pas dire ce qu'elles disent.",
+        "fact_face_unknown": "Visage non reconnu",
+        "fact_stationary": "Immobile",
+        "fact_state": "{model} : {state}",
         "health_down_title": "Frigate ne répond pas",
         "health_down": "{server} échoue à sa vérification depuis {since}, les notifications des caméras ont donc pu s'arrêter.",
         "health_up_title": "Frigate est de retour",

@@ -7,7 +7,7 @@ description: Details of how notifications are sourced and sent on.
 
 Nothing is polled. Frigate publishes each review over MQTT as it starts, changes and ends, and a notification goes out as soon as one matches the settings, held back only by the *Timing* settings.
 
-The title says what was seen and where, such as "Person detected at Barn Door", by the zones the review entered for a camera, or the camera's name when none, and the zone's name for a zone. There's no more to the message until Frigate's GenAI describes or summarises the review.
+The title says what was seen and where, such as "Person detected at Barn Door", by the zones the review entered for a camera, or the camera's name when none, and the zone's name for a zone. Under it goes what Frigate knows of the review's objects beyond the review, as far as it knows yet, such as "48 km/h · AB12CDE · Royal Mail", until Frigate's GenAI describes or summarises the review, which then says more instead. See [What Frigate Knows](#what-frigate-knows).
 
 | When                                     | With Supernotify                                                   | Without                |
 | ---------------------------------------- | ------------------------------------------------------------------ | ---------------------- |
@@ -21,13 +21,31 @@ The title says what was seen and where, such as "Person detected at Barn Door", 
 With Supernotify, each notification:
 
 - shows the snapshot of the review, or the *Image* chosen instead, and opens the clip when tapped, played from Frigate as HLS
-- has a *View snapshot* button
+- has a *View snapshot* button, and the buttons of the [*Actions*](index.md#actions) chosen, such as *Keep* and *Seen*
 - is grouped with the others of the same camera
 - passes the camera entity, so Supernotify's camera snooze works
 
 Rules, added under *Global Settings*, can change the priority of any notification by what it says, silence it, or apply Supernotify scenarios. See [GenAI Notifications](https://camera-autonotify.rhizomatics.org.uk/genai/#rules).
 
 Priority, critical alerts, sounds, who is told, snoozing, the archive and scenarios are all Supernotify's, so set them up there once rather than per camera.
+
+### What Frigate Knows
+
+A review only says what was seen, where, and who or what was recognised. Frigate knows more of each object in it,
+and says so over MQTT as the object moves, which is kept and said under the headline:
+
+| Fact | From | Said as |
+|------|------|---------|
+| Speed | A zone with `distances` set, in Frigate's own unit system | The highest speed seen, such as "48 km/h", since Frigate's own speeds at the end are of the object slowing to a stop |
+| A plate read | Frigate's licence plate recognition | The plate, where Frigate doesn't know it. A known plate is the review's sub label already |
+| Attributes | Such as a delivery company's logo, with a Frigate+ model whose attributes the camera tracks, or object classification | "Royal Mail", named by *Object names* where given |
+| A face not recognised | Face recognition, a person whose face Frigate saw but didn't recognise, at its own `recognition_threshold` | "Face not recognised". A person whose face it never saw says nothing |
+| Not moving | The tracked object having stopped | "Not moving" |
+| States | The camera's state classification, from Frigate 0.17 | Such as "Gate: open" |
+
+Each comes only where Frigate has it set up, so there's nothing to switch on here. They're said in each notification
+as it goes, the first, its updates, and the last with *Notify when over*, which says most, by when the object has
+passed. Rules still match the headline, not these.
 
 ### Who's Home, and the Alarm
 

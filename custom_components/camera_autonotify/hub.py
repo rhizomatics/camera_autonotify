@@ -16,11 +16,13 @@ from homeassistant.core import CALLBACK_TYPE, Context, HomeAssistant, callback
 from homeassistant.helpers.event import async_call_later
 
 from .const import CONF_SOURCE_NAME, DOMAIN, TYPE_ZONE
-from .frigate import genai_reviews_seen
+from .facts import FactStore
+from .frigate import fact_stores, genai_reviews_seen
 from .notifier import Notifier
 from .tracker import TYPE_GENAI, Decision, ReviewTracker, Settings, Wait
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from datetime import datetime
 
     from homeassistant.components.mqtt import ReceiveMessage
@@ -29,8 +31,11 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 REVIEWS_TOPIC = "{prefix}/reviews"
-# where Frigate sends what it adds to a tracked object, of which only GenAI descriptions are wanted
+# where Frigate sends what it adds to a tracked object: GenAI descriptions, faces, plates and classification
 OBJECT_UPDATES_TOPIC = "{prefix}/tracked_object_update"
+# the tracked objects themselves, and each camera's state classification, kept as facts for notifications
+EVENTS_TOPIC = "{prefix}/events"
+STATES_TOPIC = "{prefix}/+/classification/+"
 DATA_HUBS = "hubs"
 
 
@@ -129,6 +134,14 @@ def _is_summary(payload: str | bytes | bytearray) -> bool:
     return isinstance(message, dict) and message.get("type") == TYPE_GENAI
 
 
+def _safely(handle: Callable[[str | bytes | bytearray, float], None], message: ReceiveMessage) -> None:
+    """A message kept as facts, one not understood logged, and not passed on"""
+    try:
+        handle(message.payload, time.time())
+    except ValueError, KeyError, TypeError, AttributeError:
+        _LOGGER.debug("CAMERA_AUTONOTIFY %s not understood: %s", message.topic, message.payload)
+
+
 def _hubs(hass: HomeAssistant) -> dict[str, _Hub]:
     data: dict[str, Any] = hass.data.setdefault(DOMAIN, {})
     return data.setdefault(DATA_HUBS, {})
@@ -148,14 +161,32 @@ async def async_watch(hass: HomeAssistant, prefix: str, watcher: ReviewWatcher) 
             for each in list(hubs[prefix].watchers):
                 each.async_review(message.payload)
 
+        facts = fact_stores(hass).setdefault(prefix, FactStore())
+
         @callback
         def object_update(message: ReceiveMessage) -> None:
+            _safely(facts.on_update, message)
             for each in list(hubs[prefix].watchers):
                 each.async_object_update(message.payload)
+
+        @callback
+        def event(message: ReceiveMessage) -> None:
+            _safely(facts.on_event, message)
+
+        @callback
+        def state(message: ReceiveMessage) -> None:
+            # `{prefix}/{camera}/classification/{model}`, the prefix possibly of more than one level
+            parts = message.topic.removeprefix(f"{prefix}/").split("/")
+            payload = message.payload
+            value = payload.decode(errors="replace") if isinstance(payload, (bytes, bytearray)) else str(payload)
+            if len(parts) == 3:
+                facts.on_state(parts[0], parts[2], value.strip())
 
         unsubscribe = [
             await mqtt.async_subscribe(hass, REVIEWS_TOPIC.format(prefix=prefix), review),
             await mqtt.async_subscribe(hass, OBJECT_UPDATES_TOPIC.format(prefix=prefix), object_update),
+            await mqtt.async_subscribe(hass, EVENTS_TOPIC.format(prefix=prefix), event),
+            await mqtt.async_subscribe(hass, STATES_TOPIC.format(prefix=prefix), state),
         ]
         # another entry may have subscribed while this one was waiting
         if (hub := hubs.get(prefix)) is None:
@@ -174,5 +205,6 @@ async def async_watch(hass: HomeAssistant, prefix: str, watcher: ReviewWatcher) 
             for each in hub.unsubscribe:
                 each()
             del hubs[prefix]
+            fact_stores(hass).pop(prefix, None)
 
     return stop

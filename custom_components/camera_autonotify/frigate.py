@@ -18,6 +18,7 @@ from .const import (
     IMAGE_SNAPSHOT_CROP,
     IMAGE_THUMBNAIL,
 )
+from .facts import FactStore
 
 DEFAULT_TOPIC_PREFIX = "frigate"
 # the Frigate integration keeps each server's config, as Frigate itself reports it, under its entry id
@@ -33,6 +34,8 @@ PROXY_ENABLE = "notification_proxy_enable"
 PROXY_EXPIRE_AFTER = "notification_proxy_expire_after_seconds"
 # when a review summary last came over MQTT, by topic prefix
 DATA_GENAI_SEEN = "genai_seen"
+# what's known of each tracked object, beyond its review, by topic prefix
+DATA_FACTS = "facts"
 
 
 @callback
@@ -52,6 +55,18 @@ class FrigateApiClient(Protocol):
     async def async_review_summarize(self, start_time: float, end_time: float) -> dict[str, Any] | str: ...
 
     async def async_get_reviews(self, after: float | None = None, before: float | None = None) -> list[dict[str, Any]]: ...
+
+    # for the actions on a notification
+    async def async_retain(self, event_id: str, retain: bool) -> dict[str, Any] | str: ...
+
+    async def async_set_reviews_viewed(self, ids: list[str], viewed: bool = True) -> dict[str, Any]: ...
+
+    async def async_export_recording(
+        self, camera: str, playback_factor: str, start_time: float, end_time: float, name: str | None = None
+    ) -> dict[str, Any] | str: ...
+
+    # anything else of Frigate's API, as submitting to Frigate+, which the client has no method for
+    async def api_wrapper(self, method: str, url: str) -> dict[str, Any] | str: ...
 
 
 @callback
@@ -82,6 +97,32 @@ def camera_has_video(stats: dict[str, Any] | None, camera: str) -> bool | None:
     if not isinstance(found, dict) or found.get("camera_fps") is None:
         return None
     return float(found["camera_fps"]) > 0
+
+
+def _camera(config: dict[str, Any] | None, camera: str) -> dict[str, Any]:
+    return (((config or {}).get("cameras") or {}).get(camera)) or {}
+
+
+def plus_enabled(config: dict[str, Any] | None) -> bool:
+    """Whether Frigate+ is set up, by its API key, with or without a Frigate+ model, for submitting to it"""
+    return bool(((config or {}).get("plus") or {}).get("enabled"))
+
+
+def camera_snapshots(config: dict[str, Any] | None, camera: str) -> bool:
+    """Whether Frigate saves snapshots for a camera, which Frigate+ needs to submit one"""
+    return bool((_camera(config, camera).get("snapshots") or {}).get("enabled"))
+
+
+def camera_autotracks(config: dict[str, Any] | None, camera: str) -> bool:
+    """Whether a camera follows what it sees, moving, so that zones drawn on its frame stop meaning what they say"""
+    return bool(((_camera(config, camera).get("onvif") or {}).get("autotracking") or {}).get("enabled_in_config"))
+
+
+def frigate_url(hass: HomeAssistant, source_entry_id: str) -> str | None:
+    """The address the Frigate integration reaches a server at, for what its client has no method for"""
+    entry = hass.config_entries.async_get_entry(source_entry_id)
+    url = entry.data.get("url") if entry is not None else None
+    return str(url).rstrip("/") if url else None
 
 
 def camera_records(config: dict[str, Any] | None, camera: str) -> bool:
@@ -207,6 +248,12 @@ def all_labels(hass: HomeAssistant) -> list[str]:
     })
 
 
+def zone_cameras(config: dict[str, Any] | None, zone: str) -> list[str]:
+    """The cameras a zone is on, the zone as slugified for its device"""
+    cameras = (config or {}).get("cameras") or {}
+    return [name for name, camera in cameras.items() if zone in {slugify(z) for z in camera.get("zones") or {}}]
+
+
 def zone_labels(config: dict[str, Any] | None, zone: str) -> list[str]:
     """The labels of every camera a zone is on, the zone as slugified for its device"""
     cameras = ((config or {}).get("cameras") or {}).values()
@@ -245,6 +292,32 @@ def genai_reviews_seen(hass: HomeAssistant) -> dict[str, float]:
     Home Assistant started"""
     data: dict[str, Any] = hass.data.setdefault(DOMAIN, {})
     return data.setdefault(DATA_GENAI_SEEN, {})
+
+
+@callback
+def fact_stores(hass: HomeAssistant) -> dict[str, FactStore]:
+    """What's known of each Frigate server's tracked objects, by topic prefix, kept while any camera is followed"""
+    data: dict[str, Any] = hass.data.setdefault(DOMAIN, {})
+    return data.setdefault(DATA_FACTS, {})
+
+
+@callback
+def fact_store(hass: HomeAssistant, source_entry_id: str) -> FactStore | None:
+    """What's known of a Frigate server's tracked objects, once a camera of it is followed"""
+    return fact_stores(hass).get(topic_prefix(frigate_config(hass, source_entry_id)))
+
+
+def speed_unit(config: dict[str, Any] | None) -> str:
+    """Frigate's unit for speed, by its own unit system"""
+    return "mph" if ((config or {}).get("ui") or {}).get("unit_system") == "imperial" else "km/h"
+
+
+def face_threshold(config: dict[str, Any] | None) -> float:
+    """The score at which Frigate takes a face as recognised, its own default where not set"""
+    try:
+        return float(((config or {}).get("face_recognition") or {}).get("recognition_threshold") or 0.9)
+    except TypeError, ValueError:
+        return 0.9
 
 
 def concerning(review: dict[str, Any]) -> bool:

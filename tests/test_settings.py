@@ -2,11 +2,14 @@ from __future__ import annotations
 
 from typing import Any
 
+import pytest
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType, section
 
 from custom_components.camera_autonotify.const import (
+    CONF_ACTIONS,
+    CONF_ACTIONS_GLOBAL,
     CONF_ALERT_ONCE,
     CONF_COOLDOWN,
     CONF_DELIVERIES,
@@ -244,3 +247,73 @@ def test_genai_features():
     assert genai_features(config, zone="pend") == (True, True)
     assert genai_features(config, zone="gate") == (False, True)
     assert genai_features(None, camera="a") == (False, False)
+
+
+def suggested(result: dict[str, Any]) -> dict[str, Any]:
+    """The value shown in each field of a form, by name, those of its sections as `section.field`"""
+    shown: dict[str, Any] = {}
+    for key, value in result["data_schema"].schema.items():
+        inner = value.schema.schema.items() if isinstance(value, section) else [(key, value)]
+        prefix = f"{key}." if isinstance(value, section) else ""
+        for marker, _ in inner:
+            if (wanted := (marker.description or {}).get("suggested_value")) is not None:
+                shown[f"{prefix}{marker}"] = wanted
+    return shown
+
+
+async def test_actions_offered_for_the_camera(hass: HomeAssistant):
+    """Only those Frigate can do for it, Frigate+ where it's set up and the camera saves snapshots"""
+    mock_supernotify(hass)
+    add_frigate(hass, plus=True, snapshots=True)
+    await set_up_discovery(hass)
+    shown = fields_of(await open_settings(hass))
+    assert shown["notify.actions"].config["options"] == ["keep", "seen", "plus"]
+    assert "notify.actions_global" in shown
+
+
+async def test_actions_shown_only_where_still_offered(hass: HomeAssistant):
+    mock_supernotify(hass)
+    add_frigate(hass)
+    await set_up_discovery(hass)
+    entry = entry_titled(hass, "Courtyard")
+    hass.config_entries.async_update_entry(entry, options={CONF_ACTIONS_GLOBAL: False, CONF_ACTIONS: ["plus", "seen"]})
+    assert suggested(await open_settings(hass))["notify.actions"] == ["seen"]
+
+
+async def test_no_actions_without_supernotify(hass: HomeAssistant):
+    add_frigate(hass)
+    await set_up_discovery(hass)
+    assert not {"notify.actions", "notify.actions_global"} & set(fields_of(await open_settings(hass)))
+
+
+async def test_actions_switched_off_for_a_camera(hass: HomeAssistant):
+    mock_supernotify(hass)
+    add_frigate(hass)
+    await set_up_discovery(hass)
+    entry = entry_titled(hass, "Courtyard")
+    form = await open_settings(hass)
+    await hass.config_entries.options.async_configure(
+        form["flow_id"], {"severities": ["alert"], "timing": {}, "notify": {CONF_ACTIONS_GLOBAL: False}}
+    )
+    await hass.async_block_till_done()
+    assert dict(entry.options) == {CONF_ACTIONS_GLOBAL: False}
+
+
+@pytest.mark.parametrize(("title", "warned"), [("Driveway", True), ("Courtyard", False), ("Turning Circle", True)])
+async def test_autotracking_warned(hass: HomeAssistant, title: str, warned: bool):
+    """For a camera that follows what it sees, or a zone on one, since zones are drawn on its frame"""
+    add_frigate(hass, autotracking=True)
+    await set_up_discovery(hass, discover_zones=True)
+    placeholders = (await open_settings(hass, title))["description_placeholders"]
+    assert ("driveway follows what it sees" in placeholders["autotracking"]) is warned
+
+
+async def test_global_actions(hass: HomeAssistant):
+    """Offered where any server can do them, keep, seen and Frigate+ shown to begin with, of those"""
+    mock_supernotify(hass)
+    add_frigate(hass, plus=True, snapshots=True, record=True)
+    await set_up_discovery(hass)
+    entry = next(e for e in hass.config_entries.async_entries(DOMAIN) if e.data.get("type") == "discovery")
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert fields_of(dict(result))["actions"].config["options"] == ["keep", "seen", "plus", "export"]
+    assert suggested(dict(result))["actions"] == ["keep", "seen", "plus"]

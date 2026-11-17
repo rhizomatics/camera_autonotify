@@ -22,5 +22,6 @@ See [RFCs](rfcs/index.md)
 - Minor items left over from [RFC 0004](rfcs/rfc0004_richer_frigate.md) - smaller than its scope, and not moved to another RFC:
     - GenAI review summaries carry `observations`, a list of short sentences, and a `confidence`, neither used. `observations` could make a better message than `shortSummary` for a long review, and `confidence` could quieten a summary GenAI wasn't sure of
     - A floor on Frigate's detection confidence, the tracked object's `top_score`, below which a review isn't notified, or is quieter
-    - Which detections have a snapshot Frigate+ would accept, so *Submit to Frigate+* is only offered for those (RFC 0004 spike 2)
+    - Pass RFC 0004's facts on to Supernotify as data, in Camera AutoNotify's own schema, once Supernotify has a field that isn't passed on to transports (as `source`, Supernotify #293)
+    - An update of its own when a plate is read, or a face isn't recognised, rather than only in the notifications sent anyway
     - PTZ: the integration's `frigate.ptz` as an action, moving a camera to a preset, and `async_get_ptz_info` for the preset names. Left out of RFC 0004 until someone asks

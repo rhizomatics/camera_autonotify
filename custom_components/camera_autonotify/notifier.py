@@ -11,6 +11,7 @@ from homeassistant.core import Context, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
 
+from .actions import buttons
 from .const import (
     CONF_CUSTOM_TARGET,
     CONF_DELIVERIES,
@@ -30,22 +31,28 @@ from .const import (
     SUBENTRY_RULE,
     SUPERNOTIFY_DOMAIN,
     THREAT_PRIORITY_DEFAULTS,
-    TYPE_DISCOVERY,
     TYPE_ZONE,
 )
+from .entries import global_settings
 from .frigate import (
     camera_entity_id,
     camera_records,
+    face_threshold,
+    fact_store,
     frigate_config,
     hls_url,
     image_url,
     notifications_url,
     snapshot_url,
+    speed_unit,
 )
 from .rules import Outcome, Rule, apply_rules, rank
 from .supernotify_api import supernotify_available
 from .texts import (
     ACTION_VIEW_SNAPSHOT,
+    FACT_FACE_UNKNOWN,
+    FACT_STATE,
+    FACT_STATIONARY,
     HEADLINE,
     HEADLINE_ENDED,
     OBJECTS_JOINED,
@@ -78,15 +85,6 @@ SEVERITY_ALERT = "alert"
 def _friendly(name: str) -> str:
     """A zone or camera as Frigate writes it, `Barn_Door`, as said in a notification"""
     return name.replace("_", " ").title()
-
-
-@callback
-def global_settings(hass: HomeAssistant) -> ConfigEntry | None:
-    """The discovery entry, holding what applies to every camera and zone, unless deleted or disabled"""
-    for entry in hass.config_entries.async_entries(DOMAIN, include_disabled=False):
-        if entry.data.get(CONF_TYPE) == TYPE_DISCOVERY:
-            return entry
-    return None
 
 
 @callback
@@ -219,7 +217,30 @@ class Notifier:
         if message := self.message(decision):
             return self.title(decision), apply_rules(rules, message)
         outcome = apply_rules(rules, self.headline(decision))
-        return outcome.message, replace(outcome, message="")
+        return outcome.message, replace(outcome, message=self.facts(decision))
+
+    def facts(self, decision: Decision) -> str:
+        """What Frigate knows of the review's objects beyond the review, as a line under the headline: the highest
+        speed, plates read that Frigate doesn't know, attributes such as a delivery company, a face seen but not
+        recognised, whether it has stopped, and the camera's state classifications"""
+        store = fact_store(self.hass, self.source_entry_id)
+        if store is None:
+            return ""
+        review = decision.review
+        config = frigate_config(self.hass, self.source_entry_id)
+        found = store.of_review(review.camera, review.detections, face_threshold(config))
+        names = object_names(self.hass)
+        said: list[str] = []
+        if found.speed >= 1:
+            said.append(f"{round(found.speed)} {speed_unit(config)}")
+        said.extend(found.plates)
+        said.extend(names.get(label) or _friendly(label) for label in found.attributes)
+        if found.face_unknown:
+            said.append(text(self.hass, FACT_FACE_UNKNOWN))
+        if found.stationary:
+            said.append(text(self.hass, FACT_STATIONARY))
+        said.extend(text(self.hass, FACT_STATE, model=_friendly(m), state=s.replace("_", " ")) for m, s in found.states)
+        return " · ".join(said)
 
     def priority(self, decision: Decision, outcome: Outcome) -> str:
         """By the review's severity, or a summary's threat level, raised by a rule, and only sounding again for an
@@ -299,6 +320,8 @@ class Notifier:
                     "uri": snapshot_url(notifications, decision.detection_id),
                 },
             ]
+        if more := buttons(self.hass, self.entry, decision):
+            data.setdefault("actions", []).extend(more)
         if media:
             data["media"] = media
         if deliveries := self.entry.options.get(CONF_DELIVERIES):
