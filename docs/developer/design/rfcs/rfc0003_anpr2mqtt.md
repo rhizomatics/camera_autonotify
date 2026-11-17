@@ -1,7 +1,8 @@
 # RFC 0003 - ANPR2MQTT Integration
 
-**Status**: Ready for Review
-Reviewed 2026-11-11, design agreed, upstream changes made for anpr2mqtt 1.3.0, not yet released, not yet built here
+**Status**: Phase 2 built in 0.11.0, as early access
+Reviewed 2026-11-11, design agreed, upstream changes released in anpr2mqtt 1.3.0. Phase 2 built 2026-11-17, see
+[As built](#as-built)
 
 ## Summary
 
@@ -225,6 +226,26 @@ entity's state, with nothing polled.
 3. **Joined to Frigate reviews**: a Frigate sighting updating its review's notification, a filesystem sighting matched by time, and the semantic levels, so a sighting at a lower level than what's already been sent, such as a Frigate sub label after an anpr2mqtt sighting, isn't sent. The level and the review's key go in `extra_data`, for Supernotify or anything else to use.
 
 The recorder's three sightings above become test fixtures, as the real Frigate reviews already are, and the 14:25 visit, a review, a sub label and both sightings, is the test of phase 3: one notification, updated, not four.
+
+## As built
+
+Phase 2, released in 0.11.0 as early access, to get feedback from use before the rest:
+
+- **Built**: discovery by anpr2mqtt's device manufacturer and model, one entry per camera and event keyed by the
+  sensor's unique id, the linked camera by `linked_cameras`, area and name, when to notify, content, images, a
+  priority and scenarios per kind of vehicle, the notification box, and health from the sensor going unavailable
+- **Retained state**: taken as any change in the first few seconds of following the sensor, and any sighting more than
+  ten minutes old, rather than the old state being `None`, since an MQTT sensor starts as `unknown`
+- **Left for later**:
+    - phase 3, joining a sighting to its Frigate review, and the semantic levels
+    - adding a sensor by hand, for anpr2mqtt without devices
+    - the linked camera by `live_url`, and by `frigate_event_id` learned from sightings
+    - the visit history and the source's own details, such as `vehicle_direction`, for richer deliveries, held back,
+      as RFC 0004's facts are, until Supernotify has a data field it doesn't pass on to transports
+    - phase 1's form tidy, the missing labels found in review looking like a stale translation cache, to be checked
+      on the live install
+    - the discovery confirm screen, which still asks about Frigate for an anpr2mqtt camera
+- **Full user documentation**, once it's had some use
 
 ## Roadmap
 

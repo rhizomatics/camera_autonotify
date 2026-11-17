@@ -181,6 +181,53 @@
                         }
                     }
                 }
+            },
+            "anpr": {
+                "title": "Matrículas en {name}",
+                "description": "{linked}\n\n{supernotify}",
+                "data": {
+                    "linked_camera_auto": "Elegir la cámara vinculada automáticamente",
+                    "linked_camera": "Cámara vinculada"
+                },
+                "data_description": {
+                    "linked_camera_auto": "Encontrar la misma cámara en Frigate u otra integración de cámaras, por lo que anpr2mqtt dice de ella, su área o su nombre. Desactívalo para elegirla abajo, o déjalo vacío para ninguna.",
+                    "linked_camera": "La cámara cuyo nombre usan las notificaciones, y que cubre la pausa de cámaras de Supernotify. Solo se usa si no se elige automáticamente."
+                },
+                "sections": {
+                    "vehicles": {
+                        "name": "Vehículos",
+                        "description": "Una prioridad para cada tipo de vehículo, o ninguna notificación, y los escenarios de Supernotify que aplica cada uno. Los vehículos conocidos, peligrosos e ignorados son los de los objetivos y grupos de anpr2mqtt.",
+                        "data": {
+                            "priority_dangerous": "Vehículos peligrosos",
+                            "priority_unknown": "Vehículos desconocidos",
+                            "priority_known": "Vehículos conocidos",
+                            "priority_ignored": "Vehículos ignorados",
+                            "scenarios_dangerous": "Escenarios para vehículos peligrosos",
+                            "scenarios_unknown": "Escenarios para vehículos desconocidos",
+                            "scenarios_known": "Escenarios para vehículos conocidos",
+                            "scenarios_ignored": "Escenarios para vehículos ignorados"
+                        },
+                        "data_description": {
+                            "priority_known": "Como dice anpr2mqtt es la prioridad que anpr2mqtt da al objetivo o grupo del vehículo, o media."
+                        }
+                    },
+                    "notify": {
+                        "name": "Destinatarios",
+                        "description": "A quién y qué se notifica. Déjalo vacío para la elección habitual.",
+                        "data": {
+                            "targets": "Destinatarios",
+                            "target": "Destinatarios",
+                            "custom_target": "Destinatarios personalizados",
+                            "deliveries": "Entregas"
+                        },
+                        "data_description": {
+                            "targets": "Entidades de notificación a las que enviar. Déjalo vacío para todos los móviles con la app de Home Assistant.",
+                            "target": "A quién o qué notificar, como en cualquier notificación de Supernotify. Déjalo vacío para que elija Supernotify.",
+                            "custom_target": "Destinatarios fuera de Home Assistant, como direcciones de correo o números de teléfono.",
+                            "deliveries": "Limitar las notificaciones a estas entregas de Supernotify. Déjalo vacío para que elija Supernotify."
+                        }
+                    }
+                }
             }
         },
         "error": {
@@ -260,6 +307,17 @@
                 "seen": "Marcar como vista",
                 "plus": "Enviar a Frigate+",
                 "export": "Exportar la grabación"
+            }
+        },
+        "vehicle_priority": {
+            "options": {
+                "anpr2mqtt": "Como dice anpr2mqtt",
+                "critical": "Crítica",
+                "high": "Alta",
+                "medium": "Media",
+                "low": "Baja",
+                "minimum": "Mínima",
+                "none": "No notificar"
             }
         }
     },
@@ -351,6 +409,17 @@
         "camera_down": "Frigate no tiene vídeo de {camera} desde {since}.",
         "camera_up_title": "La cámara {camera} ha vuelto",
         "camera_up": "Frigate vuelve a tener vídeo de {camera}, tras {duration}.",
+        "anpr_title": "{vehicle} en {where}",
+        "anpr_plate": "Matrícula {plate}",
+        "anpr_first": "No visto antes",
+        "anpr_seen": "Avistamientos anteriores: {count}, el último el {when}",
+        "anpr_dvla": "DVLA: {details}",
+        "anpr_down_title": "El lector de matrículas {camera} no responde",
+        "anpr_down": "anpr2mqtt no está disponible para {camera}, así que las matrículas no se notificarán hasta que vuelva.",
+        "anpr_up_title": "El lector de matrículas {camera} ha vuelto",
+        "anpr_up": "anpr2mqtt vuelve a estar disponible para {camera}.",
+        "anpr_linked": "Cámara vinculada, encontrada automáticamente: **{camera}**.",
+        "anpr_unlinked": "No se encontró automáticamente ninguna cámara vinculada, así que las matrículas se notifican solas, con el nombre de la cámara de anpr2mqtt. Elige una abajo si la hay.",
         "summary_title": "Informe de Frigate: {period}",
         "summary_server_title": "Informe de Frigate de {server}: {period}",
         "summary_no_activity": "La GenAI no resumió ninguna actividad en estas horas.",

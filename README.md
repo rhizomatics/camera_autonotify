@@ -9,7 +9,7 @@ Notifications for what your security cameras see in Home Assistant, sent through
 
 It starts with [Frigate](https://frigate.video): every camera is found and set up by itself, and each Frigate review is sent as a notification with its snapshot, tapped to play the clip.
 
-Other camera integrations are to follow, including [ANPR2MQTT](https://anpr2mqtt.rhizomatics.org.uk) and possibly Unifi Protect or Viseron.
+Number plates read by [anpr2mqtt](https://anpr2mqtt.rhizomatics.org.uk) are notified too, as an [early access](#number-plates-from-anpr2mqtt-early-access) feature. Other camera integrations may follow, possibly UniFi Protect or Viseron.
 
 > 🌐 **Deutsch · English · Español · Français · हिन्दी · Italiano · Português · Português (Brasil)**
 
@@ -21,6 +21,7 @@ Other camera integrations are to follow, including [ANPR2MQTT](https://anpr2mqtt
 - [Supernotify](https://supernotify.rhizomatics.org.uk), installed from HACS, for anything beyond a plain notification
   - Optional, however without Supernotify there is only a plain text notification, with no snapshot or links, sent to every phone with the Home Assistant app unless you choose other notify entities
   - The latest version is recommended, and at least v2.17.1, since a notification can have a title and no message, which earlier versions don't announce properly on Alexa
+  - v2.19.0 or later sends the still image when the animated preview can't be had, in e-mail and other deliveries Supernotify fetches the image for, and raises a repair, linking to the camera's settings, when no image can be had at all
 
 ## Install
 
@@ -89,6 +90,21 @@ With Supernotify, each notification on a phone has buttons for what Frigate can 
 ### GenAI Periodic Reports
 
 Where Frigate makes GenAI review summaries, a report of the day before is also sent each day, written by Frigate's GenAI from that day's reviews. It can instead be sent every few hours, and only when GenAI saw something suspicious in those hours. It needs Supernotify, and goes by e-mail, or whichever Supernotify deliveries you choose instead, such as Telegram, being too long for a phone's notification or a voice assistant. It's set in the *Frigate GenAI Periodic Report* section of *Global Settings*. Each report is written by Frigate's GenAI provider, so is subject to its charges and limits. See [Periodic Reports](https://camera-autonotify.rhizomatics.org.uk/genai/#periodic-reports).
+
+### Number Plates from anpr2mqtt (Early Access)
+
+> **Early access**: number plates from anpr2mqtt are new in 0.11.0. It works, but has had little use yet. Full documentation will follow, as may fixes and improvements, so expect it to change. Feedback is very welcome, in the [issues](https://github.com/rhizomatics/camera_autonotify/issues).
+
+Each plate [anpr2mqtt](https://anpr2mqtt.rhizomatics.org.uk) reads is notified, with no automation, in place of the example automation in its docs:
+
+- **What you need**: anpr2mqtt 1.3.0 or later, with its Home Assistant devices on (`device_creation`, as it comes). Each anpr2mqtt camera is then found and set up like a Frigate camera, by *Set up cameras automatically*. Frigate isn't needed
+- **What's sent**: the vehicle as anpr2mqtt describes it, or its plate, at the camera, such as *Jey's Outlander at Driveway*, with the plate, the sightings before, and the DVLA's details where anpr2mqtt has them. Only a new plate is notified, not the same one again in the same visit, nor a sighting republished as Home Assistant starts
+- **Images**: from Frigate's notification proxy for a plate Frigate read, and from anpr2mqtt's image entity otherwise, so they work away from home
+- **Linked camera**: the same camera in Frigate or another camera integration, found by itself from anpr2mqtt's `linked_cameras`, its area or its name, or chosen in its settings, so the notification is named by it, and Supernotify's camera snooze covers both
+- **Vehicles**: a priority for each kind, dangerous, unknown, known or ignored, as anpr2mqtt's targets and groups say, `critical`, `high`, anpr2mqtt's own and no notification to begin with, and Supernotify scenarios for each
+- **Health**: anpr2mqtt going unavailable is notified, and again when it's back, with the timing of the Frigate health checks
+
+Not yet: a plate isn't joined to the Frigate review of the same car, so the same arrival can be notified by both, though Supernotify's duplicate detection catches some. See [RFC 0003](https://camera-autonotify.rhizomatics.org.uk/developer/design/rfcs/rfc0003_anpr2mqtt/) for what's planned.
 
 
 ## Moving From the Frigate Blueprint

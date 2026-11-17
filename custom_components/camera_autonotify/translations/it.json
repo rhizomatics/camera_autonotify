@@ -181,6 +181,53 @@
                         }
                     }
                 }
+            },
+            "anpr": {
+                "title": "Targhe a {name}",
+                "description": "{linked}\n\n{supernotify}",
+                "data": {
+                    "linked_camera_auto": "Scegli automaticamente la telecamera collegata",
+                    "linked_camera": "Telecamera collegata"
+                },
+                "data_description": {
+                    "linked_camera_auto": "Trova la stessa telecamera in Frigate o in un'altra integrazione di telecamere, da ciò che anpr2mqtt ne dice, dalla sua area o dal suo nome. Disattiva per sceglierla qui sotto, o lascia vuoto per nessuna.",
+                    "linked_camera": "La telecamera il cui nome usano le notifiche, e che la sospensione delle telecamere di Supernotify copre. Usata solo se non scelta automaticamente."
+                },
+                "sections": {
+                    "vehicles": {
+                        "name": "Veicoli",
+                        "description": "Una priorità per ogni tipo di veicolo, o nessuna notifica, e gli scenari Supernotify che ciascuno applica. I veicoli noti, pericolosi e ignorati sono quelli dei bersagli e gruppi di anpr2mqtt.",
+                        "data": {
+                            "priority_dangerous": "Veicoli pericolosi",
+                            "priority_unknown": "Veicoli sconosciuti",
+                            "priority_known": "Veicoli noti",
+                            "priority_ignored": "Veicoli ignorati",
+                            "scenarios_dangerous": "Scenari per veicoli pericolosi",
+                            "scenarios_unknown": "Scenari per veicoli sconosciuti",
+                            "scenarios_known": "Scenari per veicoli noti",
+                            "scenarios_ignored": "Scenari per veicoli ignorati"
+                        },
+                        "data_description": {
+                            "priority_known": "Come dice anpr2mqtt è la priorità che anpr2mqtt dà al bersaglio o al gruppo del veicolo, o media."
+                        }
+                    },
+                    "notify": {
+                        "name": "Destinatari",
+                        "description": "Chi e cosa viene notificato. Lascia vuoto per la scelta abituale.",
+                        "data": {
+                            "targets": "Destinazioni",
+                            "target": "Destinazioni",
+                            "custom_target": "Destinazioni personalizzate",
+                            "deliveries": "Delivery"
+                        },
+                        "data_description": {
+                            "targets": "Entità di notifica a cui inviare. Lascia vuoto per tutti i telefoni con l'app Home Assistant.",
+                            "target": "Chi o cosa notificare, come per qualsiasi notifica Supernotify. Lascia vuoto per far scegliere a Supernotify.",
+                            "custom_target": "Destinazioni fuori da Home Assistant, come indirizzi e-mail o numeri di telefono.",
+                            "deliveries": "Limita le notifiche a queste delivery Supernotify. Lascia vuoto per far scegliere a Supernotify."
+                        }
+                    }
+                }
             }
         },
         "error": {
@@ -260,6 +307,17 @@
                 "seen": "Segna come vista",
                 "plus": "Invia a Frigate+",
                 "export": "Esporta la registrazione"
+            }
+        },
+        "vehicle_priority": {
+            "options": {
+                "anpr2mqtt": "Come dice anpr2mqtt",
+                "critical": "Critica",
+                "high": "Alta",
+                "medium": "Media",
+                "low": "Bassa",
+                "minimum": "Minima",
+                "none": "Non notificare"
             }
         }
     },
@@ -351,6 +409,17 @@
         "camera_down": "Frigate non riceve video da {camera} dalle {since}.",
         "camera_up_title": "La telecamera {camera} è tornata",
         "camera_up": "Frigate riceve di nuovo video da {camera}, dopo {duration}.",
+        "anpr_title": "{vehicle} a {where}",
+        "anpr_plate": "Targa {plate}",
+        "anpr_first": "Mai visto prima",
+        "anpr_seen": "Avvistamenti precedenti: {count}, l'ultimo il {when}",
+        "anpr_dvla": "DVLA: {details}",
+        "anpr_down_title": "Il lettore di targhe {camera} non risponde",
+        "anpr_down": "anpr2mqtt non è disponibile per {camera}, quindi le targhe non saranno notificate finché non torna.",
+        "anpr_up_title": "Il lettore di targhe {camera} è tornato",
+        "anpr_up": "anpr2mqtt è di nuovo disponibile per {camera}.",
+        "anpr_linked": "Telecamera collegata, trovata automaticamente: **{camera}**.",
+        "anpr_unlinked": "Nessuna telecamera collegata trovata automaticamente, quindi le targhe sono notificate da sole, con il nome della telecamera di anpr2mqtt. Scegline una qui sotto se c'è.",
         "summary_title": "Rapporto Frigate: {period}",
         "summary_server_title": "Rapporto Frigate di {server}: {period}",
         "summary_no_activity": "Nessuna attività è stata riassunta da GenAI in queste ore.",

@@ -10,7 +10,8 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
 
 from .actions import async_listen
-from .const import CONF_SOURCE_ENTRY_ID, DISCOVERY_TITLE, DISCOVERY_TITLE_BEFORE, DOMAIN, TYPE_DISCOVERY
+from .anpr import AnprWatcher
+from .const import CONF_SOURCE_ENTRY_ID, DISCOVERY_TITLE, DISCOVERY_TITLE_BEFORE, DOMAIN, TYPE_ANPR, TYPE_DISCOVERY
 from .device import async_register_device
 from .discovery import async_discover, async_start_discovery
 from .frigate import frigate_config, topic_prefix
@@ -27,7 +28,7 @@ if TYPE_CHECKING:
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 # a camera's or zone's reviews, or the health checks of the discovery entry, unless switched off
-type CameraAutoNotifyConfigEntry = ConfigEntry[ReviewWatcher | HealthMonitor | None]
+type CameraAutoNotifyConfigEntry = ConfigEntry[ReviewWatcher | AnprWatcher | HealthMonitor | None]
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -48,6 +49,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: CameraAutoNotifyConfigEn
         async_discover(hass)
         entry.runtime_data = async_start_health_check(hass, entry)
         async_start_summaries(hass, entry)
+        return True
+    if entry.data.get(CONF_TYPE) == TYPE_ANPR:
+        # plates read by anpr2mqtt, from its sensor's state, needing neither Frigate nor MQTT here
+        anpr = AnprWatcher(hass, entry)
+        entry.async_on_unload(anpr.async_start())
+        entry.runtime_data = anpr
+        async_register_device(hass, entry, entry.title)
         return True
     config = frigate_config(hass, entry.data[CONF_SOURCE_ENTRY_ID])
     if config is None:

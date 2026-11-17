@@ -52,6 +52,20 @@ CAMERA_DOWN_TITLE = "camera_down_title"
 CAMERA_DOWN = "camera_down"
 CAMERA_UP_TITLE = "camera_up_title"
 CAMERA_UP = "camera_up"
+# a plate read by anpr2mqtt, the vehicle named as anpr2mqtt describes it, or by its plate, at the camera, with the
+# plate, the sightings before, and the DVLA's details, and anpr2mqtt going down and coming back
+ANPR_TITLE = "anpr_title"
+ANPR_PLATE = "anpr_plate"
+ANPR_FIRST = "anpr_first"
+ANPR_SEEN = "anpr_seen"
+ANPR_DVLA = "anpr_dvla"
+ANPR_DOWN_TITLE = "anpr_down_title"
+ANPR_DOWN = "anpr_down"
+ANPR_UP_TITLE = "anpr_up_title"
+ANPR_UP = "anpr_up"
+# an anpr2mqtt entry's settings, saying which camera was linked by itself, or that none was
+ANPR_LINKED = "anpr_linked"
+ANPR_UNLINKED = "anpr_unlinked"
 # a summary, named by the hours it covers, and by the server's title when there's more than one
 SUMMARY_TITLE = "summary_title"
 SUMMARY_SERVER_TITLE = "summary_server_title"

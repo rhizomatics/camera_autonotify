@@ -181,6 +181,53 @@
                         }
                     }
                 }
+            },
+            "anpr": {
+                "title": "{name} पर नंबर प्लेट",
+                "description": "{linked}\n\n{supernotify}",
+                "data": {
+                    "linked_camera_auto": "जुड़ा कैमरा अपने-आप चुनें",
+                    "linked_camera": "जुड़ा कैमरा"
+                },
+                "data_description": {
+                    "linked_camera_auto": "Frigate या किसी अन्य कैमरा इंटीग्रेशन में वही कैमरा खोजें, anpr2mqtt उसके बारे में जो कहता है, उसके क्षेत्र या उसके नाम से। इसे नीचे चुनने के लिए बंद करें, या कोई नहीं के लिए वहाँ खाली छोड़ें।",
+                    "linked_camera": "वह कैमरा जिसका नाम सूचनाएँ उपयोग करती हैं, और जिसे Supernotify का कैमरा स्नूज़ कवर करता है। केवल तब उपयोग होता है जब अपने-आप न चुना गया हो।"
+                },
+                "sections": {
+                    "vehicles": {
+                        "name": "वाहन",
+                        "description": "हर तरह के वाहन के लिए एक प्राथमिकता, या कोई सूचना नहीं, और हर एक के Supernotify परिदृश्य। जाने-पहचाने, ख़तरनाक और अनदेखे वाहन वैसे हैं जैसे anpr2mqtt के लक्ष्य और समूह कहते हैं।",
+                        "data": {
+                            "priority_dangerous": "ख़तरनाक वाहन",
+                            "priority_unknown": "अनजान वाहन",
+                            "priority_known": "जाने-पहचाने वाहन",
+                            "priority_ignored": "अनदेखे वाहन",
+                            "scenarios_dangerous": "ख़तरनाक वाहन के लिए परिदृश्य",
+                            "scenarios_unknown": "अनजान वाहन के लिए परिदृश्य",
+                            "scenarios_known": "जाने-पहचाने वाहन के लिए परिदृश्य",
+                            "scenarios_ignored": "अनदेखे वाहन के लिए परिदृश्य"
+                        },
+                        "data_description": {
+                            "priority_known": "जैसा anpr2mqtt कहे वह प्राथमिकता है जो anpr2mqtt वाहन के लक्ष्य या समूह को देता है, या मध्यम।"
+                        }
+                    },
+                    "notify": {
+                        "name": "प्राप्तकर्ता",
+                        "description": "किसे और क्या सूचित किया जाए। सामान्य चुनाव के लिए खाली छोड़ें।",
+                        "data": {
+                            "targets": "प्राप्तकर्ता",
+                            "target": "प्राप्तकर्ता",
+                            "custom_target": "कस्टम प्राप्तकर्ता",
+                            "deliveries": "डिलीवरी"
+                        },
+                        "data_description": {
+                            "targets": "जिन notify एंटिटी को भेजना है। Home Assistant ऐप वाले हर फ़ोन के लिए खाली छोड़ें।",
+                            "target": "किसे या क्या सूचित करना है, किसी भी Supernotify सूचना की तरह। Supernotify को चुनने देने के लिए खाली छोड़ें।",
+                            "custom_target": "Home Assistant से बाहर के प्राप्तकर्ता, जैसे ई-मेल पते या फ़ोन नंबर।",
+                            "deliveries": "सूचनाओं को इन Supernotify डिलीवरी तक सीमित करें। Supernotify को चुनने देने के लिए खाली छोड़ें।"
+                        }
+                    }
+                }
             }
         },
         "error": {
@@ -260,6 +307,17 @@
                 "seen": "देखी गई चिह्नित करें",
                 "plus": "Frigate+ को भेजें",
                 "export": "रिकॉर्डिंग एक्सपोर्ट करें"
+            }
+        },
+        "vehicle_priority": {
+            "options": {
+                "anpr2mqtt": "जैसा anpr2mqtt कहे",
+                "critical": "गंभीर",
+                "high": "उच्च",
+                "medium": "मध्यम",
+                "low": "निम्न",
+                "minimum": "न्यूनतम",
+                "none": "सूचना न दें"
             }
         }
     },
@@ -351,6 +409,17 @@
         "camera_down": "Frigate के पास {since} से {camera} का कोई वीडियो नहीं है।",
         "camera_up_title": "{camera} कैमरा वापस आ गया",
         "camera_up": "{duration} के बाद Frigate के पास {camera} का वीडियो फिर से है।",
+        "anpr_title": "{where} पर {vehicle}",
+        "anpr_plate": "प्लेट {plate}",
+        "anpr_first": "पहले कभी नहीं देखा गया",
+        "anpr_seen": "पिछली बार देखे गए: {count}, आख़िरी बार {when}",
+        "anpr_dvla": "DVLA: {details}",
+        "anpr_down_title": "{camera} प्लेट रीडर जवाब नहीं दे रहा",
+        "anpr_down": "{camera} के लिए anpr2mqtt उपलब्ध नहीं है, इसलिए उसके वापस आने तक नंबर प्लेटों की सूचना नहीं दी जाएगी।",
+        "anpr_up_title": "{camera} प्लेट रीडर वापस आ गया",
+        "anpr_up": "{camera} के लिए anpr2mqtt फिर से उपलब्ध है।",
+        "anpr_linked": "जुड़ा कैमरा, अपने-आप मिला: **{camera}**।",
+        "anpr_unlinked": "अपने-आप कोई जुड़ा कैमरा नहीं मिला, इसलिए प्लेटों की सूचना अलग से दी जाती है, anpr2mqtt के कैमरे के नाम से। अगर कोई हो तो नीचे चुनें।",
         "summary_title": "Frigate रिपोर्ट: {period}",
         "summary_server_title": "{server} से Frigate रिपोर्ट: {period}",
         "summary_no_activity": "इन घंटों में GenAI ने किसी गतिविधि का सारांश नहीं बनाया।",

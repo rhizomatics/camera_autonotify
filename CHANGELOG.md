@@ -6,6 +6,27 @@ title: What's New
 
 > Camera Autonotify was first released in October 2026 with support only for Frigate notifications. Its intended to be a `1.0.0` release by the end of 2026, with [ANPR2MQTT](https://anpr2mqtt.rhizomatics.org.uk) as the second integration. Ideas, improvements and other feedback very welcome - use the [Github Issues](https://github.com/rhizomatics/camera_autonotify/issues) to add them.
 
+# 0.11.0
+## ✨ Enhancements
+### Number Plates from anpr2mqtt, Early Access
+[RFC0003 - ANPR2MQTT Integration](./developer/design/rfcs/rfc0003_anpr2mqtt.md) is built as far as notifying anpr2mqtt's plates by themselves, as **early access**: it works, but has had little use yet, so full documentation will follow, as may fixes and improvements.
+- Each anpr2mqtt camera, from anpr2mqtt 1.3.0, found and set up like a Frigate camera, with or without Frigate
+- A new plate notified as anpr2mqtt describes the vehicle, with the plate, the sightings before and the DVLA's details, not the same plate again in the same visit, nor a republished sighting
+- Images that work away from home, by Frigate's notification proxy or anpr2mqtt's image entity
+- A linked camera, found from anpr2mqtt's `linked_cameras`, its area or its name, or chosen
+- A priority, or no notification, and Supernotify scenarios, for each kind of vehicle: dangerous, unknown, known and ignored
+- anpr2mqtt going unavailable notified, and coming back
+- Not yet: joining a plate to the Frigate review of the same car
+### Supernotify Images
+- With Supernotify v2.19.0 or later:
+  - the animated preview goes with the camera's still image behind it, tried in turn, so in e-mail and the other deliveries Supernotify fetches the image for, a preview Frigate can't make is replaced by the still image of the event, rather than no picture
+  - an image that can't be fetched at all raises a Home Assistant repair, saying which images failed and why, linking to the camera's or zone's settings to choose another *Image*
+  - Supernotify also takes the camera's live view as a last resort, which isn't the event, as [When the Image Can't Be Fetched](./how_it_works.md#when-the-image-cant-be-fetched) explains
+- Earlier versions of Supernotify are sent the image as before
+## 📚 Documentation
+- [Migrating from Frigate Blueprint](./migrating.md) lists what's been added since, among the things the blueprint doesn't do
+- The languages supported, each in its own name, at the top of the README
+
 # 0.10.0
 ## ✨ Enhancements
 [RFC0004 - Richer Frigate Integration](./developer/design/rfcs/rfc0004_richer_frigate.md) has been implemented.

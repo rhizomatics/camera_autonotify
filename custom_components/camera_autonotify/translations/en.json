@@ -181,6 +181,53 @@
                         }
                     }
                 }
+            },
+            "anpr": {
+                "title": "Number plates at {name}",
+                "description": "{linked}\n\n{supernotify}",
+                "data": {
+                    "linked_camera_auto": "Choose the linked camera automatically",
+                    "linked_camera": "Linked camera"
+                },
+                "data_description": {
+                    "linked_camera_auto": "Find the same camera in Frigate or another camera integration, from what anpr2mqtt says of it, its area or its name. Switch off to choose it below, or leave that empty for none.",
+                    "linked_camera": "The camera whose name the notifications use, and that Supernotify's camera snooze covers. Only used when not chosen automatically."
+                },
+                "sections": {
+                    "vehicles": {
+                        "name": "Vehicles",
+                        "description": "A priority for each kind of vehicle, or no notification, and the Supernotify scenarios each applies. Known, dangerous and ignored vehicles are as anpr2mqtt's targets and groups say.",
+                        "data": {
+                            "priority_dangerous": "Dangerous vehicles",
+                            "priority_unknown": "Unknown vehicles",
+                            "priority_known": "Known vehicles",
+                            "priority_ignored": "Ignored vehicles",
+                            "scenarios_dangerous": "Scenarios for dangerous vehicles",
+                            "scenarios_unknown": "Scenarios for unknown vehicles",
+                            "scenarios_known": "Scenarios for known vehicles",
+                            "scenarios_ignored": "Scenarios for ignored vehicles"
+                        },
+                        "data_description": {
+                            "priority_known": "As anpr2mqtt says is the priority anpr2mqtt gives the vehicle's target or group, or medium."
+                        }
+                    },
+                    "notify": {
+                        "name": "Targets",
+                        "description": "Who and what is notified. Leave empty for the usual choice.",
+                        "data": {
+                            "targets": "Targets",
+                            "target": "Targets",
+                            "custom_target": "Custom targets",
+                            "deliveries": "Deliveries"
+                        },
+                        "data_description": {
+                            "targets": "Notify entities to send to. Leave empty for every phone with the Home Assistant app.",
+                            "target": "Who or what to notify, as for any Supernotify notification. Leave empty for Supernotify to choose.",
+                            "custom_target": "Targets outside of Home Assistant, such as e-mail addresses or phone numbers.",
+                            "deliveries": "Limit notifications to these Supernotify deliveries. Leave empty for Supernotify to choose."
+                        }
+                    }
+                }
             }
         },
         "error": {
@@ -260,6 +307,17 @@
                 "seen": "Mark as seen",
                 "plus": "Submit to Frigate+",
                 "export": "Export the recording"
+            }
+        },
+        "vehicle_priority": {
+            "options": {
+                "anpr2mqtt": "As anpr2mqtt says",
+                "critical": "Critical",
+                "high": "High",
+                "medium": "Medium",
+                "low": "Low",
+                "minimum": "Minimum",
+                "none": "Don't notify"
             }
         }
     },
@@ -351,6 +409,17 @@
         "camera_down": "Frigate has had no video from {camera} since {since}.",
         "camera_up_title": "{camera} camera is back",
         "camera_up": "Frigate has video from {camera} again, after {duration}.",
+        "anpr_title": "{vehicle} at {where}",
+        "anpr_plate": "Plate {plate}",
+        "anpr_first": "Not seen before",
+        "anpr_seen": "Previous sightings: {count}, last on {when}",
+        "anpr_dvla": "DVLA: {details}",
+        "anpr_down_title": "{camera} plate reader is not responding",
+        "anpr_down": "anpr2mqtt has been unavailable for {camera}, so number plates won't be notified until it's back.",
+        "anpr_up_title": "{camera} plate reader is back",
+        "anpr_up": "anpr2mqtt is available again for {camera}.",
+        "anpr_linked": "Linked camera, found automatically: **{camera}**.",
+        "anpr_unlinked": "No linked camera was found automatically, so plates are notified by themselves, named by anpr2mqtt's camera. Choose one below if there is one.",
         "summary_title": "Frigate report for {period}",
         "summary_server_title": "Frigate report for {period} from {server}",
         "summary_no_activity": "No activity was summarised by GenAI in these hours.",

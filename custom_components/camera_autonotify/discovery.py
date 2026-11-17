@@ -1,4 +1,5 @@
-"""Find Frigate cameras, and zones if wanted, and set each up or offer it as a discovered config entry"""
+"""Find Frigate cameras, and zones if wanted, and anpr2mqtt's cameras, and set each up or offer it as a discovered
+config entry"""
 
 from __future__ import annotations
 
@@ -20,7 +21,9 @@ from .const import (
     CONF_SOURCE_NAME,
     DOMAIN,
     FRIGATE_DOMAIN,
+    SOURCE_ANPR2MQTT,
     SOURCE_FRIGATE,
+    TYPE_ANPR,
     TYPE_CAMERA,
     TYPE_DISCOVERY,
     TYPE_ZONE,
@@ -91,6 +94,27 @@ def find_zones(hass: HomeAssistant) -> list[Found]:
     return found
 
 
+MQTT_DOMAIN = "mqtt"
+SENSOR_DOMAIN = "sensor"
+
+
+@callback
+def find_anpr(hass: HomeAssistant) -> list[Found]:
+    """Each sensor of anpr2mqtt's, one per camera and event, known by its device's manufacturer and model, so the
+    sensors of its targets, which have no device, and anything else of MQTT's are left out"""
+    device_registry = dr.async_get(hass)
+    found: list[Found] = []
+    for entity in er.async_get(hass).entities.values():
+        if entity.platform != MQTT_DOMAIN or entity.domain != SENSOR_DOMAIN or entity.disabled or not entity.device_id:
+            continue
+        device = device_registry.async_get(entity.device_id)
+        if not isinstance(device, dr.DeviceEntry) or device.manufacturer != "Rhizomatics" or device.model != "anpr2mqtt":
+            continue
+        name = entity.name or entity.original_name or entity.entity_id
+        found.append(Found(device.id, str(name), TYPE_ANPR, entity.config_entry_id or "", entity.unique_id))
+    return found
+
+
 @callback
 def _discovery_options(hass: HomeAssistant) -> dict[str, bool]:
     """The choices of the discovery entry, nothing found while it's disabled or deleted"""
@@ -110,7 +134,7 @@ def async_discover(hass: HomeAssistant) -> None:
     if not options:
         return
     source = SOURCE_IMPORT if options[CONF_AUTO_DISCOVER] else SOURCE_INTEGRATION_DISCOVERY
-    found = find_cameras(hass) + (find_zones(hass) if options[CONF_DISCOVER_ZONES] else [])
+    found = find_cameras(hass) + (find_zones(hass) if options[CONF_DISCOVER_ZONES] else []) + find_anpr(hass)
     for item in found:
         # those already configured, ignored or in progress are dropped by the flow's unique id
         discovery_flow.async_create_flow(
@@ -121,7 +145,7 @@ def async_discover(hass: HomeAssistant) -> None:
                 CONF_DEVICE_ID: item.device_id,
                 CONF_NAME: item.name,
                 CONF_TYPE: item.type,
-                CONF_SOURCE: SOURCE_FRIGATE,
+                CONF_SOURCE: SOURCE_ANPR2MQTT if item.type == TYPE_ANPR else SOURCE_FRIGATE,
                 CONF_SOURCE_ENTRY_ID: item.source_entry_id,
                 CONF_SOURCE_NAME: item.source_name,
             },
@@ -137,7 +161,7 @@ def async_start_discovery(hass: HomeAssistant) -> None:
         if event.data["action"] != "create":
             return
         entity = er.async_get(hass).async_get(event.data["entity_id"])
-        if entity is not None and entity.platform == FRIGATE_DOMAIN:
+        if entity is not None and entity.platform in (FRIGATE_DOMAIN, MQTT_DOMAIN):
             async_discover(hass)
 
     hass.bus.async_listen(er.EVENT_ENTITY_REGISTRY_UPDATED, entity_registry_updated)

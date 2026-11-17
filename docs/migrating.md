@@ -51,7 +51,7 @@ and deliveries in Supernotify itself, once, for every camera.
 | `attachment` | *Image*, under *Image and targets*: the snapshot, the snapshot with its bounding box, the snapshot cropped to the object, the thumbnail, or an animated GIF preview, which has no bounding box or crop, and shows the snapshot until it's ready |
 | `attachment_2` | The same *Image* for the first notification and its updates, and *GenAI image* for what GenAI adds, the animated preview to begin with |
 | `video`, `ios_live_view` | Not attached, see [Video on iPhones](how_it_works.md#video-on-iphones). Tapping the notification plays the clip |
-| `tap_action`, `button_1` to `button_3` | Tap for the clip, and a *View snapshot* button |
+| `tap_action`, `button_1` to `button_3` | Tap for the clip, a *View snapshot* button, and the buttons of *Actions*, such as *Keep* and *Seen*. See [Actions](index.md#actions) |
 | `button_3` silence, `silence_timer` | Supernotify's camera snooze |
 | `title`, `message`, `subtitle` | Fixed wording, not editable, translated into Home Assistant's language where there's a translation |
 | `genai_notification_title` | Frigate's own title for a GenAI review summary, with no prefix, since the threat level sets the notification's priority instead. See [GenAI Notifications](genai.md) |
@@ -110,7 +110,18 @@ Things the blueprint doesn't do:
 - **Zones of their own**, each notifying for reviews from any camera it's on. See [Zones](index.md#zones)
 - **GenAI review summaries and object descriptions**, each updating the review's notification, with the priority set by the threat level Frigate's GenAI gives. See [GenAI Notifications](genai.md)
 - **Rules** on what any notification says, to raise its priority, silence it, or apply Supernotify scenarios
-- **Periodic GenAI reports**, of the day, or of anything suspicious every few hours, by e-mail or another delivery. See [Periodic Reports](genai.md#periodic-reports)
+- **Buttons for what Frigate can do**: *Keep* the clip from Frigate's retention, mark the review *Seen* in Frigate,
+  submit the snapshot to *Frigate+*, or *Export* the recording, each offered only where Frigate can do it, and chosen
+  for every camera or each one. See [Actions](index.md#actions)
+- **What Frigate knows, beyond the review**, said under the headline: the speed through a speed zone, a plate read
+  that Frigate doesn't know, a delivery company's logo, a face seen but not recognised, a car that has stopped, or a
+  gate left open. See [What Frigate Knows](how_it_works.md#what-frigate-knows)
+- **More images**: the snapshot with the object's box, to begin with, or cropped to it, or Frigate's animated preview
+  of the event, the same GIF Frigate's own review shows, which is also the image of what GenAI adds, to begin with,
+  since it's what GenAI looked at. Where Frigate can't make the preview, the still image is shown instead, and with
+  Supernotify v2.19.0 or later, an image that can't be fetched at all raises a Home Assistant repair linking to the
+  camera's settings. See [When the Image Can't Be Fetched](how_it_works.md#when-the-image-cant-be-fetched)
+- **Periodic GenAI reports**, of the day, or of anything suspicious every few hours, by e-mail or another delivery, asked for again when Frigate fails to write one, and its failure notified, with why and where to look. See [Periodic Reports](genai.md#periodic-reports)
 - **Health checks**, telling you when a Frigate server stops responding, or a camera stops sending video, and when it's back, with cameras switched off on purpose kept quiet. See [Health Check](health.md)
 - **Supernotify** for every notification
   - priority, critical alerts and sounds set once for every camera
@@ -122,6 +133,9 @@ Things the blueprint doesn't do:
   - discovers and sends to all mobile devices automatically
   - archive of what was sent including all the rules on why delivery choices made
 - **A device for each camera**, linked to Frigate's own, from Home Assistant 2026.8
+- **A warning for cameras that autotrack**, whose zones move with them, in the camera's settings
+- **Translated** into Deutsch, English, Español, Français, हिन्दी, Italiano, Português and Português (Brasil), for
+  the notifications, in the language set for Home Assistant, and for the settings
 
 ## Going Back
 

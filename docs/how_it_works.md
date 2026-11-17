@@ -108,11 +108,16 @@ since deleted, Frigate not answering, or the proxy switched off or its links exp
 
 - **On a phone**, the phone fetches the image itself, so one that can't be fetched shows no picture, and tapping the
   notification still opens the clip where Frigate has it
-- **In e-mail, and other deliveries Supernotify fetches the image for**, Supernotify until v2.19.0 sends it without a
-  picture. From Supernotify v2.19.0 it takes a picture from the camera instead, its live view **at the time the
-  notification is sent**, since the camera entity is always passed for Supernotify's camera snooze. That's better than
-  nothing, but it's not the event: the person or car may be long gone, or something else in view. Nothing in the
-  notification says so yet. Saying so is planned in Supernotify, as "Image Notes" on its roadmap
+- **In e-mail, and other deliveries Supernotify fetches the image for**, before Supernotify v2.19.0, it's sent without
+  a picture. From v2.19.0:
+    - the animated preview is sent with the camera's still image behind it, its *Image*, or the snapshot with its box,
+      tried in turn, so a preview Frigate can't make is replaced by the still image of the event
+    - if none of them can be had, Supernotify takes a picture from the camera instead, its live view **at the time
+      the notification is sent**, since the camera entity is always passed for Supernotify's camera snooze. That's
+      better than nothing, but it's not the event: the person or car may be long gone, or something else in view.
+      Nothing in the notification says so yet. Saying so is planned in Supernotify, as "Image Notes" on its roadmap
+    - and Supernotify raises a Home Assistant repair, saying which images failed and why, with a link to the
+      camera's or zone's settings, to choose another *Image*. It goes once an image can be had again
 
 Camera AutoNotify already avoids the commonest case itself, showing the snapshot until the animated preview is ready,
 and always for a camera Frigate doesn't record. See *Image* in [Settings](index.md#settings).

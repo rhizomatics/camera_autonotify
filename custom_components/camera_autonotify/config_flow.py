@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from dataclasses import fields
 from typing import Any
 
@@ -38,6 +39,7 @@ from homeassistant.helpers.selector import (
 )
 
 from .actions import offered
+from .anpr import AnprNotifier, Sighting, find_linked_camera, sensor_entity
 from .compat import vol
 from .const import (
     CONF_ACTIONS,
@@ -59,7 +61,11 @@ from .const import (
     CONF_HEALTH_RETRIES,
     CONF_IMAGE,
     CONF_INITIAL_DELAY,
+    CONF_KIND_PRIORITIES,
+    CONF_KIND_SCENARIOS,
     CONF_LABELS,
+    CONF_LINKED_CAMERA,
+    CONF_LINKED_CAMERA_AUTO,
     CONF_MATCH,
     CONF_MIN_THREAT_LEVEL,
     CONF_OBJECT,
@@ -105,22 +111,28 @@ from .const import (
     GENAI_IMAGE_GLOBAL,
     GENAI_IMAGES,
     IMAGES,
+    KINDS,
     MATCH_CONTAINS,
     MATCHES,
     MAX_SUMMARY_RETRIES,
     POWER_DOMAINS,
     PRIORITIES,
     SEVERITIES,
+    SOURCE_ANPR2MQTT,
     SUBENTRY_RULE,
     SUMMARY_AUTO,
     SUMMARY_INTERVALS,
     SUMMARY_MODES,
     SUMMARY_OFF,
     THREAT_PRIORITY_DEFAULTS,
+    TYPE_ANPR,
     TYPE_DISCOVERY,
     TYPE_ZONE,
+    VEHICLE_NO_DELIVERY,
+    VEHICLE_PRIORITY_DEFAULTS,
+    VEHICLE_PRIORITY_SOURCE,
 )
-from .discovery import find_cameras
+from .discovery import find_anpr, find_cameras
 from .frigate import (
     all_labels,
     camera_autotracks,
@@ -135,6 +147,8 @@ from .health import HealthSettings
 from .rules import compile_pattern
 from .supernotify_api import deliveries_by_transport, email_deliveries, scenario_names, supernotify_available
 from .texts import (
+    ANPR_LINKED,
+    ANPR_UNLINKED,
     AUTOTRACKING,
     CAMERAS_FOUND,
     CAMERAS_NONE,
@@ -149,6 +163,8 @@ from .tracker import Settings
 
 STEP_DISCOVERY = "discovery"
 STEP_SETTINGS = "settings"
+STEP_ANPR = "anpr"
+SECTION_VEHICLES = "vehicles"
 SECTION_TIMING = "timing"
 SECTION_GENAI = "genai"
 SECTION_NOTIFY = "notify"
@@ -156,7 +172,20 @@ SECTION_HEALTH = "health"
 SECTION_SUMMARY = "summary"
 # the daily summary without Supernotify, with nothing to set, only saying it needs Supernotify
 SECTION_SUMMARY_UNAVAILABLE = "summary_unavailable"
-SECTIONS = (SECTION_TIMING, SECTION_GENAI, SECTION_NOTIFY, SECTION_HEALTH, SECTION_SUMMARY, SECTION_SUMMARY_UNAVAILABLE)
+SECTIONS = (
+    SECTION_TIMING,
+    SECTION_GENAI,
+    SECTION_NOTIFY,
+    SECTION_HEALTH,
+    SECTION_SUMMARY,
+    SECTION_SUMMARY_UNAVAILABLE,
+    SECTION_VEHICLES,
+)
+# an anpr2mqtt entry's settings as they come, not stored
+ANPR_DEFAULTS: dict[str, Any] = {
+    CONF_LINKED_CAMERA_AUTO: True,
+    **{CONF_KIND_PRIORITIES[kind]: priority for kind, priority in VEHICLE_PRIORITY_DEFAULTS.items()},
+}
 # a setting left as it comes isn't stored, so it follows any better default of a later version
 DEFAULTS: dict[str, Any] = (
     {f.name: sorted(value) if isinstance(value := getattr(Settings(), f.name), frozenset) else value for f in fields(Settings)}
@@ -385,19 +414,47 @@ async def settings_schema(
         # the buttons on a phone, as the global settings unless chosen here, of those Frigate can do for the camera
         notify[vol.Required(CONF_ACTIONS_GLOBAL, default=DEFAULTS[CONF_ACTIONS_GLOBAL])] = BooleanSelector()
         notify[vol.Optional(CONF_ACTIONS)] = _choose(actions, CONF_ACTIONS)
-    if supernotify_available(hass):
-        # the same pair of target fields as supernotify.notify itself
-        notify[vol.Optional(CONF_TARGET)] = TargetSelector()
-        notify[vol.Optional(CONF_CUSTOM_TARGET)] = TextSelector(TextSelectorConfig(multiple=True))
-        deliveries = await supernotify_deliveries(hass) or []
-        notify[vol.Optional(CONF_DELIVERIES)] = SelectSelector(SelectSelectorConfig(options=deliveries, multiple=True))
-    else:
-        notify[vol.Optional(CONF_TARGETS)] = EntitySelector(EntitySelectorConfig(domain="notify", multiple=True))
+    notify.update(await target_fields(hass))
     fields_[vol.Required(SECTION_TIMING)] = section(vol.Schema(timing), {"collapsed": True})
     if genai:
         fields_[vol.Required(SECTION_GENAI)] = section(vol.Schema(genai), {"collapsed": True})
     fields_[vol.Required(SECTION_NOTIFY)] = section(vol.Schema(notify), {"collapsed": True})
     return vol.Schema(fields_)
+
+
+async def target_fields(hass: HomeAssistant) -> dict[vol.Marker, Any]:
+    """Who and what is notified: with Supernotify, the same pair of target fields as supernotify.notify itself, and
+    its deliveries, or else notify entities"""
+    if not supernotify_available(hass):
+        return {vol.Optional(CONF_TARGETS): EntitySelector(EntitySelectorConfig(domain="notify", multiple=True))}
+    deliveries = await supernotify_deliveries(hass) or []
+    return {
+        vol.Optional(CONF_TARGET): TargetSelector(),
+        vol.Optional(CONF_CUSTOM_TARGET): TextSelector(TextSelectorConfig(multiple=True)),
+        vol.Optional(CONF_DELIVERIES): SelectSelector(SelectSelectorConfig(options=deliveries, multiple=True)),
+    }
+
+
+async def anpr_schema(hass: HomeAssistant) -> vol.Schema:
+    """An anpr2mqtt entry's linked camera, a priority and scenarios for each kind of vehicle, and who is told"""
+    vehicles: dict[vol.Marker, Any] = {}
+    scenarios = await scenario_names(hass) if supernotify_available(hass) else None
+    priorities = [VEHICLE_PRIORITY_SOURCE, *PRIORITIES, VEHICLE_NO_DELIVERY]
+    for kind in KINDS:
+        vehicles[vol.Required(CONF_KIND_PRIORITIES[kind], default=VEHICLE_PRIORITY_DEFAULTS[kind])] = SelectSelector(
+            SelectSelectorConfig(options=priorities, mode=SelectSelectorMode.DROPDOWN, translation_key="vehicle_priority")
+        )
+        if scenarios is not None:
+            # chosen from Supernotify's, or typed, for one not made yet
+            vehicles[vol.Optional(CONF_KIND_SCENARIOS[kind])] = SelectSelector(
+                SelectSelectorConfig(options=scenarios, multiple=True, custom_value=True, mode=SelectSelectorMode.DROPDOWN)
+            )
+    return vol.Schema({
+        vol.Required(CONF_LINKED_CAMERA_AUTO, default=True): BooleanSelector(),
+        vol.Optional(CONF_LINKED_CAMERA): EntitySelector(EntitySelectorConfig(domain="camera")),
+        vol.Required(SECTION_VEHICLES): section(vol.Schema(vehicles), {"collapsed": False}),
+        vol.Required(SECTION_NOTIFY): section(vol.Schema(await target_fields(hass)), {"collapsed": True}),
+    })
 
 
 def sectioned(schema: vol.Schema, values: dict[str, Any]) -> dict[str, Any]:
@@ -417,6 +474,14 @@ def flattened(user_input: dict[str, Any]) -> dict[str, Any]:
     for name, value in user_input.items():
         settings.update(value if isinstance(value, dict) and name in SECTIONS else {name: value})
     return settings
+
+
+def _unique_id(found: Mapping[str, Any]) -> str:
+    """A camera's or zone's device, or for anpr2mqtt, whose cameras each have one device for all their events, the
+    sensor's unique id"""
+    if found.get(CONF_TYPE) == TYPE_ANPR:
+        return f"{SOURCE_ANPR2MQTT}:{found[CONF_SOURCE_NAME]}"
+    return str(found[CONF_DEVICE_ID])
 
 
 class CameraAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -446,7 +511,7 @@ class CameraAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             # the cameras are set up as this entry is, each as its own entry to change or delete
             return self.async_create_entry(title=DISCOVERY_TITLE, data={CONF_TYPE: TYPE_DISCOVERY}, options=user_input)
-        found = [camera.name for camera in find_cameras(self.hass)]
+        found = [camera.name for camera in find_cameras(self.hass) + find_anpr(self.hass)]
         await async_load_texts(self.hass)
         if found:
             found_text = text(self.hass, CAMERAS_FOUND) + "\n\n" + "\n".join(f"- {name}" for name in found)
@@ -465,7 +530,7 @@ class CameraAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_import(self, import_data: dict[str, Any]) -> ConfigFlowResult:
         """A camera found with automatic discovery on, so set up without asking"""
         # a discovery of the same camera may be waiting, and goes once this entry exists
-        await self.async_set_unique_id(import_data[CONF_DEVICE_ID], raise_on_progress=False)
+        await self.async_set_unique_id(_unique_id(import_data), raise_on_progress=False)
         self._abort_if_unique_id_configured()
         return self.async_create_entry(
             title=import_data[CONF_NAME], data={k: v for k, v in import_data.items() if k in ENTRY_DATA}
@@ -474,7 +539,7 @@ class CameraAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_integration_discovery(self, discovery_info: dict[str, Any]) -> ConfigFlowResult:
         """A camera found with automatic discovery off, or a zone, so offered to be added"""
         self._found = dict(discovery_info)
-        await self.async_set_unique_id(discovery_info[CONF_DEVICE_ID])
+        await self.async_set_unique_id(_unique_id(discovery_info))
         self._abort_if_unique_id_configured()
         self.context["title_placeholders"] = {"name": discovery_info[CONF_NAME]}
         return await self.async_step_confirm()
@@ -501,7 +566,38 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if self.config_entry.data.get(CONF_TYPE) == TYPE_DISCOVERY:
             return await self.async_step_discovery()
+        if self.config_entry.data.get(CONF_TYPE) == TYPE_ANPR:
+            return await self.async_step_anpr()
         return await self.async_step_settings()
+
+    async def async_step_anpr(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """An anpr2mqtt entry's settings, saying which camera is linked, as found by itself"""
+        if user_input is not None:
+            settings = {
+                key: value
+                for key, value in flattened(user_input).items()
+                if (value or value is False or value == 0) and value != ANPR_DEFAULTS.get(key)
+            }
+            return self.async_create_entry(data=settings)
+        schema = await anpr_schema(self.hass)
+        await async_load_texts(self.hass)
+        found = AnprNotifier(self.hass, self.config_entry)
+        sensor = sensor_entity(self.hass, self.config_entry)
+        state = self.hass.states.get(sensor.entity_id) if sensor is not None else None
+        sighting = Sighting.from_state(state) if state is not None else Sighting("")
+        camera = find_linked_camera(self.hass, sensor, sighting.linked_cameras, sighting.camera)
+        linked = (
+            text(self.hass, ANPR_LINKED, camera=found.where(sighting, camera)) if camera else text(self.hass, ANPR_UNLINKED)
+        )
+        return self.async_show_form(
+            step_id=STEP_ANPR,
+            data_schema=self.add_suggested_values_to_schema(schema, sectioned(schema, dict(self.config_entry.options))),
+            description_placeholders={
+                "name": self.config_entry.title,
+                "supernotify": await supernotify_status(self.hass),
+                "linked": linked,
+            },
+        )
 
     async def async_step_discovery(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None and not self._undeliverable_warned and await self._summary_undeliverable(user_input):

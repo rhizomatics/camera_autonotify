@@ -23,6 +23,32 @@ SOURCE_FRIGATE: Final[str] = "frigate"
 CONF_SOURCE_ENTRY_ID: Final[str] = "source_entry_id"
 CONF_SOURCE_NAME: Final[str] = "source_name"
 
+# number plates read by anpr2mqtt, one entry for each of its cameras and events, its sensor by its unique id as the
+# source name, and the MQTT entry as the source entry
+TYPE_ANPR: Final[str] = "anpr"
+SOURCE_ANPR2MQTT: Final[str] = "anpr2mqtt"
+# the camera of a primary integration, such as Frigate, that sees what anpr2mqtt reads plates from, chosen by itself
+# unless set
+CONF_LINKED_CAMERA_AUTO: Final[str] = "linked_camera_auto"
+CONF_LINKED_CAMERA: Final[str] = "linked_camera"
+# each kind of vehicle, with a priority or no delivery, and its own Supernotify scenarios
+KIND_DANGEROUS: Final[str] = "dangerous"
+KIND_UNKNOWN: Final[str] = "unknown"
+KIND_KNOWN: Final[str] = "known"
+KIND_IGNORED: Final[str] = "ignored"
+KINDS: Final[tuple[str, ...]] = (KIND_DANGEROUS, KIND_UNKNOWN, KIND_KNOWN, KIND_IGNORED)
+CONF_KIND_PRIORITIES: Final[dict[str, str]] = {kind: f"priority_{kind}" for kind in KINDS}
+CONF_KIND_SCENARIOS: Final[dict[str, str]] = {kind: f"scenarios_{kind}" for kind in KINDS}
+# beyond the priorities, the priority anpr2mqtt gives the vehicle's target or group, or no delivery at all
+VEHICLE_PRIORITY_SOURCE: Final[str] = "anpr2mqtt"
+VEHICLE_NO_DELIVERY: Final[str] = "none"
+VEHICLE_PRIORITY_DEFAULTS: Final[dict[str, str]] = {
+    KIND_DANGEROUS: "critical",
+    KIND_UNKNOWN: "high",
+    KIND_KNOWN: VEHICLE_PRIORITY_SOURCE,
+    KIND_IGNORED: VEHICLE_NO_DELIVERY,
+}
+
 # the filters and timing of a camera or zone, named as the tracker's settings
 CONF_SEVERITIES: Final[str] = "severities"
 CONF_LABELS: Final[str] = "labels"

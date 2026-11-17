@@ -25,8 +25,5 @@ See [RFCs](rfcs/index.md)
     - Pass RFC 0004's facts on to Supernotify as data, in Camera AutoNotify's own schema, once Supernotify has a field that isn't passed on to transports (as `source`, Supernotify #293)
     - An update of its own when a plate is read, or a face isn't recognised, rather than only in the notifications sent anyway
     - PTZ: the integration's `frigate.ptz` as an action, moving a camera to a preset, and `async_get_ptz_info` for the preset names. Left out of RFC 0004 until someone asks
-- Once Supernotify v2.19.0 ships (its #331, built but not yet released), and gated on the installed Supernotify version, with a plain string kept for older ones:
-    - send the animated preview with the snapshot behind it, as `snapshot_url: [{url: ..._preview.gif, reprocess: never}, ...snapshot.jpg?bbox=1]`, so a GIF Frigate can't make falls back to the snapshot in e-mail and other deliveries Supernotify fetches for
-    - send `help_url` as the camera's or zone's settings page, so an image that can't be fetched raises one Home Assistant repair linking there, rather than only a warning in the log
-    - from that version Supernotify snaps `camera_entity_id`, which is always sent, when every URL fails, even a single one, where before the camera was ignored once `snapshot_url` was set. So a notification whose image can't be fetched shows the camera's live view instead of nothing, as How It Works now says, since the live view isn't the event
+- Supernotify v2.19.0's fallback URLs and help link are used from 0.11.0. Left:
     - once Supernotify's "Image Notes" is scheduled (on its roadmap, not in v2.19.0, to be designed first, likely as template variables for the image's source and a note, so it works with templates, plain e-mail and every transport), pass what it then needs, possibly the event's time, and drop the caveat from How It Works. Don't send `event_time` before then
