@@ -6,6 +6,16 @@ title: What's New
 
 > Camera Autonotify was first released in October 2026 with support only for Frigate notifications. Its intended to be a `1.0.0` release by the end of 2026, with [ANPR2MQTT](https://anpr2mqtt.rhizomatics.org.uk) as the second integration. Ideas, improvements and other feedback very welcome - use the [Github Issues](https://github.com/rhizomatics/camera_autonotify/issues) to add them.
 
+# 0.11.1
+## ✨ Enhancements
+- Speeds are said in km/h or mph by *Speed unit* in *Global Settings*, automatically mph where roads are signed in it, by Home Assistant's country, such as the UK and US, or where its units aren't metric, rather than in whatever unit Frigate uses
+## 🐞 Fixes
+- The linked camera of an anpr2mqtt camera is only ever one of Frigate's, or UniFi Protect's, Viseron's or Blue Iris's, so anpr2mqtt's own camera, or the same camera by ONVIF, no longer stops it being found by itself, and the settings only offer those
+## 📚 Documentation
+- How to switch off the Frigate camera's notification of a car that anpr2mqtt also notifies, to avoid duplicates
+- [RFC0003 - ANPR2MQTT Integration](./developer/design/rfcs/rfc0003_anpr2mqtt.md) updated: Frigate's plates looked up with the DVLA directly, with other countries' registers to follow, and vehicles registered here, with categories, corrections, ignores, visit history and a *Known vehicle* button
+- [RFC0005 - Rules](./developer/design/rfcs/rfc0005_rules.md) updated with rules for known, dangerous, unknown and ignored vehicles
+
 # 0.11.0
 ## ✨ Enhancements
 ### Number Plates from anpr2mqtt, Early Access
@@ -13,12 +23,10 @@ title: What's New
 - Each anpr2mqtt camera, from anpr2mqtt 1.3.0, found and set up like a Frigate camera, with or without Frigate
 - A new plate notified as anpr2mqtt describes the vehicle, with the plate, the sightings before and the DVLA's details, not the same plate again in the same visit, nor a republished sighting
 - Images that work away from home, by Frigate's notification proxy or anpr2mqtt's image entity
-- A linked camera, of Frigate, UniFi Protect, Viseron or Blue Iris, never anpr2mqtt's own nor one by ONVIF, found from anpr2mqtt's `linked_cameras`, its area or its name, or chosen
+- A linked camera, found from anpr2mqtt's `linked_cameras`, its area or its name, or chosen
 - A priority, or no notification, and Supernotify scenarios, for each kind of vehicle: dangerous, unknown, known and ignored
 - anpr2mqtt going unavailable notified, and coming back
 - Not yet: joining a plate to the Frigate review of the same car, nor anpr2mqtt's other kinds of detection, such as faces or lines crossed
-### Speed Unit
-- Speeds are said in km/h or mph by *Speed unit* in *Global Settings*, automatically mph where roads are signed in it, by Home Assistant's country, such as the UK and US, or where its units aren't metric, rather than in whatever unit Frigate uses
 ### Supernotify Images
 - With Supernotify v2.19.0 or later:
   - the animated preview goes with the camera's still image behind it, tried in turn, so in e-mail and the other deliveries Supernotify fetches the image for, a preview Frigate can't make is replaced by the still image of the event, rather than no picture
