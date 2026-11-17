@@ -37,8 +37,8 @@ CONF_TIMEOUT: Final[str] = "timeout"
 CONF_ALERT_ONCE: Final[str] = "alert_once"
 CONF_UPDATE_SUB_LABEL: Final[str] = "update_sub_label"
 # the image of each notification, served by Frigate through the Frigate integration's notification proxy, the snapshot
-# to begin with, which Frigate can draw the object's box on, or crop to the object, or else the smaller thumbnail, or an
-# animated preview made from the recordings
+# with the object's box drawn on by Frigate to begin with, or the whole snapshot, or cropped to the object, or else the
+# smaller thumbnail, or an animated preview made from the recordings
 CONF_IMAGE: Final[str] = "image"
 IMAGE_SNAPSHOT: Final[str] = "snapshot"
 IMAGE_SNAPSHOT_BOX: Final[str] = "snapshot_box"
@@ -52,6 +52,13 @@ IMAGES: Final[tuple[str, ...]] = (
     IMAGE_THUMBNAIL,
     IMAGE_PREVIEW,
 )
+DEFAULT_IMAGE: Final[str] = IMAGE_SNAPSHOT_BOX
+# the image of what Frigate's GenAI adds, set in the global settings, the animated preview to begin with, being what
+# GenAI looked at, and for each camera or zone, as the global settings unless chosen
+CONF_GENAI_IMAGE: Final[str] = "genai_image"
+DEFAULT_GENAI_IMAGE: Final[str] = IMAGE_PREVIEW
+GENAI_IMAGE_GLOBAL: Final[str] = "global"
+GENAI_IMAGES: Final[tuple[str, ...]] = (GENAI_IMAGE_GLOBAL, *IMAGES)
 SEVERITIES: Final[tuple[str, ...]] = ("alert", "detection")
 # what Frigate's generative AI adds, the review summaries and object descriptions, named as the tracker's settings
 CONF_SUMMARIES: Final[str] = "summaries"
@@ -93,6 +100,10 @@ CONF_SUMMARY_TIME: Final[str] = "summary_time"
 CONF_SUMMARY_INTERVAL: Final[str] = "summary_interval"
 CONF_SUMMARY_CONCERNS: Final[str] = "summary_concerns_only"
 CONF_SUMMARY_DELIVERIES: Final[str] = "summary_deliveries"
+# how many more times Frigate is asked for a report it failed to make, before its failure is notified
+CONF_SUMMARY_RETRIES: Final[str] = "summary_retries"
+DEFAULT_SUMMARY_RETRIES: Final[int] = 3
+MAX_SUMMARY_RETRIES: Final[int] = 10
 SUMMARY_AUTO: Final[str] = "auto"
 SUMMARY_ON: Final[str] = "on"
 SUMMARY_OFF: Final[str] = "off"

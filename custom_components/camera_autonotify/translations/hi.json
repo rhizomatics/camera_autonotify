@@ -32,12 +32,14 @@
                 "data": {
                     "auto_discover": "कैमरे अपने-आप सेट अप करें",
                     "discover_zones": "ज़ोन भी खोजें",
-                    "object_names": "वस्तुओं के नाम"
+                    "object_names": "वस्तुओं के नाम",
+                    "genai_image": "GenAI छवि"
                 },
                 "data_description": {
                     "auto_discover": "हर Frigate कैमरा मिलते ही जोड़ें। बंद करने पर हर कैमरा अलग से पेश किया जाएगा",
                     "discover_zones": "हर Frigate ज़ोन को कैमरे की तरह पेश करें, केवल उसी ज़ोन की सूचनाओं के लिए",
-                    "object_names": "हर सूचना में Frigate की हर वस्तु को क्या कहा जाए, जैसे car को वाहन, या कोई अनुवाद। जिन वस्तुओं का नाम यहाँ नहीं दिया गया, उन्हें Frigate के नाम से ही कहा जाता है।"
+                    "object_names": "हर सूचना में Frigate की हर वस्तु को क्या कहा जाए, जैसे car को वाहन, या कोई अनुवाद। जिन वस्तुओं का नाम यहाँ नहीं दिया गया, उन्हें Frigate के नाम से ही कहा जाता है।",
+                    "genai_image": "Frigate की GenAI जो जोड़ती है, समीक्षा सारांश या वस्तु विवरण, उसकी छवि, हर उस कैमरे और ज़ोन के लिए जो अपनी नहीं चुनता। एनिमेटेड प्रीव्यू वही दिखाता है जो GenAI ने देखा, जहाँ कैमरा रिकॉर्ड करता है, नहीं तो कैमरे की अपनी छवि।"
                 },
                 "sections": {
                     "health": {
@@ -64,14 +66,16 @@
                             "summary_interval": "कितनी बार",
                             "summary_time": "शुरुआत का समय",
                             "summary_concerns_only": "केवल चिंता की बात होने पर",
-                            "summary_deliveries": "डिलीवरी"
+                            "summary_deliveries": "डिलीवरी",
+                            "summary_retries": "पुनः प्रयास"
                         },
                         "data_description": {
                             "summary_mode": "स्वचालित तब भेजता है जब Frigate किसी भी कैमरे के लिए GenAI समीक्षा सारांश बनाता है।",
                             "summary_interval": "हर रिपोर्ट पिछली रिपोर्ट के बाद से, भेजे जाने वाले घंटे तक के घंटों को कवर करती है।",
                             "summary_time": "दिन की पहली रिपोर्ट कब भेजी जाए, और बाकी उसके बाद हर इतने घंटों में।",
                             "summary_concerns_only": "Frigate से रिपोर्ट हर बार माँगी जाती है, पर भेजी तभी जाती है जब GenAI ने उन घंटों की किसी समीक्षा को संदिग्ध या गंभीर आँका हो, या अन्य चिंताएँ बताई हों।",
-                            "summary_deliveries": "डिफ़ॉल्ट रूप से Supernotify की 'email' डिलीवरी का उपयोग होता है; एक या अधिक अन्य डिलीवरी चुनने के लिए बदलें, जैसे Telegram या File Notify एंटिटी। खाली छोड़ने पर और Supernotify में ई-मेल डिलीवरी न होने पर, रिपोर्ट बिल्कुल नहीं भेजी जातीं।"
+                            "summary_deliveries": "डिफ़ॉल्ट रूप से Supernotify की 'email' डिलीवरी का उपयोग होता है; एक या अधिक अन्य डिलीवरी चुनने के लिए बदलें, जैसे Telegram या File Notify एंटिटी। खाली छोड़ने पर और Supernotify में ई-मेल डिलीवरी न होने पर, रिपोर्ट बिल्कुल नहीं भेजी जातीं।",
+                            "summary_retries": "जो रिपोर्ट Frigate नहीं लिख सका, उसे कितनी बार और माँगा जाए, हर बार पंद्रह मिनट के अंतर पर। फिर भी विफल होने पर, एक सूचना यह बताती है, पता हो तो कारण, और कहाँ देखें।"
                         }
                     },
                     "summary_unavailable": {
@@ -137,7 +141,8 @@
                             "priority_critical": "गंभीर प्राथमिकता",
                             "descriptions": "वस्तु विवरण",
                             "unreviewed_descriptions": "बिना समीक्षा के विवरण",
-                            "genai_wait": "GenAI की प्रतीक्षा करें"
+                            "genai_wait": "GenAI की प्रतीक्षा करें",
+                            "genai_image": "GenAI छवि"
                         },
                         "data_description": {
                             "summaries": "समीक्षा समाप्त होने पर, अगर Frigate की GenAI सारांश बनाती है, तो सूचना को Frigate के शीर्षक और सारांश से अपडेट करें।",
@@ -147,7 +152,8 @@
                             "priority_critical": "ख़तरा स्तर 2 वाले सारांश की प्राथमिकता।",
                             "descriptions": "समीक्षा में हर वस्तु के Frigate के विवरण से सूचना को अपडेट करें।",
                             "unreviewed_descriptions": "उन वस्तुओं के विवरणों की भी सूचना दें जिनकी Frigate ने समीक्षा नहीं बनाई, जैसे वे जो अलर्ट के लिए ज़रूरी ज़ोन से बाहर हों।",
-                            "genai_wait": "समीक्षा समाप्त होने के बाद GenAI जो जोड़े उसके लिए उसे कितनी देर रखा जाए, और किसी विवरण को उसकी समीक्षा के लिए।"
+                            "genai_wait": "समीक्षा समाप्त होने के बाद GenAI जो जोड़े उसके लिए उसे कितनी देर रखा जाए, और किसी विवरण को उसकी समीक्षा के लिए।",
+                            "genai_image": "इस कैमरे या ज़ोन के लिए GenAI जो जोड़ती है उसकी छवि, वैश्विक सेटिंग्स वाली के बजाय।"
                         }
                     },
                     "notify": {
@@ -230,6 +236,16 @@
             "fields": {
                 "object": "वस्तु",
                 "name": "नाम"
+            }
+        },
+        "genai_image": {
+            "options": {
+                "global": "वैश्विक सेटिंग्स के अनुसार",
+                "snapshot": "स्नैपशॉट",
+                "snapshot_box": "वस्तु के बॉक्स के साथ स्नैपशॉट",
+                "snapshot_crop": "वस्तु तक काटा गया स्नैपशॉट",
+                "thumbnail": "थंबनेल",
+                "preview": "एनिमेटेड प्रीव्यू (GIF)"
             }
         }
     },
@@ -317,6 +333,14 @@
         "summary_server_title": "{server} से Frigate रिपोर्ट: {period}",
         "summary_no_activity": "इन घंटों में GenAI ने किसी गतिविधि का सारांश नहीं बनाया।",
         "summary_no_concerns": "इन घंटों में चिंता की कोई बात नहीं मिली।",
+        "summary_failed_title": "{period} की Frigate रिपोर्ट विफल",
+        "summary_failed": "Frigate {server} {attempts} प्रयासों के बाद भी रिपोर्ट नहीं लिख सका। {reason}\n\nHome Assistant के लॉग: {logs}\nFrigate इंटीग्रेशन, उसका डायग्नोस्टिक्स डाउनलोड करने के लिए: {diagnostics}\nFrigate की GenAI समस्या निवारण: {help}",
+        "summary_failed_timeout": "Frigate ने Frigate इंटीग्रेशन द्वारा दिए गए 60 सेकंड में जवाब नहीं दिया, जो तब हो सकता है जब उसका GenAI प्रदाता धीमा हो, या उन घंटों में बहुत सी समीक्षाएँ हों।",
+        "summary_failed_unreachable": "Frigate से संपर्क नहीं हो सका।",
+        "summary_failed_auth": "Frigate ने Frigate इंटीग्रेशन का लॉगिन अस्वीकार कर दिया।",
+        "summary_failed_status": "Frigate ने एक त्रुटि के साथ जवाब दिया, {status}। Frigate के अपने लॉग कारण बताते हैं, जैसे उसके GenAI प्रदाता की विफलता, या कोई सीमा पूरी होना।",
+        "summary_failed_none": "Frigate ने बिना रिपोर्ट के जवाब दिया: {message}",
+        "summary_failed_other": "त्रुटि थी: {error}",
         "period_to_midnight": "{day}, {start} से आधी रात तक",
         "period_same_day": "{day}, {start} से {end} तक",
         "period_days": "{start_day} {start} से {end_day} {end} तक",

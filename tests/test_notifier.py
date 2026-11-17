@@ -13,6 +13,7 @@ from homeassistant.helpers import entity_registry as er
 from custom_components.camera_autonotify.const import (
     CONF_CUSTOM_TARGET,
     CONF_DELIVERIES,
+    CONF_GENAI_IMAGE,
     CONF_IMAGE,
     CONF_SOURCE_ENTRY_ID,
     CONF_SOURCE_NAME,
@@ -78,7 +79,8 @@ async def test_new_alert(hass: HomeAssistant, external_url: None):
         "extra_data": {"mobile_push_notification_tag": f"frigate_{REVIEW_ID}", "group": "frigate_courtyard"},
         "media": {
             "camera_entity_id": "camera.courtyard",
-            "snapshot_url": f"{BASE}/api/frigate/notifications/{DETECTION}/snapshot.jpg",
+            # the snapshot with the object's box, to begin with
+            "snapshot_url": f"{BASE}/api/frigate/notifications/{DETECTION}/snapshot.jpg?bbox=1",
         },
         "actions": [
             {"level": "notification", "uri": f"{BASE}/api/frigate/notifications/{DETECTION}/courtyard/master.m3u8"},
@@ -118,7 +120,7 @@ async def test_links_to_its_own_server(hass: HomeAssistant, external_url: None):
     add_frigate(hass, client_id="house")
     add_frigate(hass, cameras={}, entry_id="02FRIGATE", client_id="barn")
     data = notifier(hass).supernotify_data(decision())
-    assert data["media"]["snapshot_url"] == f"{BASE}/api/frigate/house/notifications/{DETECTION}/snapshot.jpg"
+    assert data["media"]["snapshot_url"] == f"{BASE}/api/frigate/house/notifications/{DETECTION}/snapshot.jpg?bbox=1"
     assert data["actions"][0]["uri"] == f"{BASE}/api/frigate/house/notifications/{DETECTION}/courtyard/master.m3u8"
 
 
@@ -332,7 +334,7 @@ async def test_description_by_itself_tagged_by_object(hass: HomeAssistant, exter
     data = notifier(hass).supernotify_data(described("A person", tag_id="object-1"))
     assert data["extra_data"]["mobile_push_notification_tag"] == "frigate_object-1"
     # the snapshot of the object described
-    assert data["media"]["snapshot_url"] == f"{BASE}/api/frigate/notifications/object-1/snapshot.jpg"
+    assert data["media"]["snapshot_url"] == f"{BASE}/api/frigate/notifications/object-1/snapshot.jpg?bbox=1"
 
 
 async def test_silenced(hass: HomeAssistant):
@@ -364,13 +366,13 @@ async def test_unusable_rule_left_out(hass: HomeAssistant):
     ("record", "reason", "previous", "image"),
     [
         # the first notification, before Frigate may have any frames of the event
-        (True, Reason.NEW, 0, "snapshot.jpg"),
+        (True, Reason.NEW, 0, "snapshot.jpg?bbox=1"),
         # an update, or the last when it's over, by when it has
         (True, Reason.NEW, 1, "event_preview.gif"),
         (True, Reason.FINAL, 2, "event_preview.gif"),
         # never for a camera Frigate doesn't record, having no frames to make it from
-        (False, Reason.NEW, 1, "snapshot.jpg"),
-        (False, Reason.FINAL, 2, "snapshot.jpg"),
+        (False, Reason.NEW, 1, "snapshot.jpg?bbox=1"),
+        (False, Reason.FINAL, 2, "snapshot.jpg?bbox=1"),
     ],
 )
 async def test_preview_falls_back_to_snapshot(
@@ -386,4 +388,35 @@ async def test_preview_falls_back_to_snapshot(
 async def test_preview_without_frigate_config(hass: HomeAssistant, external_url: None):
     """Frigate's config not read yet, so not known to record"""
     data = notifier(hass, options={CONF_IMAGE: "preview"}).supernotify_data(decision(Reason.NEW, 1))
-    assert data["media"]["snapshot_url"].endswith("/snapshot.jpg")
+    assert data["media"]["snapshot_url"].endswith("/snapshot.jpg?bbox=1")
+
+
+def global_image(hass: HomeAssistant, image: str) -> None:
+    MockConfigEntry(domain=DOMAIN, data={CONF_TYPE: TYPE_DISCOVERY}, options={CONF_GENAI_IMAGE: image}).add_to_hass(hass)
+
+
+@pytest.mark.parametrize("reason", [Reason.SUMMARY, Reason.DESCRIPTION])
+async def test_genai_preview_to_begin_with(hass: HomeAssistant, reason: Reason):
+    """What GenAI adds shows the animated preview, even as the first notification, GenAI only adding to an event
+    Frigate has frames of, while the review itself has the snapshot with its box"""
+    add_frigate(hass, record=True)
+    assert notifier(hass).image(decision(reason)) == "preview"
+    assert notifier(hass).image(decision(Reason.NEW)) == "snapshot_box"
+
+
+async def test_genai_falls_back_to_own_image(hass: HomeAssistant):
+    """Without recordings, the camera's own image, as chosen"""
+    add_frigate(hass, record=False)
+    assert notifier(hass).image(decision(Reason.SUMMARY)) == "snapshot_box"
+    assert notifier(hass, options={CONF_IMAGE: "thumbnail"}).image(decision(Reason.SUMMARY)) == "thumbnail"
+    assert notifier(hass, options={CONF_IMAGE: "preview"}).image(decision(Reason.SUMMARY)) == "snapshot_box"
+
+
+async def test_genai_image_global_then_camera(hass: HomeAssistant):
+    add_frigate(hass, record=True)
+    global_image(hass, "snapshot_crop")
+    assert notifier(hass).image(decision(Reason.SUMMARY)) == "snapshot_crop"
+    assert notifier(hass, options={CONF_GENAI_IMAGE: "global"}).image(decision(Reason.SUMMARY)) == "snapshot_crop"
+    assert notifier(hass, options={CONF_GENAI_IMAGE: "preview"}).image(decision(Reason.SUMMARY)) == "preview"
+    # the camera's choice for what GenAI adds leaves its other notifications as they are
+    assert notifier(hass, options={CONF_GENAI_IMAGE: "thumbnail"}).image(decision(Reason.NEW)) == "snapshot_box"

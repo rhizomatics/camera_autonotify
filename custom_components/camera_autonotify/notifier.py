@@ -14,6 +14,7 @@ from homeassistant.helpers import entity_registry as er
 from .const import (
     CONF_CUSTOM_TARGET,
     CONF_DELIVERIES,
+    CONF_GENAI_IMAGE,
     CONF_IMAGE,
     CONF_OBJECT,
     CONF_OBJECT_NAMES,
@@ -21,9 +22,11 @@ from .const import (
     CONF_TARGET,
     CONF_TARGETS,
     CONF_THREAT_PRIORITIES,
+    DEFAULT_GENAI_IMAGE,
+    DEFAULT_IMAGE,
     DOMAIN,
+    GENAI_IMAGE_GLOBAL,
     IMAGE_PREVIEW,
-    IMAGE_SNAPSHOT,
     SUBENTRY_RULE,
     SUPERNOTIFY_DOMAIN,
     THREAT_PRIORITY_DEFAULTS,
@@ -50,6 +53,7 @@ from .texts import (
     async_load_texts,
     text,
 )
+from .tracker import Reason
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -235,16 +239,29 @@ class Notifier:
             return PRIORITY_SILENT
         return priority
 
-    def image(self, decision: Decision) -> str | None:
-        """The image chosen, except the animated preview falls back to the snapshot where Frigate can't make it yet:
-        for a camera that doesn't record, since it's made from the frames kept for the recordings, and for the first
-        notification, which may come before Frigate has any frames of the event. An update takes the first
-        notification's place, so the preview follows as soon as there's one"""
-        image: str | None = self.entry.options.get(CONF_IMAGE)
+    def image(self, decision: Decision) -> str:
+        """The image chosen, the GenAI image for what GenAI adds, except the animated preview falls back to the
+        camera's own image, or the snapshot with its box, where Frigate can't make it yet: for a camera that doesn't
+        record, since it's made from the frames kept for the recordings, and for the first notification of a review,
+        which may come before Frigate has any frames of the event. An update takes the first notification's place, so
+        the preview follows as soon as there's one, and GenAI only adds to an event Frigate has frames of"""
+        own: str = self.entry.options.get(CONF_IMAGE) or DEFAULT_IMAGE
+        genai = decision.reason in (Reason.SUMMARY, Reason.DESCRIPTION)
+        image = self.genai_image() if genai else own
         if image != IMAGE_PREVIEW:
             return image
         records = camera_records(frigate_config(self.hass, self.source_entry_id), decision.review.camera)
-        return image if records and decision.is_update else IMAGE_SNAPSHOT
+        if records and (genai or decision.is_update):
+            return image
+        return own if own != IMAGE_PREVIEW else DEFAULT_IMAGE
+
+    def genai_image(self) -> str:
+        """The camera's own image for what GenAI adds, or else the global settings'"""
+        chosen: str | None = self.entry.options.get(CONF_GENAI_IMAGE)
+        if chosen and chosen != GENAI_IMAGE_GLOBAL:
+            return chosen
+        entry = global_settings(self.hass)
+        return (entry.options.get(CONF_GENAI_IMAGE) if entry else None) or DEFAULT_GENAI_IMAGE
 
     def supernotify_data(self, decision: Decision, ruled: tuple[str, Outcome] | None = None) -> dict[str, Any]:
         """The `supernotify.notify` call: the snapshot, tapped for the clip as HLS, and never `clip_url`, which iOS

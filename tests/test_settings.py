@@ -189,6 +189,7 @@ async def test_genai_settings(hass: HomeAssistant):
         "genai.descriptions",
         "genai.unreviewed_descriptions",
         "genai.genai_wait",
+        "genai.genai_image",
     ]
     # a zone can't tell which descriptions are of it, without a review
     zone = [name for name in fields_of(await open_settings(hass, "Pend")) if name.startswith("genai.")]

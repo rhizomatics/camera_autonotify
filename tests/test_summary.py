@@ -4,12 +4,14 @@ from datetime import date, datetime
 from typing import Any
 from unittest.mock import AsyncMock
 
+import aiohttp
 import pytest
 from freezegun.api import FrozenDateTimeFactory
 from homeassistant import config_entries
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import CONF_TYPE
 from homeassistant.core import HomeAssistant, SupportsResponse
+from homeassistant.core_config import async_process_ha_core_config
 from homeassistant.util import dt as dt_util
 
 from custom_components.camera_autonotify.const import (
@@ -19,13 +21,14 @@ from custom_components.camera_autonotify.const import (
     CONF_SUMMARY_DELIVERIES,
     CONF_SUMMARY_INTERVAL,
     CONF_SUMMARY_MODE,
+    CONF_SUMMARY_RETRIES,
     CONF_SUMMARY_TIME,
     DISCOVERY_TITLE,
     DOMAIN,
     TYPE_DISCOVERY,
 )
 from custom_components.camera_autonotify.frigate import concerning
-from custom_components.camera_autonotify.summary import SummarySettings, said_period, summary_text
+from custom_components.camera_autonotify.summary import SummarySettings, failure, said_period, summary_text
 from custom_components.camera_autonotify.texts import async_load_texts, said_day
 from tests.ha_testing import MockConfigEntry, async_fire_time_changed, async_mock_service
 
@@ -507,3 +510,103 @@ async def test_summary_by_one_email_delivery(
     summary = next(field for key, field in result["data_schema"].schema.items() if str(key) == "summary")
     suggested = {str(key): (key.description or {}).get("suggested_value") for key in summary.schema.schema}
     assert suggested[CONF_SUMMARY_DELIVERIES] == chosen
+
+
+def failing(cause: BaseException | None = None, message: str = "") -> Exception:
+    """An error as the Frigate integration's client raises it, mostly with nothing to say itself, from its cause"""
+    error = Exception(message)
+    error.__cause__ = cause
+    return error
+
+
+async def test_summary_retried_until_made(hass: HomeAssistant, freezer: FrozenDateTimeFactory):
+    client = loaded_frigate(hass)
+    made = {"success": True, "summary": SUMMARY}
+    client.async_review_summarize.side_effect = [failing(TimeoutError()), {"success": False}, made]
+    calls = mock_supernotify(hass)
+    await set_up(hass)
+    await at(hass, freezer, "2026-11-11 00:05:00")
+    assert calls == []
+    # a quarter of an hour apart, and the same hours each time
+    await at(hass, freezer, "2026-11-11 00:20:00")
+    assert calls == []
+    await at(hass, freezer, "2026-11-11 00:35:00")
+    assert [call.data["message"] for call in calls] == [SUMMARY]
+    assert len({call.args for call in client.async_review_summarize.await_args_list}) == 1
+    await at(hass, freezer, "2026-11-11 01:35:00")
+    assert client.async_review_summarize.await_count == 3
+
+
+async def test_summary_failure_notified(hass: HomeAssistant, freezer: FrozenDateTimeFactory):
+    client = loaded_frigate(hass)
+    client.async_review_summarize.side_effect = failing(TimeoutError())
+    calls = mock_supernotify(hass)
+    await async_process_ha_core_config(hass, {"external_url": "https://example.ui.nabu.casa"})
+    # sent even when only concerns are, a failed summary not saying there were none
+    await set_up(hass, **{CONF_SUMMARY_CONCERNS: True})
+    # the first try, and 3 more a quarter of an hour apart
+    for when in ("00:05", "00:20", "00:35"):
+        await at(hass, freezer, f"2026-11-11 {when}:00")
+        assert calls == []
+    await at(hass, freezer, "2026-11-11 00:50:00")
+    assert client.async_review_summarize.await_count == 4
+    assert [call.data["title"] for call in calls] == ["Frigate report for Tuesday 10 November failed"]
+    message = calls[0].data["message"]
+    assert message.startswith("Frigate frigate:5000 couldn't write the report after 4 tries. Frigate didn't answer")
+    assert "https://example.ui.nabu.casa/config/logs" in message
+    assert "https://example.ui.nabu.casa/config/integrations/integration/frigate" in message
+    assert "https://docs.frigate.video/configuration/genai/genai_config#how-do-i-debug-genai-issues" in message
+    assert calls[0].data["delivery"] == ["email"]
+    # and no more
+    await at(hass, freezer, "2026-11-11 02:05:00")
+    assert len(calls) == 1
+
+
+async def test_summary_failure_without_retries(hass: HomeAssistant, freezer: FrozenDateTimeFactory):
+    client = loaded_frigate(hass)
+    client.async_review_summarize.return_value = {"success": False, "message": "Failed to create summary."}
+    calls = mock_supernotify(hass)
+    await set_up(hass, **{CONF_SUMMARY_RETRIES: 0})
+    await at(hass, freezer, "2026-11-11 00:05:00")
+    assert "Frigate answered without a report: Failed to create summary." in calls[0].data["message"]
+
+
+async def test_summary_retry_stopped_on_unload(hass: HomeAssistant, freezer: FrozenDateTimeFactory):
+    client = loaded_frigate(hass)
+    client.async_review_summarize.side_effect = failing(TimeoutError())
+    mock_supernotify(hass)
+    entry = await set_up(hass)
+    await at(hass, freezer, "2026-11-11 00:05:00")
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    await at(hass, freezer, "2026-11-11 00:20:00")
+    assert client.async_review_summarize.await_count == 1
+
+
+class Refused(Exception):
+    status = 403
+
+
+class Failed(Exception):
+    status = 500
+
+
+@pytest.mark.parametrize(
+    ("error", "said"),
+    [
+        (failing(TimeoutError()), "Frigate didn't answer within the 60 seconds"),
+        (failing(aiohttp.ClientConnectionError()), "Frigate couldn't be reached."),
+        (failing(Refused()), "Frigate refused the Frigate integration's login."),
+        (failing(Failed()), "Frigate answered with an error, 500. Frigate's own logs say why"),
+        (failing(None, "429 RESOURCE_EXHAUSTED"), "The error was: 429 RESOURCE_EXHAUSTED"),
+        (failing(KeyError()), "The error was: KeyError"),
+    ],
+)
+async def test_failure_explained(hass: HomeAssistant, error: Exception, said: str):
+    await async_load_texts(hass)
+    assert failure(hass, error).startswith(said)
+
+
+def test_retries_from_options():
+    assert SummarySettings.from_options({CONF_SUMMARY_RETRIES: 2}).retries == 2
+    assert SummarySettings.from_options({CONF_SUMMARY_RETRIES: 99}).retries == 10
+    assert SummarySettings.from_options({CONF_SUMMARY_RETRIES: "many"}).retries == 3

@@ -63,6 +63,15 @@ upper case, one of NO RISK, LOW RISK, MEDIUM RISK, HIGH RISK or CRITICAL RISK. K
 behavior, and potential intent of the {label}, rather than just describing its appearance.
 ```
 
+## The Image
+
+What GenAI adds, a review summary or an object description, has its own image, the *GenAI image* in *Global
+Settings*, which each camera or zone can change in its *GenAI* settings. It's Frigate's animated GIF preview to begin
+with, of the first 20 seconds of the event, the same GIF Frigate's own review shows, so the notification shows what
+GenAI looked at. The preview has no bounding box or crop, and is made from the camera's recordings, so for a camera
+Frigate doesn't record, the camera's own *Image* is shown instead. The camera's own *Image* is still used for the
+review's first notification and its other updates, the snapshot with the object's bounding box to begin with.
+
 ## Periodic Reports
 
 Frigate's GenAI can also write a report of everything its cameras saw over a period, from the reviews in it, as the
@@ -83,6 +92,7 @@ It's in the *Frigate GenAI Periodic Report* section of *Global Settings*:
 | How often | Once a day | Every 1, 2, 3, 4, 6, 8 or 12 hours, or once a day. Each report covers the hours since the one before, up to the hour it's sent in |
 | Starting at | 00:05 | When the first of the day is sent, and the others every so many hours from it |
 | Only when there's a concern | Off | Only send it when GenAI gave one of the reviews in those hours a threat level of suspicious or critical, or noted other concerns |
+| Retries | 3 | How many more times Frigate is asked for a report it failed to write, a quarter of an hour apart |
 | Deliveries | Supernotify's e-mail delivery | Choose others to send it by instead, such as Telegram. Left empty, it goes by Supernotify's e-mail delivery, the one called `email` if there's more than one, such as one for HTML too, so it's only sent once, and isn't sent at all if Supernotify has none, which Global Settings warns of when saved |
 
 Frigate is asked for the report every time it's due, whatever reviews came over MQTT. Whether it's then sent, with
@@ -92,6 +102,14 @@ not one still going on. When nothing in those hours was of concern, Frigate writ
 there's a concern* off, a single line saying so is sent instead, in Home Assistant's language. Each report goes at
 `medium` priority, and rules apply to it as to
 any other notification. Frigate needs to be 0.17 or later.
+
+When Frigate fails to write a report, by an error or by answering without one, it's asked again a quarter of an hour
+later, as many times as *Retries* is set to. If it still fails, a notification takes the report's place, by the same
+deliveries, and is sent even with *Only when there's a concern* on, since a missing report can't say there was nothing
+to worry about. It says why as far as can be told, such as Frigate taking more than the 60 seconds the Frigate
+integration waits for it, or answering with an error, and links to Home Assistant's logs, the Frigate integration's
+page, to download its diagnostics, and Frigate's own [GenAI troubleshooting](https://docs.frigate.video/configuration/genai/genai_config#how-do-i-debug-genai-issues).
+Frigate's own logs usually say most, since that's where its GenAI provider's errors go.
 
 ### Two Ways to Use It
 

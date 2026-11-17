@@ -498,6 +498,7 @@ async def test_settings_in_global_options(hass: HomeAssistant):
         CONF_HEALTH_INTERVAL: 120,
         CONF_HEALTH_RETRIES: 2,
         CONF_HEALTH_BACKOFF: 15,
+        "genai_image": "preview",
     }
     assert monitor(entry).settings == HealthSettings(interval=120, retries=2, backoff=15)
     # shown again as stored

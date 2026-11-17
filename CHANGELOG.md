@@ -5,6 +5,9 @@ title: What's New
 # 0.9.1
 ## ✨ Enhancements
 - Smarter handling of when GIF option is available, e.g. not if camera has recording switched off, and not on first snapshot when not enough frames for Frigate to construct an animation.
+- *GenAI image*, in *Global Settings*, is the picture shown with what Frigate's GenAI adds, a review summary or an object description, the animated GIF preview to begin with, as Frigate's own review shows. Each camera or zone can choose its own in its *GenAI* settings. Where the camera doesn't record, its own *Image* is shown instead
+- *Image* is now the snapshot with the object's bounding box to begin with, rather than the whole snapshot. A camera or zone with *Image* already chosen keeps it
+- A periodic report Frigate fails to write is asked for again, 3 times to begin with, a quarter of an hour apart, set by *Retries*. If it still fails, a notification says so, why as far as can be told, such as Frigate taking longer than the 60 seconds the Frigate integration waits, with links to Home Assistant's logs, the Frigate integration's diagnostics, and Frigate's GenAI troubleshooting
 
 # 0.9.0
 ## ✨ Enhancements

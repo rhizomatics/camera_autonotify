@@ -32,12 +32,14 @@
                 "data": {
                     "auto_discover": "Configurer les caméras automatiquement",
                     "discover_zones": "Trouver aussi les zones",
-                    "object_names": "Noms des objets"
+                    "object_names": "Noms des objets",
+                    "genai_image": "Image GenAI"
                 },
                 "data_description": {
                     "auto_discover": "Ajoute chaque caméra Frigate dès qu'elle est trouvée. Désactivez pour que chacune vous soit proposée à la place",
                     "discover_zones": "Propose chaque zone Frigate comme une caméra, pour des notifications sur cette zone seule",
-                    "object_names": "Comment appeler chaque objet Frigate dans toutes les notifications, par exemple car en Véhicule, ou une traduction. Les objets non nommés ici gardent le nom que leur donne Frigate."
+                    "object_names": "Comment appeler chaque objet Frigate dans toutes les notifications, par exemple car en Véhicule, ou une traduction. Les objets non nommés ici gardent le nom que leur donne Frigate.",
+                    "genai_image": "L'image de ce qu'ajoute la GenAI de Frigate, un résumé de revue ou une description d'objet, pour chaque caméra et zone qui ne choisit pas la sienne. L'aperçu animé montre ce que la GenAI a regardé, là où la caméra enregistre, sinon l'image de la caméra."
                 },
                 "sections": {
                     "health": {
@@ -64,14 +66,16 @@
                             "summary_interval": "Fréquence",
                             "summary_time": "À partir de",
                             "summary_concerns_only": "Seulement en cas d'inquiétude",
-                            "summary_deliveries": "Livraisons"
+                            "summary_deliveries": "Livraisons",
+                            "summary_retries": "Nouvelles tentatives"
                         },
                         "data_description": {
                             "summary_mode": "Automatique l'envoie quand Frigate produit des résumés GenAI des revues pour au moins une caméra.",
                             "summary_interval": "Chaque rapport couvre les heures depuis le précédent, jusqu'à l'heure de son envoi.",
                             "summary_time": "Heure d'envoi du premier rapport de la journée, les suivants étant envoyés à intervalles réguliers à partir de celle-ci.",
                             "summary_concerns_only": "Le rapport est toujours demandé à Frigate, mais n'est envoyé que si la GenAI a jugé l'une des revues de ces heures suspecte ou critique, ou a relevé d'autres inquiétudes.",
-                            "summary_deliveries": "Utilise par défaut la livraison 'email' de Supernotify. Choisissez une ou plusieurs autres livraisons pour le remplacer, comme Telegram ou l'entité File Notify. Si vide et que Supernotify n'a pas de livraison par e-mail, les rapports ne sont pas envoyés du tout."
+                            "summary_deliveries": "Utilise par défaut la livraison 'email' de Supernotify. Choisissez une ou plusieurs autres livraisons pour le remplacer, comme Telegram ou l'entité File Notify. Si vide et que Supernotify n'a pas de livraison par e-mail, les rapports ne sont pas envoyés du tout.",
+                            "summary_retries": "Combien de fois encore Frigate est sollicité pour un rapport qu'il n'a pas pu écrire, à un quart d'heure d'intervalle. S'il échoue encore, une notification le dit, avec la raison si elle est connue, et où regarder."
                         }
                     },
                     "summary_unavailable": {
@@ -137,7 +141,8 @@
                             "priority_critical": "Priorité critique",
                             "descriptions": "Descriptions des objets",
                             "unreviewed_descriptions": "Descriptions sans revue",
-                            "genai_wait": "Attendre la GenAI"
+                            "genai_wait": "Attendre la GenAI",
+                            "genai_image": "Image GenAI"
                         },
                         "data_description": {
                             "summaries": "Met à jour la notification avec le titre et le résumé de Frigate une fois la revue terminée, quand la GenAI de Frigate en produit un.",
@@ -147,7 +152,8 @@
                             "priority_critical": "La priorité d'un résumé au niveau de menace 2.",
                             "descriptions": "Met à jour la notification avec la description par Frigate de chaque objet de la revue.",
                             "unreviewed_descriptions": "Notifier aussi les descriptions d'objets pour lesquels Frigate n'a pas fait de revue, comme ceux hors des zones nécessaires à une alerte.",
-                            "genai_wait": "Combien de temps garder une revue terminée pour ce qu'ajoute la GenAI, et une description pour sa revue."
+                            "genai_wait": "Combien de temps garder une revue terminée pour ce qu'ajoute la GenAI, et une description pour sa revue.",
+                            "genai_image": "L'image de ce qu'ajoute la GenAI pour cette caméra ou zone, au lieu de celle des Paramètres globaux."
                         }
                     },
                     "notify": {
@@ -230,6 +236,16 @@
             "fields": {
                 "object": "Objet",
                 "name": "Nom"
+            }
+        },
+        "genai_image": {
+            "options": {
+                "global": "Comme les Paramètres globaux",
+                "snapshot": "Instantané",
+                "snapshot_box": "Instantané avec le cadre de l'objet",
+                "snapshot_crop": "Instantané recadré sur l'objet",
+                "thumbnail": "Miniature",
+                "preview": "Aperçu animé (GIF)"
             }
         }
     },
@@ -317,6 +333,14 @@
         "summary_server_title": "Rapport Frigate de {server} : {period}",
         "summary_no_activity": "Aucune activité n'a été résumée par GenAI pendant ces heures.",
         "summary_no_concerns": "Rien de préoccupant n'a été trouvé pendant ces heures.",
+        "summary_failed_title": "Échec du rapport Frigate : {period}",
+        "summary_failed": "Frigate {server} n'a pas pu écrire le rapport après {attempts} tentatives. {reason}\n\nJournaux de Home Assistant : {logs}\nL'intégration Frigate, pour télécharger ses diagnostics : {diagnostics}\nDépannage de la GenAI de Frigate : {help}",
+        "summary_failed_timeout": "Frigate n'a pas répondu dans les 60 secondes permises par l'intégration Frigate, ce qui peut arriver quand son fournisseur de GenAI est lent, ou qu'il y a eu beaucoup de revues pendant ces heures.",
+        "summary_failed_unreachable": "Frigate n'a pas pu être joint.",
+        "summary_failed_auth": "Frigate a refusé la connexion de l'intégration Frigate.",
+        "summary_failed_status": "Frigate a répondu par une erreur, {status}. Les journaux de Frigate disent pourquoi, comme une panne de son fournisseur de GenAI, ou une limite atteinte.",
+        "summary_failed_none": "Frigate a répondu sans rapport : {message}",
+        "summary_failed_other": "L'erreur était : {error}",
         "period_to_midnight": "{day}, de {start} à minuit",
         "period_same_day": "{day}, de {start} à {end}",
         "period_days": "du {start_day} {start} au {end_day} {end}",

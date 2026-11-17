@@ -1,7 +1,11 @@
-# RFC 0005 Text Matching
+# RFC 0005 Rules
 
 **Status**: Ready for Review
 2026-11-13, nothing yet to build
+
+## Summary
+
+Use text matching in camera events, and other info out of event details (including some normalized across event sources) to select notification priority, targets, drop notifications or select Supernotify scenarios.
 
 ## Motivation
 

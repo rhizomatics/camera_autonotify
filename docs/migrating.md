@@ -49,7 +49,7 @@ and deliveries in Supernotify itself, once, for every camera.
 | `tts`, `tts_helper` | A Supernotify TTS delivery |
 | `group`, `tag` | Set by camera and by review, nothing to set |
 | `attachment` | *Image*, under *Image and targets*: the snapshot, the snapshot with its bounding box, the snapshot cropped to the object, the thumbnail, or an animated GIF preview, which has no bounding box or crop, and shows the snapshot until it's ready |
-| `attachment_2` | The same *Image* for the first notification and its updates |
+| `attachment_2` | The same *Image* for the first notification and its updates, and *GenAI image* for what GenAI adds, the animated preview to begin with |
 | `video`, `ios_live_view` | Not attached, see [Video on iPhones](index.md#video-on-iphones). Tapping the notification plays the clip |
 | `tap_action`, `button_1` to `button_3` | Tap for the clip, and a *View snapshot* button |
 | `button_3` silence, `silence_timer` | Supernotify's camera snooze |
@@ -73,7 +73,7 @@ Where your blueprint automation left one of these inputs as it came, the camera'
 | `alert_once` | Off | *Sound only the first* | On |
 | `final_delay` | 5 seconds | *Delay when over* | 0 seconds |
 | `timeout` | 2 minutes | *Stop updates after* | 600 seconds, 10 minutes |
-| `attachment` | Thumbnail | *Image* | Snapshot |
+| `attachment` | Thumbnail | *Image* | Snapshot with bounding box |
 
 ## Object Names
 

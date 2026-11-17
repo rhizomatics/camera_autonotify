@@ -12,6 +12,11 @@ GenAI review summary. With none of concern, Frigate answers with a fixed sentenc
 that's said here in Home Assistant's language instead. The reviews are asked for after the summary, so there can only be
 more of them than Frigate saw, and a summary it did make is never taken for one of those sentences.
 
+A summary Frigate fails to make, by an error or by answering without one, is asked for again so many times, a quarter
+of an hour apart, and if it still fails, that's notified in its place, by the same deliveries, saying why as far as can
+be told, with links to Home Assistant's logs, the Frigate integration's page for its diagnostics, and Frigate's own
+GenAI troubleshooting.
+
 Too long for a phone's notification or a voice assistant, so only sent through Supernotify, by one of its e-mail
 deliveries unless others are chosen, such as Telegram, and not at all when it has none.
 """
@@ -19,13 +24,14 @@ deliveries unless others are chosen, such as Telegram, and not at all when it ha
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, time, timedelta
 from typing import TYPE_CHECKING, Any
 
+import aiohttp
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
-from homeassistant.helpers.event import async_track_time_change
+from homeassistant.helpers.event import async_call_later, async_track_time_change
 from homeassistant.util import dt as dt_util
 
 from .const import (
@@ -34,11 +40,14 @@ from .const import (
     CONF_SUMMARY_DELIVERIES,
     CONF_SUMMARY_INTERVAL,
     CONF_SUMMARY_MODE,
+    CONF_SUMMARY_RETRIES,
     CONF_SUMMARY_TIME,
     DEFAULT_SUMMARY_INTERVAL,
+    DEFAULT_SUMMARY_RETRIES,
     DEFAULT_SUMMARY_TIME,
     DOMAIN,
     FRIGATE_DOMAIN,
+    MAX_SUMMARY_RETRIES,
     SUMMARY_AUTO,
     SUMMARY_INTERVALS,
     SUMMARY_MODES,
@@ -47,6 +56,7 @@ from .const import (
 )
 from .frigate import (
     FrigateApiClient,
+    base_url,
     concerning,
     frigate_client,
     frigate_config,
@@ -60,6 +70,14 @@ from .texts import (
     PERIOD_DAYS,
     PERIOD_SAME_DAY,
     PERIOD_TO_MIDNIGHT,
+    SUMMARY_FAILED,
+    SUMMARY_FAILED_AUTH,
+    SUMMARY_FAILED_NONE,
+    SUMMARY_FAILED_OTHER,
+    SUMMARY_FAILED_STATUS,
+    SUMMARY_FAILED_TIMEOUT,
+    SUMMARY_FAILED_TITLE,
+    SUMMARY_FAILED_UNREACHABLE,
     SUMMARY_NO_ACTIVITY,
     SUMMARY_NO_CONCERNS,
     SUMMARY_SERVER_TITLE,
@@ -77,6 +95,12 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 PRIORITY = "medium"
+# a quarter of an hour between each time Frigate is asked again for a summary it failed to make
+RETRY_DELAY = 900
+# where to look further, Home Assistant's own pages by its address, Frigate's GenAI troubleshooting by its docs
+LOGS_PATH = "/config/logs"
+FRIGATE_PATH = f"/config/integrations/integration/{FRIGATE_DOMAIN}"
+GENAI_HELP = "https://docs.frigate.video/configuration/genai/genai_config#how-do-i-debug-genai-issues"
 DEFAULT_TIME = time.fromisoformat(DEFAULT_SUMMARY_TIME)
 
 
@@ -88,6 +112,8 @@ class SummarySettings:
     interval: int = DEFAULT_SUMMARY_INTERVAL
     concerns_only: bool = False
     deliveries: tuple[str, ...] = ()
+    # how many more times a summary Frigate failed to make is asked for
+    retries: int = DEFAULT_SUMMARY_RETRIES
 
     @classmethod
     def from_options(cls, options: Mapping[str, Any]) -> SummarySettings:
@@ -101,12 +127,17 @@ class SummarySettings:
             interval = int(options.get(CONF_SUMMARY_INTERVAL, default.interval))
         except TypeError, ValueError:
             interval = default.interval
+        try:
+            retries = min(max(int(options.get(CONF_SUMMARY_RETRIES, default.retries)), 0), MAX_SUMMARY_RETRIES)
+        except TypeError, ValueError:
+            retries = default.retries
         return cls(
             mode=mode if mode in SUMMARY_MODES else default.mode,
             at=at,
             interval=interval if interval in SUMMARY_INTERVALS else default.interval,
             concerns_only=bool(options.get(CONF_SUMMARY_CONCERNS, default.concerns_only)),
             deliveries=tuple(options.get(CONF_SUMMARY_DELIVERIES) or ()),
+            retries=retries,
         )
 
     def due(self, now: datetime) -> bool:
@@ -146,6 +177,28 @@ def summary_text(response: dict[str, Any] | str | None) -> str | None:
     return None
 
 
+def failure(hass: HomeAssistant, error: BaseException) -> str:
+    """Why Frigate couldn't make a summary, as far as can be told, the Frigate integration's own error mostly saying
+    nothing itself, raised from what went wrong"""
+    cause = error.__cause__ or error
+    if isinstance(cause, TimeoutError):
+        return text(hass, SUMMARY_FAILED_TIMEOUT)
+    status = getattr(cause, "status", None)
+    if status in (401, 403):
+        return text(hass, SUMMARY_FAILED_AUTH)
+    if isinstance(status, int):
+        return text(hass, SUMMARY_FAILED_STATUS, status=status)
+    if isinstance(cause, aiohttp.ClientError | OSError):
+        return text(hass, SUMMARY_FAILED_UNREACHABLE)
+    return text(hass, SUMMARY_FAILED_OTHER, error=str(error) or type(cause).__name__)
+
+
+def unmade(hass: HomeAssistant, response: dict[str, Any] | str | None) -> str:
+    """Why Frigate answered without a summary, by its own message where it gave one"""
+    message = response.get("message") if isinstance(response, dict) else response
+    return text(hass, SUMMARY_FAILED_NONE, message=str(message or "")[:200])
+
+
 @dataclass(frozen=True)
 class Found:
     """How many of the reviews in the hours summarised GenAI summarised, and how many of those were of concern"""
@@ -169,20 +222,47 @@ def found(reviews: list[dict[str, Any]] | None, start: datetime, end: datetime) 
     return Found(len(chosen), sum(1 for review in chosen if concerning(review)))
 
 
+@dataclass(frozen=True)
+class Report:
+    """A summary to ask a Frigate server for, and where it goes"""
+
+    server_id: str
+    server: str
+    start: datetime
+    end: datetime
+    # titled by the server, there being more than one
+    several: bool
+    deliveries: list[str]
+
+    def title_key(self, several: str, one: str) -> str:
+        return several if self.several else one
+
+
 @dataclass
 class Summaries:
     hass: HomeAssistant
     entry: ConfigEntry
     settings: SummarySettings
+    # each summary to be asked for again, by its server and the start of its hours, to be cancelled when stopped
+    _retries: dict[tuple[str, float], CALLBACK_TYPE] = field(default_factory=dict)
 
     @callback
     def async_start(self) -> CALLBACK_TYPE:
-        """Every hour at the minute set, for those hours a summary is due in, returning what stops it, or nothing to
-        stop when switched off"""
+        """Every hour at the minute set, for those hours a summary is due in, returning what stops it, and any retry
+        waiting, or nothing to stop when switched off"""
         if self.settings.mode == SUMMARY_OFF:
             return lambda: None
         at = self.settings.at
-        return async_track_time_change(self.hass, self._due, minute=at.minute, second=at.second)
+        stop_due = async_track_time_change(self.hass, self._due, minute=at.minute, second=at.second)
+
+        @callback
+        def stop() -> None:
+            stop_due()
+            for cancel in self._retries.values():
+                cancel()
+            self._retries.clear()
+
+        return stop
 
     @callback
     def _due(self, now: datetime) -> None:
@@ -209,9 +289,7 @@ class Summaries:
         if not deliveries:
             _LOGGER.warning("CAMERA_AUTONOTIFY No summary, Supernotify having no e-mail delivery and none chosen")
             return
-        await async_load_texts(self.hass)
         start, end = self.settings.period(now)
-        said = said_period(self.hass, start, end)
         servers = [
             entry
             for entry in self.hass.config_entries.async_entries(FRIGATE_DOMAIN, include_disabled=False)
@@ -224,28 +302,93 @@ class Summaries:
             if client is None or not hasattr(client, "async_review_summarize"):
                 _LOGGER.warning("CAMERA_AUTONOTIFY Frigate %s can't summarise, needing Frigate 0.17", server.title)
                 continue
+            await self._async_report(Report(server.entry_id, server.title, start, end, len(servers) > 1, deliveries))
+
+    async def _async_report(self, report: Report, attempt: int = 1) -> None:
+        """A server's summary of its hours, asked for again if it fails, so many times, then its failure notified"""
+        await async_load_texts(self.hass)
+        said = said_period(self.hass, report.start, report.end)
+        client = frigate_client(self.hass, report.server_id)
+        why: str | None = None
+        made: str | None = None
+        if client is None:
+            # the Frigate entry unloaded since the first try
+            why = text(self.hass, SUMMARY_FAILED_UNREACHABLE)
+        else:
             try:
-                response = await client.async_review_summarize(start.timestamp(), end.timestamp())
+                response = await client.async_review_summarize(report.start.timestamp(), report.end.timestamp())
             except Exception as error:
                 # FrigateApiClientError, for a timeout, a refusal, or Frigate or its GenAI provider failing to make it
-                _LOGGER.warning("CAMERA_AUTONOTIFY Frigate %s couldn't summarise %s: %s", server.title, said, error)
-                continue
-            if (report := summary_text(response)) is None:
-                _LOGGER.warning("CAMERA_AUTONOTIFY Frigate %s made no summary of %s: %s", server.title, said, response)
-                continue
-            seen = await self._async_found(client, server.title, start, end)
-            if seen is None and self.settings.concerns_only:
-                continue
-            if seen is not None and not seen.concerns:
-                if self.settings.concerns_only:
-                    _LOGGER.debug("CAMERA_AUTONOTIFY Nothing of concern from Frigate %s, so summary not sent", server.title)
-                    continue
-                report = text(self.hass, SUMMARY_NO_CONCERNS if seen.summarised else SUMMARY_NO_ACTIVITY)
-            names = {"period": said, "server": server.title}
-            title = text(self.hass, SUMMARY_SERVER_TITLE if len(servers) > 1 else SUMMARY_TITLE, **names)
-            await async_notify_message(
-                self.hass, title, report, PRIORITY, f"{DOMAIN}_summary_{server.entry_id}", {CONF_DELIVERIES: deliveries}
+                _LOGGER.warning(
+                    "CAMERA_AUTONOTIFY Frigate %s couldn't summarise %s: %s",
+                    report.server,
+                    said,
+                    str(error) or repr(error.__cause__ or error),
+                )
+                why = failure(self.hass, error)
+            else:
+                if (made := summary_text(response)) is None:
+                    _LOGGER.warning("CAMERA_AUTONOTIFY Frigate %s made no summary of %s: %s", report.server, said, response)
+                    why = unmade(self.hass, response)
+        if client is None or made is None:
+            await self._async_failed(report, attempt, said, why or "")
+            return
+        seen = await self._async_found(client, report.server, report.start, report.end)
+        if seen is None and self.settings.concerns_only:
+            return
+        if seen is not None and not seen.concerns:
+            if self.settings.concerns_only:
+                _LOGGER.debug("CAMERA_AUTONOTIFY Nothing of concern from Frigate %s, so summary not sent", report.server)
+                return
+            made = text(self.hass, SUMMARY_NO_CONCERNS if seen.summarised else SUMMARY_NO_ACTIVITY)
+        title = text(self.hass, report.title_key(SUMMARY_SERVER_TITLE, SUMMARY_TITLE), period=said, server=report.server)
+        await async_notify_message(
+            self.hass, title, made, PRIORITY, f"{DOMAIN}_summary_{report.server_id}", {CONF_DELIVERIES: report.deliveries}
+        )
+
+    async def _async_failed(self, report: Report, attempt: int, said: str, why: str) -> None:
+        """Asked for again in a while, or else, once asked for as many times as set, its failure notified, whether or
+        not only concerns are sent, since a failed summary can't say there were none"""
+        if attempt <= self.settings.retries:
+            _LOGGER.info(
+                "CAMERA_AUTONOTIFY Asking Frigate %s again for %s in %s seconds, retry %s of %s",
+                report.server,
+                said,
+                RETRY_DELAY,
+                attempt,
+                self.settings.retries,
             )
+            key = (report.server_id, report.start.timestamp())
+
+            @callback
+            def again(_now: datetime) -> None:
+                self._retries.pop(key, None)
+                self.entry.async_create_background_task(
+                    self.hass, self._async_report(report, attempt + 1), f"{DOMAIN} summary retry"
+                )
+
+            self._retries[key] = async_call_later(self.hass, RETRY_DELAY, again)
+            return
+        base = base_url(self.hass) or ""
+        message = text(
+            self.hass,
+            SUMMARY_FAILED,
+            server=report.server,
+            attempts=attempt,
+            reason=why,
+            logs=f"{base}{LOGS_PATH}",
+            diagnostics=f"{base}{FRIGATE_PATH}",
+            help=GENAI_HELP,
+        )
+        title = text(self.hass, SUMMARY_FAILED_TITLE, period=said, server=report.server)
+        await async_notify_message(
+            self.hass,
+            title,
+            message,
+            PRIORITY,
+            f"{DOMAIN}_summary_{report.server_id}",
+            {CONF_DELIVERIES: report.deliveries},
+        )
 
     async def _async_found(self, client: FrigateApiClient, server: str, start: datetime, end: datetime) -> Found | None:
         """What GenAI made of the reviews in the hours given, or nothing when Frigate couldn't give them"""

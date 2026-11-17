@@ -48,6 +48,7 @@ from .const import (
     CONF_DISCOVER_ZONES,
     CONF_FINAL_DELAY,
     CONF_FINAL_UPDATE,
+    CONF_GENAI_IMAGE,
     CONF_GENAI_WAIT,
     CONF_HEALTH_BACKOFF,
     CONF_HEALTH_CHECK,
@@ -77,6 +78,7 @@ from .const import (
     CONF_SUMMARY_DELIVERIES,
     CONF_SUMMARY_INTERVAL,
     CONF_SUMMARY_MODE,
+    CONF_SUMMARY_RETRIES,
     CONF_SUMMARY_TIME,
     CONF_TARGET,
     CONF_TARGETS,
@@ -87,15 +89,20 @@ from .const import (
     CONF_ZONE_MULTI,
     CONF_ZONE_ORDER,
     CONF_ZONES,
+    DEFAULT_GENAI_IMAGE,
+    DEFAULT_IMAGE,
     DEFAULT_POWER_GRACE,
     DEFAULT_SUMMARY_INTERVAL,
+    DEFAULT_SUMMARY_RETRIES,
     DEFAULT_SUMMARY_TIME,
     DISCOVERY_TITLE,
     DOMAIN,
-    IMAGE_SNAPSHOT,
+    GENAI_IMAGE_GLOBAL,
+    GENAI_IMAGES,
     IMAGES,
     MATCH_CONTAINS,
     MATCHES,
+    MAX_SUMMARY_RETRIES,
     POWER_DOMAINS,
     PRIORITIES,
     SEVERITIES,
@@ -139,7 +146,12 @@ SECTIONS = (SECTION_TIMING, SECTION_GENAI, SECTION_NOTIFY, SECTION_HEALTH, SECTI
 DEFAULTS: dict[str, Any] = (
     {f.name: sorted(value) if isinstance(value := getattr(Settings(), f.name), frozenset) else value for f in fields(Settings)}
     | dict(zip(CONF_THREAT_PRIORITIES, THREAT_PRIORITY_DEFAULTS, strict=True))
-    | {CONF_STATUS_CHECK: True, CONF_POWER_GRACE: DEFAULT_POWER_GRACE, CONF_IMAGE: IMAGE_SNAPSHOT}
+    | {
+        CONF_STATUS_CHECK: True,
+        CONF_POWER_GRACE: DEFAULT_POWER_GRACE,
+        CONF_IMAGE: DEFAULT_IMAGE,
+        CONF_GENAI_IMAGE: GENAI_IMAGE_GLOBAL,
+    }
 )
 SUMMARY_OPTIONS = (
     CONF_SUMMARY_MODE,
@@ -147,6 +159,7 @@ SUMMARY_OPTIONS = (
     CONF_SUMMARY_TIME,
     CONF_SUMMARY_CONCERNS,
     CONF_SUMMARY_DELIVERIES,
+    CONF_SUMMARY_RETRIES,
 )
 # what a rule holds, its name being the subentry's title
 RULE_DATA = (CONF_MATCH, CONF_PATTERN, CONF_PRIORITY, CONF_SILENCE, CONF_SCENARIOS, CONF_REMOVE)
@@ -188,6 +201,9 @@ def discovery_schema(
     }
     if labels is not None:
         fields_[vol.Optional(CONF_OBJECT_NAMES)] = object_names_selector(labels)
+        fields_[vol.Required(CONF_GENAI_IMAGE, default=DEFAULT_GENAI_IMAGE)] = SelectSelector(
+            SelectSelectorConfig(options=list(IMAGES), mode=SelectSelectorMode.DROPDOWN, translation_key=CONF_IMAGE)
+        )
     if health:
         fields_[vol.Required(SECTION_HEALTH)] = section(vol.Schema(health_schema()), {"collapsed": True})
         if deliveries is not None:
@@ -244,6 +260,9 @@ def summary_schema(deliveries: list[str]) -> dict[vol.Marker, Any]:
         ),
         vol.Required(CONF_SUMMARY_TIME, default=DEFAULT_SUMMARY_TIME): TimeSelector(),
         vol.Required(CONF_SUMMARY_CONCERNS, default=False): BooleanSelector(),
+        vol.Required(CONF_SUMMARY_RETRIES, default=DEFAULT_SUMMARY_RETRIES): NumberSelector(
+            NumberSelectorConfig(min=0, max=MAX_SUMMARY_RETRIES, step=1, mode=NumberSelectorMode.BOX)
+        ),
         # left empty, Supernotify's e-mail deliveries, as shown to begin with
         vol.Optional(CONF_SUMMARY_DELIVERIES): SelectSelector(SelectSelectorConfig(options=deliveries, multiple=True)),
     }
@@ -300,6 +319,10 @@ def genai_schema(summaries: bool, descriptions: bool, camera: bool) -> dict[vol.
             )
     if genai:
         genai[vol.Required(CONF_GENAI_WAIT, default=DEFAULTS[CONF_GENAI_WAIT])] = _seconds(600)
+        # as the global settings unless chosen here
+        genai[vol.Required(CONF_GENAI_IMAGE, default=DEFAULTS[CONF_GENAI_IMAGE])] = SelectSelector(
+            SelectSelectorConfig(options=list(GENAI_IMAGES), mode=SelectSelectorMode.DROPDOWN, translation_key=CONF_GENAI_IMAGE)
+        )
     return genai
 
 
