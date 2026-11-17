@@ -93,6 +93,8 @@ STARTUP_GRACE = 10.0
 # a sighting from longer ago than this isn't new, however it arrives
 STALE_AFTER = 600.0
 NOT_PLATES = (STATE_UNKNOWN, STATE_UNAVAILABLE, "", "None")
+# anpr2mqtt's target type of a number plate, its events otherwise being of faces, lines crossed and the like
+PLATE = "plate"
 # the DVLA's details worth saying, in this order, as anpr2mqtt passes them on
 DVLA_DETAILS = ("make", "colour", "yearOfManufacture", "fuelType", "taxStatus", "motStatus")
 
@@ -167,6 +169,9 @@ class PlateTracker:
     def sighting(self, old: State | None, new: State | None, now: float) -> Sighting | None:
         if new is None or not is_plate(new) or "trigger" in new.attributes:
             # cleared, unavailable, or republished as Home Assistant started
+            return None
+        if new.attributes.get("target_type", PLATE) != PLATE:
+            # another kind of detection, such as a face or a line crossed, not yet notified
             return None
         if now - self.started < STARTUP_GRACE:
             # retained, so seen before

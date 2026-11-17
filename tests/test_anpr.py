@@ -152,6 +152,12 @@ def test_retained_as_followed():
     assert plates.last_plate == "PX19TVD"
 
 
+def test_other_kinds_of_detection_left_alone():
+    """A face or a line crossed, which anpr2mqtt can read from a camera's images too, not yet notified"""
+    assert tracker().sighting(state("PREVIOUS"), state("Jey", target_type="face"), NOW.timestamp()) is None
+    assert tracker().sighting(state("PREVIOUS"), state(target_type="plate"), NOW.timestamp()) is not None
+
+
 def test_republished():
     assert tracker().sighting(state("PREVIOUS"), state(trigger="homeassistant/status"), NOW.timestamp()) is None
 

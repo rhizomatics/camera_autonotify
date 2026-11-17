@@ -16,7 +16,7 @@ title: What's New
 - A linked camera, found from anpr2mqtt's `linked_cameras`, its area or its name, or chosen
 - A priority, or no notification, and Supernotify scenarios, for each kind of vehicle: dangerous, unknown, known and ignored
 - anpr2mqtt going unavailable notified, and coming back
-- Not yet: joining a plate to the Frigate review of the same car
+- Not yet: joining a plate to the Frigate review of the same car, nor anpr2mqtt's other kinds of detection, such as faces or lines crossed
 ### Supernotify Images
 - With Supernotify v2.19.0 or later:
   - the animated preview goes with the camera's still image behind it, tried in turn, so in e-mail and the other deliveries Supernotify fetches the image for, a preview Frigate can't make is replaced by the still image of the event, rather than no picture

@@ -95,7 +95,13 @@ Where Frigate makes GenAI review summaries, a report of the day before is also s
 
 > **Early access**: number plates from anpr2mqtt are new in 0.11.0. It works, but has had little use yet. Full documentation will follow, as may fixes and improvements, so expect it to change. Feedback is very welcome, in the [issues](https://github.com/rhizomatics/camera_autonotify/issues).
 
-Each plate [anpr2mqtt](https://anpr2mqtt.rhizomatics.org.uk) reads is notified, with no automation, in place of the example automation in its docs:
+[anpr2mqtt](https://anpr2mqtt.rhizomatics.org.uk) does three things:
+
+1. **Plates from ANPR cameras**: it listens for the images an ANPR camera uploads by FTP, or to a NAS, and reads the plate from each
+2. **Frigate's plates, enhanced**: it adds to Frigate's own licence plate recognition, in the UK with the vehicle's details from the DVLA, correcting the plate where it can
+3. **Any other detection** a camera can make that results in an image sent by FTP or to a NAS, such as a face, or a line crossed
+
+Camera AutoNotify notifies the number plates of the first two, with no automation, in place of the example automation in anpr2mqtt's docs. Other kinds of detection are left alone for now:
 
 - **What you need**: anpr2mqtt 1.3.0 or later, with its Home Assistant devices on (`device_creation`, as it comes). Each anpr2mqtt camera is then found and set up like a Frigate camera, by *Set up cameras automatically*. Frigate isn't needed
 - **What's sent**: the vehicle as anpr2mqtt describes it, or its plate, at the camera, such as *Jey's Outlander at Driveway*, with the plate, the sightings before, and the DVLA's details where anpr2mqtt has them. Only a new plate is notified, not the same one again in the same visit, nor a sighting republished as Home Assistant starts
@@ -105,6 +111,18 @@ Each plate [anpr2mqtt](https://anpr2mqtt.rhizomatics.org.uk) reads is notified, 
 - **Health**: anpr2mqtt going unavailable is notified, and again when it's back, with the timing of the Frigate health checks
 
 Not yet: a plate isn't joined to the Frigate review of the same car, so the same arrival can be notified by both, though Supernotify's duplicate detection catches some. See [RFC 0003](https://camera-autonotify.rhizomatics.org.uk/developer/design/rfcs/rfc0003_anpr2mqtt/) for what's planned.
+
+#### Avoiding Duplicate Notifications
+
+Until then, one car arriving can be notified up to three ways, so switch off those you don't need:
+
+| Notified by | What it says | To switch it off |
+| ----------- | ------------ | ---------------- |
+| The Frigate camera's review | *Car detected at Driveway*, updated with the plate where Frigate knows it | In the Frigate camera's settings here, leave `car` out of *Objects*, choosing the others you want, or switch off *Notify recognised faces and plates* to keep the review but not its plate update, though that stops faces too |
+| anpr2mqtt, from Frigate's plates | *Jey's Outlander at Driveway*, with the DVLA's details | In anpr2mqtt's config, `frigate: enabled: false`, or leave the camera out of `frigate: cameras` |
+| anpr2mqtt, from an ANPR camera's images | The same as from Frigate's plates | Nothing to switch off here, being the reason to have anpr2mqtt |
+
+With an ANPR camera of its own, the simplest is usually to keep anpr2mqtt's sightings, which say most, and leave `car` out of the Frigate camera's *Objects*. Without one, keep anpr2mqtt reading Frigate's plates for the DVLA's details, and leave `car` out of *Objects* likewise, so only anpr2mqtt notifies the car.
 
 
 ## Moving From the Frigate Blueprint
