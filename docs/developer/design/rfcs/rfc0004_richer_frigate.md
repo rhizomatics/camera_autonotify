@@ -123,7 +123,7 @@ Found in the review, and more useful than some of the outline. Where each has go
 |------|-----|
 | Keep, Seen, Export | Actions, in the [proposed scope](#proposed-scope), mobile only to begin with |
 | Unknown visitor, Unrecognised vehicle | Gathered here, as what reviews don't carry, and matched by rules in [RFC 0005](rfc0005_rules.md#matching-whats-recognised) |
-| Confidence | Gathered here, the threshold being a rule in RFC 0005 |
+| Confidence | Gathered here, Frigate's own threshold deciding what's recognised, and an advanced rule in RFC 0005 able to read a score for another |
 | Version gating | In the [proposed scope](#proposed-scope) |
 
 As first found:

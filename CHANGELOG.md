@@ -8,6 +8,7 @@ title: What's New
 
 # 0.10.0
 ## ✨ Enhancements
+[RFC0004 - Richer Frigate Integration](./developer/design/rfcs/rfc0004_richer_frigate.md) has been implemented.
 ### Mobile Actions
 - Buttons on each notification on a phone, with Supernotify:
   - *Keep* the clip from Frigate's retention
@@ -19,6 +20,12 @@ title: What's New
 - What Frigate knows of the review's objects beyond the review is said under the headline: the highest speed through a speed zone, a plate read that Frigate doesn't know, attributes such as a delivery company's logo, a face seen but not recognised, an object that has stopped, and the camera's state classifications, such as a gate open
 ### Autotracking Warning
 - A warning in the settings of a camera that autotracks, or a zone on one, since its zones move with it
+## 📚 Documentation
+New design docs:
+- [RFC0007 - Rich Email](./developer/design/rfcs/rfc0007_rich_email.md)
+- [RFC0008 - Visits](./developer/design/rfcs/rfc0008_visits.md)
+Updated design docs:
+- [RFC0005 - Rules](./developer/design/rfcs/rfc0005_rules.md)
 
 # 0.9.1
 ## ✨ Enhancements
@@ -35,6 +42,9 @@ title: What's New
 ## 🐞 Fixes
 - *Only when there's a concern* for periodic reports counts a review that began before the hours reported and went on into them, as Frigate's own report does, and no longer one still going on, which Frigate leaves out
 - A periodic report of hours with nothing of concern, or no GenAI summaries at all, says so in Home Assistant's language, rather than sending Frigate's fixed English sentence
+## 📚 Documentation
+New design docs
+- [RFC0006 Config Health](./developer/design/rfcs/rfc0006_config_health_report.md)
 
 # 0.8.0
 ## ✨ Enhancements
