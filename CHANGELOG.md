@@ -8,9 +8,9 @@ title: What's New
 
 # 0.11.1
 ## ✨ Enhancements
-- Speeds are said in km/h or mph by *Speed unit* in *Global Settings*, automatically mph where roads are signed in it, by Home Assistant's country, such as the UK and US, or where its units aren't metric, rather than in whatever unit Frigate uses
+- Speeds are said in km/h or mph by *Speed unit* in *Global Settings*, automatically mph where roads are signed in it, by Home Assistant's country, such as the UK and US, or where its units aren't metric, rather than in whatever unit Frigate happens to use.
 ## 🐞 Fixes
-- The linked camera of an anpr2mqtt camera is only ever one of Frigate's, or UniFi Protect's, Viseron's or Blue Iris's, so anpr2mqtt's own camera, or the same camera by ONVIF, no longer stops it being found by itself, and the settings only offer those
+- The linked camera choice for an anpr2mqtt config entry is now limited to the ones it could be, e.g. Frigate if that's the only other integration.
 ## 📚 Documentation
 - How to switch off the Frigate camera's notification of a car that anpr2mqtt also notifies, to avoid duplicates
 - [RFC0003 - ANPR2MQTT Integration](./developer/design/rfcs/rfc0003_anpr2mqtt.md) updated: Frigate's plates looked up with the DVLA directly, with other countries' registers to follow, and vehicles registered here, with categories, corrections, ignores, visit history and a *Known vehicle* button
