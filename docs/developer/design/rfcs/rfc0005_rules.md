@@ -103,7 +103,8 @@ text:
 - **Text**: starts with, contains, or regular expression, always ignoring case, on the message, or the title when
   there's no message
 - **Object**: one or more of the objects Frigate tracks, such as `car` or `bird`
-- **Recognised as**: one of a chosen list of names, anything else, or nothing recognised
+- **Recognised as**: one of a chosen list of names, any name but those of a chosen list, or seen but not recognised,
+  such as a plate read that's not known, or a face seen but not known
 - **Severity**: alerts, detections, or either
 
 A rule of only a word, `boring`, or only an object and *nothing recognised*, takes a single field or two. A simple
@@ -134,6 +135,7 @@ Given to every condition, simple or advanced, as `variables` when it's checked:
 | `event.objects`, `event.object` | What was seen, and the first of it |
 | `event.recognised`, `event.names` | Whether anything was recognised, and the names, from sub labels, faces and plates, or from anpr2mqtt once [RFC 0003](rfc0003_anpr2mqtt.md) is built |
 | `event.face_unknown`, `event.plates`, `event.speed`, `event.attributes`, `event.states` | The facts of [RFC 0004](rfc0004_richer_frigate.md), such as a plate read that's not known, or a gate open |
+| `event.vehicle.category`, `event.vehicle.history`, `event.vehicle.lookup` | The vehicle category a plate is in, its visit history, and its register's details, from the DVLA or another country's provider, in a common schema, per [RFC 0003](rfc0003_anpr2mqtt.md#vehicles-in-camera-autonotify) |
 | `event.threat_level` | GenAI's threat level, where it summarised the review |
 | `event.profile` | Frigate's active profile, from `{prefix}/profile/state`, or `none` for its base config, where Frigate has profiles |
 | `event.genai` | Whether the notification is what GenAI added, a summary or a description |
@@ -256,6 +258,50 @@ GenAI provider one, so it needn't be matched in the description's text, though m
 Supernotify's scenarios then decide, as now, how it's delivered by who's home or whether the alarm is set, by the
 rule's tags, without needing to know about birds or faces.
 
+### Vehicles
+
+Known, dangerous, unknown and ignored vehicles, as anpr2mqtt classifies them today, are four simple rules, for
+Frigate's plates and anpr2mqtt's alike, replacing anpr2mqtt's classification for those using Home Assistant, per
+[RFC 0003](rfc0003_anpr2mqtt.md)'s decision 15:
+
+| Rule | Object | Recognised as | Then |
+|------|--------|---------------|------|
+| Dangerous vehicle | `car`, `motorcycle` and the rest | one of: *Stolen van*, ... | `critical`, tag `dangerous_vehicle` |
+| Ignored vehicle | the same | one of: *Neighbour's car*, ... | silence |
+| Known vehicle | the same | any name but: *Stolen van*, *Neighbour's car*, ... | `medium`, tag `known_vehicle` |
+| Unknown vehicle | the same | a plate read, but not recognised | `high`, tag `unknown_vehicle` |
+
+Known and dangerous are easy, a name from a list. **Unknown is the test of the rule structure**, being the inverse of
+the others: a plate was read, so the vehicle could have been recognised, and it wasn't, as any of the names known.
+Without *seen but not recognised*, it couldn't be said at all, since a car with no plate read isn't an unknown
+vehicle, only one whose plate wasn't seen. Known needs *any name but* the dangerous and ignored ones, or a dangerous
+vehicle would be known too. Where they overlap anyway, combining keeps it safe: silence wins only for the ignored, and
+otherwise the most urgent priority.
+
+The names are those of the vehicle categories registered in Camera AutoNotify, per
+[RFC 0003](rfc0003_anpr2mqtt.md#vehicles-in-camera-autonotify), modelled on anpr2mqtt's target groups: a single vehicle,
+every family car, or a delivery company's vans, each matching plates or expressions, after corrections and ignores. So
+a plate's category is set in one place, for every source, and the rules only say what each category means here.
+anpr2mqtt's sightings that are in none of them are still recognised by its targets' descriptions.
+
+A plate's visit history is there too, as `event.vehicle.history`: the previous sightings, the count by hour, whether
+it's a new visit, the earliest and latest times of day it's been seen, and whether this sighting is within them. So
+an advanced rule can raise a known vehicle seen at an unusual time:
+
+```yaml
+condition: template
+value_template: >
+  {{ event.vehicle.category == 'Family cars' and event.vehicle.history.within_time_range == false }}
+```
+
+A plate looked up with the DVLA, or another country's register
+([RFC 0003](rfc0003_anpr2mqtt.md#dvla-enrichment-of-frigates-plates)), also gives `event.vehicle.lookup` to advanced
+rules, in a common schema whichever register it came from, such as raising an untaxed or uninspected vehicle.
+
+anpr2mqtt keeps its own classification, `known`, `dangerous` and `ignore`, for those who use it without Home
+Assistant, and phase 2's vehicle settings keep following it for anpr2mqtt's sightings, but with Home Assistant its
+docs recommend these rules instead, so the meaning of a vehicle is decided in one place, for every source.
+
 ## Feasibility
 
 - **The editor**: `ConditionSelector` is in Home Assistant's selectors, and works in a config flow, giving the same
@@ -297,10 +343,18 @@ theirs.
    warning of routing conditions
 5. Simple rules turned into conditions when loaded, so both types are checked the same way, with *Make advanced*
 6. Diagnostics following a notification from rules to tags to scenarios, and the tidiness checks in RFC 0006
-7. Worked examples in the docs, each with both the rule and the scenario
+7. Worked examples in the docs, each with both the rule and the scenario, the four vehicle rules among them, and the
+   unknown vehicle rule as the test of *seen but not recognised*
 8. Other AutoNotifiers that need rules take the same approach, with variables of their own domain
 
 ## Open questions
+
+- **Vehicle settings and rules**: settled, not migrated. There are few anpr2mqtt installs, so RFC 0003's vehicle
+  settings of an anpr2mqtt entry stay beside the rules for anpr2mqtt's own classification, rather than becoming them
+- **Plates without a category**: settled by RFC 0003's *Known vehicle* button, registering a plate as it arrives, so
+  a household starting with every vehicle unknown fills its categories as it goes
+- **Importing**: whether Frigate's `lpr.known_plates`, and anpr2mqtt's targets for those moving over, can be imported
+  into categories once, by choice, as a start
 
 - **Source**: still worth sending on `supernotify.notify`, so Supernotify's archive can say where a notification came
   from (Supernotify #293), though no longer needed to scope rules there

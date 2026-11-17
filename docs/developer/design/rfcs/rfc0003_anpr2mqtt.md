@@ -2,7 +2,8 @@
 
 **Status**: Phase 2 built in 0.11.0, as early access
 Reviewed 2026-11-11, design agreed, upstream changes released in anpr2mqtt 1.3.0. Phase 2 built 2026-11-17, see
-[As built](#as-built)
+[As built](#as-built). 2026-11-17, the DVLA lookup moved here for Frigate's own plates, see
+[DVLA enrichment of Frigate's plates](#dvla-enrichment-of-frigates-plates)
 
 ## Summary
 
@@ -98,6 +99,22 @@ From the review of the findings above.
     [duplicate detection](https://supernotify.rhizomatics.org.uk/latest/configuration/dupe_detection/) rules, and
     use the same title and message for the same plate from either source, so it has a good chance of catching them.
     Duplicate detection at a higher level, which Supernotify is too low in the stack to do, goes on the roadmap.
+
+14. **Frigate's plates don't go through anpr2mqtt.** Frigate to MQTT, to anpr2mqtt, back to MQTT and on to Home
+    Assistant is a round trip for no gain, now that Camera AutoNotify reads Frigate's plates itself
+    ([RFC 0004](rfc0004_richer_frigate.md)). The DVLA lookup anpr2mqtt does for them is done here instead, so a plate
+    Frigate reads is enriched directly. anpr2mqtt stays for ANPR cameras sending images by FTP or to a NAS, and for
+    its other kinds of detection
+15. **anpr2mqtt keeps its Frigate listener and its vehicle classification**, for those not using Home Assistant, or
+    not using Camera AutoNotify. Its docs recommend Camera AutoNotify's own instead with Home Assistant: the DVLA
+    lookup below, and rules for known, dangerous and unknown vehicles in [RFC 0005](rfc0005_rules.md#vehicles)
+16. **Vehicles are registered in Camera AutoNotify**, modelled on anpr2mqtt's targets and groups, with its
+    corrections, ignores and visit history, since the much bigger opportunity is Frigate users wanting the
+    enrichment, who have no anpr2mqtt. There are few anpr2mqtt installs, so its vehicle settings aren't migrated on
+    upgrade: a *Known vehicle* button lets plates be registered as they arrive instead. It needn't be done exactly as
+    anpr2mqtt does it, so long as it's at least a superset, and better or more Home Assistant like where it can be
+17. **Lookups aren't only the DVLA's.** The DVLA is the first of any number of lookup providers, each for a country's
+    or region's vehicle register, so plates elsewhere can be enriched the same way
 
 ## Upstream changes to anpr2mqtt
 
@@ -219,11 +236,148 @@ built, so Camera AutoNotify and AutoArm look alike.
 An anpr2mqtt entity being `unavailable` means anpr2mqtt is down, and is notified by the [health checks](https://camera-autonotify.rhizomatics.org.uk/health/) as a third kind beside servers and cameras, from the
 entity's state, with nothing polled.
 
+## DVLA enrichment of Frigate's plates
+
+Per decision 14, the same lookup anpr2mqtt does, done by Camera AutoNotify for each plate Frigate reads. The DVLA, for
+UK plates, is the first lookup provider, per decision 17, and the one described here. See
+[Other countries](#other-countries) for the rest.
+
+### What's looked up
+
+- **When**: a plate read by Frigate, from the tracked object's `recognized_license_plate` or an `lpr` message,
+  gathered with RFC 0004's facts, once its score is at least anpr2mqtt's default `min_score`, 0.7, and, as anpr2mqtt
+  does, only once for each plate while it's cached
+- **How**: the DVLA's Vehicle Enquiry Service, a `POST` to
+  `https://driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1/vehicles` with the `x-api-key` header and
+  `{"registrationNumber": plate}`, by Home Assistant's own HTTP session, never blocking the notification
+- **Cached**: a day to begin with, as anpr2mqtt's `cache_ttl`, kept in a Home Assistant `Store` so a restart doesn't
+  ask again, a plate the DVLA doesn't know cached as such too
+- **Failures**: an error, a refusal or a rate limit logged, and the plate notified without the DVLA's details. A key
+  that's refused raises a repair, linking to the setting
+
+### Correcting a misread
+
+As anpr2mqtt's `correct_against_good_read`: where the DVLA doesn't know a plate, and it's within a character or two of
+the last plate the DVLA confirmed on the same camera, within the cache's time, it's taken as that plate. Frigate's
+own `lpr.known_plates` already matches a known plate with its `match_distance`, so this is only for plates Frigate
+doesn't know.
+
+### What it adds
+
+The same as anpr2mqtt's `reg_info` gives today: the make, colour, year, fuel, tax and MOT, as a line of RFC 0004's
+facts, *DVLA: MITSUBISHI, WHITE, 2019, Taxed*, said with the plate, and as variables for rules, such as
+`event.vehicle.lookup.tax`, in the common schema of [Other countries](#other-countries), so a rule can raise an
+untaxed vehicle. A review notified before the lookup returns has the
+details in its next notification, as other facts do, or an update of its own, per the roadmap's update for a plate
+read.
+
+### Settings
+
+The DVLA's part of the *Vehicle lookup* section of *Global Settings*: the API key, issued by the DVLA, off without
+one, and how long to cache. A key is stored as a config entry's data, not its options, and left out of diagnostics.
+
+### Other countries
+
+Per decision 17, a lookup is a provider, with the DVLA only the first:
+
+- **A provider** says which plates it's for, by country or region, and by the plate's format where that tells, what
+  it needs, such as an API key, and turns a plate into the same details, the make, colour, year, and whatever its
+  register has of tax, inspection or insurance, as a common schema, with anything more kept as it comes. Rules read
+  the common schema, so a rule for an untaxed or uninspected vehicle works whichever country's register said so
+- **Choosing**: one or more providers, each with its own settings, in the *Vehicle lookup* section of *Global
+  Settings*, which replaces *DVLA*. A plate goes to the provider for its country, or to the one chosen where the
+  plate's format can't tell
+- **Others**: a provider for another country is added beside the DVLA's, without changing the rest. Some countries'
+  registers are open data, needing no key, such as the Netherlands' RDW, which makes them a good second to prove the
+  interface, though each is to be checked for its terms and limits first
+- **Caching, failures and correcting a misread** are the same for every provider, done once around them, not in each
+
+### What it means for anpr2mqtt
+
+- A Frigate-read plate is one notification, the Frigate review's, with the DVLA's details, rather than the review and
+  an anpr2mqtt sighting
+- anpr2mqtt's Frigate listener isn't needed with Home Assistant, and its docs say so, though it keeps working for
+  those who use it, and its sightings are still notified, as phase 2 does
+- [Joining to Frigate reviews](#phases), phase 3, is then only for an ANPR camera's own sightings, matched to a
+  Frigate review by time, since Frigate's own plates no longer arrive by anpr2mqtt
+
+## Vehicles in Camera AutoNotify
+
+Per decision 16, what anpr2mqtt knows of vehicles, kept here, for every plate, from Frigate or anpr2mqtt. At least
+what anpr2mqtt does, not a copy of it, so where Home Assistant has a way of its own, that's used:
+
+- **Actions**: `camera_autonotify.add_plate` and `camera_autonotify.remove_plate`, with a category, a plate and a
+  description, so plates can be added from automations, scripts and voice, not only the settings and the
+  *Known vehicle* button
+- **An event for each sighting**, `camera_autonotify_vehicle`, with the plate, its category, the DVLA's or another
+  provider's details and its visit history, for automations, such as opening the gate for a family car, rather than
+  each reading a sensor's attributes
+- **Entities**: each category's sensor, of the last plate seen, with a device class, icon and translated name, and its
+  visit history as attributes, so dashboards and the recorder have it as they do any other sensor
+- **Better than plates alone**: a category can also match RFC 0004's facts, such as a delivery company's logo, so
+  *Amazon Prime vans* can be every van with Amazon's logo, as well as a run of registrations
+
+### Categories
+
+A category of vehicles, a subentry of *Global Settings*, as rules are, modelled on an anpr2mqtt target group:
+
+| Field | What it is |
+|-------|------------|
+| Name | Such as *Jey's Outlander*, *Family cars* or *Amazon Prime vans*, what rules match on |
+| Icon | For its entity and where it's shown, as anpr2mqtt's `icon` |
+| Description | What it's said as in a notification, where a plate of it has no description of its own |
+| Entity id | Its sensor, the last plate seen of it and when, as anpr2mqtt's target sensors, to use in automations and dashboards |
+| Look up | Whether the DVLA is asked about its plates, off for known vehicles to begin with, as anpr2mqtt's `lookup` |
+| Plates | One or more, each a plate, or a regular expression for a run of plates, such as a fleet's, with an optional description of its own |
+
+So a category can be a single vehicle, every family car, or a delivery company's vans. A plate is matched once
+corrected, ignoring case and spaces, exactly, by expression, or within one character, as Frigate's own
+`match_distance` does, so a misread of a known plate still finds it. Frigate's `lpr.known_plates` sub labels still
+come through reviews as they do; categories are what rules and the *Known vehicle* button work with.
+
+### Corrections and ignores
+
+As anpr2mqtt's `correction` and `ignore`, in a *Plates* section of *Global Settings*, applied to every plate read,
+before it's matched, looked up or counted:
+
+- **Corrections**: a plate, and the reads that are really it, each a string or a regular expression, such as a camera
+  that always reads an `O` as a `0` on one car
+- **Ignores**: reads that aren't vehicles at all, such as a road sign or a van's livery, each a string or a regular
+  expression, dropped without a notification or a sighting
+
+### Visit history
+
+For every plate, as anpr2mqtt's tracker keeps it, in a Home Assistant `Store`, counted from the sightings before this
+one:
+
+| Fact | What it is |
+|------|------------|
+| Previous sightings, last seen | How often, and when last |
+| Count by hour | Sightings in each hour of the day, said on the 12 hour clock, such as `9am: 2 times, 1pm: 15 times` |
+| New visit | Whether this sighting is a visit of its own, more than the minimum gap since the last, `min_visit_gap_seconds` in anpr2mqtt, a setting here, with a sighting within it not counted |
+| Earliest and latest time of day | The earliest and latest times of day the plate has been seen |
+| Within the usual times | Whether this sighting is between the two, or none without history, so a familiar car at 3am, earlier than ever before, can be raised |
+
+The previous sightings and last seen are said in the message, as phase 2 does. A sighting outside the usual times
+says so, such as *Earlier than ever seen before*. The rest are variables for rules, `event.vehicle.history`, and for
+richer deliveries, such as the count by hour in the HTML e-mail of [RFC 0007](rfc0007_rich_email.md). History is kept
+for a set time, a year to begin with, being personal data about who comes and goes, and never leaves Home Assistant.
+
+### Registering as it happens
+
+A *Known vehicle* button on a notification of a plate that's in no category, one more of
+[RFC 0004](rfc0004_richer_frigate.md)'s actions, with a text box for its description, adds the plate to a category
+chosen in *Global Settings*, *Known vehicles* to begin with, so a household fills its categories as cars arrive,
+rather than typing plates in. A plate added this way is matched from its next sighting.
+
 ## Phases
 
 1. **Tidy the settings forms** (decision 10), and release the **upstream changes**, made but not yet released, before anything here relies on them.
 2. **anpr2mqtt cameras by themselves**: discovery, the entry with its linked camera, when to notify, content, images, vehicles, the notification box, health and documentation, with the recommended Supernotify scenarios. Done when the example automation can be deleted on the live install.
-3. **Joined to Frigate reviews**: a Frigate sighting updating its review's notification, a filesystem sighting matched by time, and the semantic levels, so a sighting at a lower level than what's already been sent, such as a Frigate sub label after an anpr2mqtt sighting, isn't sent. The level and the review's key go in `extra_data`, for Supernotify or anything else to use.
+3. **DVLA enrichment of Frigate's plates**, per decision 14, so Frigate's plates need no anpr2mqtt, with anpr2mqtt's docs recommending it for Home Assistant. See [DVLA enrichment of Frigate's plates](#dvla-enrichment-of-frigates-plates).
+4. **Vehicles in Camera AutoNotify**: categories, corrections and ignores, the visit history, and the *Known vehicle* button, per decision 16. See [Vehicles in Camera AutoNotify](#vehicles-in-camera-autonotify).
+5. **Joined to Frigate reviews**: a filesystem sighting matched to a Frigate review by time, and a Frigate sighting from anpr2mqtt, for those still using its listener, updating its review's notification, and the semantic levels, so a sighting at a lower level than what's already been sent isn't sent. The level and the review's key go in `extra_data`, for Supernotify or anything else to use.
+6. **Vehicle rules**: known, dangerous, unknown and ignored vehicles as [RFC 0005](rfc0005_rules.md#vehicles) rules over the categories, for Frigate's plates and anpr2mqtt's alike, with the vehicle settings of phase 2 kept, not migrated, for anpr2mqtt's own classification.
 
 The recorder's three sightings above become test fixtures, as the real Frigate reviews already are, and the 14:25 visit, a review, a sub label and both sightings, is the test of phase 3: one notification, updated, not four.
 
@@ -237,7 +391,8 @@ Phase 2, released in 0.11.0 as early access, to get feedback from use before the
 - **Retained state**: taken as any change in the first few seconds of following the sensor, and any sighting more than
   ten minutes old, rather than the old state being `None`, since an MQTT sensor starts as `unknown`
 - **Left for later**:
-    - phase 3, joining a sighting to its Frigate review, and the semantic levels
+    - phases 3 to 6: the DVLA lookup here for Frigate's plates, vehicles registered here with their history, joining a
+      sighting to its Frigate review, and vehicle rules
     - adding a sensor by hand, for anpr2mqtt without devices
     - the linked camera by `live_url`, and by `frigate_event_id` learned from sightings
     - the visit history and the source's own details, such as `vehicle_direction`, for richer deliveries, held back,
