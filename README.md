@@ -11,6 +11,8 @@ It starts with [Frigate](https://frigate.video): every camera is found and set u
 
 Other camera integrations are to follow, including [ANPR2MQTT](https://anpr2mqtt.rhizomatics.org.uk) and possibly Unifi Protect or Viseron.
 
+> 🌐 **Deutsch · English · Español · Français · हिन्दी · Italiano · Português · Português (Brasil)**
+
 ## What You Need
 
 - Home Assistant 2026.5 or later

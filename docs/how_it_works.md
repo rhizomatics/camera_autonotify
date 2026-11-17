@@ -20,7 +20,7 @@ The title says what was seen and where, such as "Person detected at Barn Door", 
 
 With Supernotify, each notification:
 
-- shows the snapshot of the review, or the *Image* chosen instead, and opens the clip when tapped, played from Frigate as HLS
+- shows the snapshot of the review, or the *Image* chosen instead, and opens the clip when tapped, played from Frigate as HLS. See [When the Image Can't Be Fetched](#when-the-image-cant-be-fetched)
 - has a *View snapshot* button, and the buttons of the [*Actions*](index.md#actions) chosen, such as *Keep* and *Seen*
 - is grouped with the others of the same camera
 - passes the camera entity, so Supernotify's camera snooze works
@@ -99,3 +99,20 @@ camera notifications stay quiet and routine when someone's home.
 
 The clip is never attached to the notification. Attached as `clip.mp4`, an iPhone shows the snapshot only some of the time, and a Frigate clip is often too large for it to play from the notification. Attached as the HLS playlist, it shows no image at all. So every notification has the snapshot, or the *Image* chosen instead, as its image, and opening it plays the clip, on iPhones and Android phones alike. This replaces the
 [Apple push fix](https://supernotify.rhizomatics.org.uk/latest/recipes/fix_frigate_apple_push/), which isn't needed here.
+
+### When the Image Can't Be Fetched
+
+The image of a notification comes from Frigate, through the Frigate integration's notification proxy, and now and
+then it can't be had: the animated preview before Frigate has the frames for it, a snapshot of an event Frigate has
+since deleted, Frigate not answering, or the proxy switched off or its links expired.
+
+- **On a phone**, the phone fetches the image itself, so one that can't be fetched shows no picture, and tapping the
+  notification still opens the clip where Frigate has it
+- **In e-mail, and other deliveries Supernotify fetches the image for**, Supernotify until v2.19.0 sends it without a
+  picture. From Supernotify v2.19.0 it takes a picture from the camera instead, its live view **at the time the
+  notification is sent**, since the camera entity is always passed for Supernotify's camera snooze. That's better than
+  nothing, but it's not the event: the person or car may be long gone, or something else in view. Nothing in the
+  notification says so yet. Saying so is planned in Supernotify, as "Image Notes" on its roadmap
+
+Camera AutoNotify already avoids the commonest case itself, showing the snapshot until the animated preview is ready,
+and always for a camera Frigate doesn't record. See *Image* in [Settings](index.md#settings).

@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from homeassistant.core import Context, HomeAssistant, callback
+from homeassistant.loader import IntegrationNotLoaded, async_get_loaded_integration
 
 from .const import SUPERNOTIFY_DOMAIN
 
@@ -12,6 +14,36 @@ from .const import SUPERNOTIFY_DOMAIN
 @callback
 def supernotify_available(hass: HomeAssistant) -> bool:
     return hass.services.has_service(SUPERNOTIFY_DOMAIN, "notify")
+
+
+# the first version taking a list of snapshot URLs, tried in order, and a help link for when none gives an image,
+# its betas included, by major and minor version only
+FALLBACK_URLS: tuple[int, int] = (2, 19)
+
+
+def parsed_version(version: object) -> tuple[int, int, int] | None:
+    """A version's numbers, whatever follows them, such as `2.19.0b3` or `2.19.0-beta3`, or nothing for none"""
+    found = re.match(r"\s*v?(\d+)\.(\d+)(?:\.(\d+))?", str(version or ""))
+    if found is None:
+        return None
+    return int(found[1]), int(found[2]), int(found[3] or 0)
+
+
+@callback
+def supernotify_version(hass: HomeAssistant) -> tuple[int, int, int] | None:
+    """The version of Supernotify as loaded, by its manifest, without waiting, or nothing when it isn't loaded"""
+    try:
+        integration = async_get_loaded_integration(hass, SUPERNOTIFY_DOMAIN)
+    except IntegrationNotLoaded:
+        return None
+    return parsed_version(integration.version)
+
+
+@callback
+def fallback_urls(hass: HomeAssistant) -> bool:
+    """Whether Supernotify takes a list of snapshot URLs, tried in order, and a help link"""
+    version = supernotify_version(hass)
+    return version is not None and version[:2] >= FALLBACK_URLS
 
 
 async def _enquire(hass: HomeAssistant, action: str, context: Context) -> dict[str, Any]:

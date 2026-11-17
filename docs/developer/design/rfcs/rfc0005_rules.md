@@ -3,13 +3,18 @@
 **Status**: Ready for Review
 2026-11-13, nothing yet to build. 2026-11-17, matching what's recognised moved here from
 [RFC 0004](rfc0004_richer_frigate.md), and rules rebuilt on Home Assistant's own conditions, staying in Camera
-AutoNotify rather than moving to Supernotify
+AutoNotify rather than moving to Supernotify, and limited to classifying the event, with routing left to Supernotify
 
 ## Summary
 
-Rules decide what a camera notification means before it's sent: its priority, whether it's sent at all, and which
-Supernotify scenarios apply. They match the notification's text, and everything Camera AutoNotify knows of the
-camera event behind it, such as the object, who or what was recognised, or the speed.
+Rules classify a camera event before it's notified: how important it is, whether it's worth notifying at all, and
+what kind of event it is, as tags such as `unknown_vehicle` or `delivery`, which for now are Supernotify scenario
+names. They match the notification's text, and
+everything Camera AutoNotify knows of the event behind it, such as the object, who or what was recognised, or the
+speed.
+
+Rules never route. Who's told, by which deliveries, and how that changes with who's home or the alarm, is
+Supernotify's, by its scenarios, which a rule's tags select.
 
 Rules are built on Home Assistant's own conditions and templates, so there's nothing new to learn, and set up in a
 form. A **simple** rule is a few fields for the common case, such as one word to look for. An **advanced** rule is
@@ -40,6 +45,9 @@ hold for every source, so rules that use it belong where it is, by the [design p
 - **One way to behave**: simple and advanced rules combine, and act, the same, so moving from one to the other
   changes nothing else
 - **Explained**: which rules matched, and what they changed, shows in diagnostics and debug logs
+- **Classify, don't route**: rules say what the event is, and scenarios where it goes, so each has one job
+- **Help people keep the two apart**: in practice the line gets blurred, so the form, the checks and the docs steer
+  towards the split, and show where it's crossed, rather than leaving a tangle to be found later
 
 ## Where it's done today
 
@@ -64,14 +72,19 @@ Both use Home Assistant's conditions, but they're not the same thing, and neithe
 
 | | Camera AutoNotify rules | Supernotify scenarios |
 |---|---|---|
-| Decide | What a camera notification means: how urgent, whether to send it, which scenarios apply | How a notification is delivered: which deliveries, to whom, by who's home or the alarm |
-| Know | The notification, and the camera event behind it, as variables | The notification, and Supernotify's own state, such as occupancy |
+| Decide | What the event is: how important, whether worth notifying, what kind, as tags | Where it goes: which deliveries, to whom, how loudly, by who's home or the alarm |
+| Know | The notification, and the camera event behind it, as variables | The notification, its tags, and the house: occupancy, people, the alarm |
 | Apply to | Camera AutoNotify's own notifications | Every notification, from any source |
 | Run | Before the notification is sent | As Supernotify delivers it |
 
-A rule can apply scenarios, so the two work together: a rule says an unknown car at night is `high` and applies
-`security`, and the `security` scenario decides who that reaches. The camera's domain data stays in Camera
-AutoNotify, and only what's decided, the priority and scenarios, goes on to Supernotify.
+So for an unknown car at night: a rule matches a car, not recognised, after dark, and gives it `high` priority and
+the tag `unknown_vehicle`. That tag selects the `security` scenario, which with the alarm set makes it `critical`,
+to everyone's phone and the speakers, and with someone home, only their phone. The camera's domain data stays in
+Camera AutoNotify, and only what's decided, the priority and tags, goes on to Supernotify.
+
+Rules have no *Targets* or *Deliveries*, and no condition on who's home or the alarm. A camera or zone's own
+*Targets* and *Deliveries* in its settings are where its notifications go to begin with, before scenarios, and stay
+as they are.
 
 ## Design
 
@@ -99,10 +112,10 @@ same, and can be turned into an advanced rule in its form, showing the condition
 
 #### Advanced rules
 
-Any Home Assistant condition, edited with Home Assistant's own condition editor, the `ConditionSelector`, as in an
-automation: `and`, `or` and `not`, state, time, zone, sun, numeric state, and template conditions, which see the
-notification and its event as variables. So "a person not recognised, after dark, with the alarm set" is three
-conditions anyone who writes automations already knows, and a template covers the rest:
+Home Assistant conditions, edited with Home Assistant's own condition editor, the `ConditionSelector`, as in an
+automation: `and`, `or` and `not`, time, sun, and template conditions, which see the notification and its event as
+variables. So "a person not recognised, after dark" is two conditions anyone who writes automations already knows,
+and a template covers the rest:
 
 ```yaml
 condition: template
@@ -122,20 +135,48 @@ Given to every condition, simple or advanced, as `variables` when it's checked:
 | `event.recognised`, `event.names` | Whether anything was recognised, and the names, from sub labels, faces and plates, or from anpr2mqtt once [RFC 0003](rfc0003_anpr2mqtt.md) is built |
 | `event.face_unknown`, `event.plates`, `event.speed`, `event.attributes`, `event.states` | The facts of [RFC 0004](rfc0004_richer_frigate.md), such as a plate read that's not known, or a gate open |
 | `event.threat_level` | GenAI's threat level, where it summarised the review |
+| `event.profile` | Frigate's active profile, from `{prefix}/profile/state`, or `none` for its base config, where Frigate has profiles |
 | `event.genai` | Whether the notification is what GenAI added, a summary or a description |
+
+Time of day is part of what an event is, a car at 3am meaning something different from one at 3pm, so time and sun
+conditions belong in rules. So, in the same way, does the house's state where it changes what the event means, and
+the camera domain's own view of that is **Frigate's profile**: Frigate watches differently when the house is empty,
+and [Auto Arm](https://autoarm.rhizomatics.org.uk/configuration/frigate/) switches the profile from the alarm's
+state, so `event.profile == 'armed_away'` says the house is empty in Frigate's own terms, without a rule reading the
+alarm or who's home itself.
 
 The names of `event`'s variables are kept stable once released, since rules are written against them, and named
 for cameras rather than Frigate, so the same rule works whichever camera source the event came from.
 
 ### Then
 
-As rules do today, for both types:
+What a rule gives, for both types, all about the event, none about where it goes:
 
-- **Priority**: raise or set it, never below a floor a source set from a fact, such as a threat level
-- **Silence**: don't send it
-- **Scenarios**: Supernotify scenarios to apply
+- **Priority**: how important the event is, raised or set, never below a floor a source set from a fact, such as a
+  threat level. Scenarios can still raise it further, such as to `critical` with the alarm set
+- **Silence**: not worth notifying at all, such as a bird seen every day
+- **Tags**: what kind of event it is, such as `unknown_vehicle`, `delivery` or `wildlife`, as Supernotify scenario
+  names, chosen from Supernotify's scenarios or typed
 - **Remove the text matched**: simple rules with *Text* only, such as a risk level at the start of a GenAI summary,
   since a condition has no text it matched
+
+### Tags are scenarios, for now
+
+Rather than get ahead of Supernotify with a tag of its own, a tag is a Supernotify scenario name, sent by
+`apply_scenarios`, as rules apply scenarios today. A scenario may in the end turn out to be a tag and a rule
+together, but that's for Supernotify to settle, and until then nothing new is needed on either side:
+
+- **A tag with a scenario**: the scenario applies, and says where the notification goes, as now
+- **A tag without one**: Supernotify ignores an unknown name in `apply_scenarios`, logging it at debug only, rather
+  than rejecting the notification. So a rule can give `unknown_vehicle` before anyone has made a scenario of that
+  name, though there's little point until someone does
+- **Seen by other scenarios**: Supernotify's `applied_scenarios` condition variable holds every name asked for, those
+  it doesn't have included, so another scenario's condition can test `'unknown_vehicle' in applied_scenarios`, with
+  no change to Supernotify
+
+So there's no *Tags* section to set up, and no separate mapping: the rule's *Tags* are the scenario names. Today's
+rules already apply scenarios, so they carry on unchanged, with nothing to migrate. If Supernotify later gives tags a
+field of their own, *Tags* moves to it, and the names stay the same.
 
 ### Combining
 
@@ -147,16 +188,39 @@ taken as not matching, and logged.
 
 Rules stay subentries of *Global Settings*, as now. *Add rule* first asks which type:
 
-- **Simple**: one form, *Text*, *Object*, *Recognised as* and *Severity*, then *Priority*, *Silence*, *Remove the
-  text matched* and *Scenarios*. The objects and names to choose from are read from Frigate, as *Object names*
-  already reads its labels, with names typed for plates
-- **Advanced**: Home Assistant's condition editor, then the same *Priority*, *Silence* and *Scenarios*. The
-  conditions are checked when saved, with `async_validate_conditions_config`, so a mistake is shown in the form
-  rather than found when a notification goes
+- **Simple**: one form, *Text*, *Object*, *Recognised as* and *Severity*, then *Priority*, *Silence*, *Tags* and
+  *Remove the text matched*. The objects and names to choose from are read from Frigate, as *Object names* already
+  reads its labels, with names typed for plates
+- **Advanced**: Home Assistant's condition editor, then the same *Priority*, *Silence* and *Tags*. The conditions are
+  checked when saved, with `async_validate_conditions_config`, so a mistake is shown in the form rather than found
+  when a notification goes
 - **Changing a rule**: its own type's form, with *Make advanced* on a simple rule, to carry on from the condition it
   was
 
 Existing rules are simple rules, with *Text* as they have now, so nothing needs migrating.
+
+## Keeping rules and scenarios apart
+
+The split is clean on paper, and blurred in practice: a scenario that matches the message with a regular expression
+is classifying, and a rule's condition on the alarm is routing. Neither is wrong in itself, but both together, for
+the same thing, make a tangle that's hard to see into. So the integration helps people keep to the split, and see
+where it's crossed:
+
+- **The forms say which is which**: the rule form's description says it's for what the event is, not who's told, with
+  a link to Supernotify's scenarios for that. *Tags* marks which names Supernotify has a scenario for, and which not
+  yet
+- **Warned, not blocked**: an advanced rule whose conditions test who's home, the alarm, people, device trackers or
+  Supernotify's occupancy is saved, with a warning in the form that this is routing, better done in a scenario the
+  rule's tag selects, or by Frigate's profile where it's what the event means. Blocking would only push it into a
+  template
+- **Shown together**: each notification's diagnostics and debug log say which rules matched, the priority and tags
+  they gave, and which scenarios each tag selected, and Supernotify's archive then shows which scenarios applied and
+  where it went. One notification can be followed from event to delivery
+- **Tidiness checks**: in the [config health report](rfc0006_config_health_report.md), a tag Supernotify has no
+  scenario for, which does nothing yet, and a Supernotify scenario whose condition matches `notification_message`
+  with a pattern a rule already matches
+- **Docs by example**: worked examples that show both halves, the rule and the scenario, for an unknown car at night,
+  a boring bird, and a delivery, so the pattern is copied rather than reinvented
 
 ## Matching what's recognised
 
@@ -170,8 +234,9 @@ from the review's severity, a GenAI threat level, or a rule matching the message
 
 On the live install this is done by Supernotify scenarios matching the message with a regular expression, for birds,
 and for known people named in GenAI descriptions. That works only while the words do, and can't say that nothing was
-recognised. With the simple rule's *Object* and *Recognised as*, each is two fields, and night or the alarm an
-advanced rule's extra condition.
+recognised. With the simple rule's *Object* and *Recognised as*, each is two fields, night an advanced rule's
+extra condition, or Frigate's profile, and who's told with the alarm set a scenario's, selected by the rule's
+tag.
 
 The facts come from the camera source, in a schema of the source's kind rather than of one product, so the same rule
 works whoever recognised the car:
@@ -188,8 +253,8 @@ a score where it wants another threshold.
 
 A GenAI description naming a known person follows from the sub label it was written with, where Frigate gave the
 GenAI provider one, so it needn't be matched in the description's text, though matching the text stays possible.
-Supernotify's scenarios then still decide, as now, how the priority is delivered by who's home or whether the alarm
-is set, without needing to know about birds or faces.
+Supernotify's scenarios then decide, as now, how it's delivered by who's home or whether the alarm is set, by the
+rule's tags, without needing to know about birds or faces.
 
 ## Feasibility
 
@@ -225,13 +290,15 @@ theirs.
 
 **A**:
 
-1. Existing rules become simple rules, unchanged
-2. Simple rules gain *Object*, *Recognised as* and *Severity*, over RFC 0004's facts
-3. Advanced rules, with Home Assistant's condition editor and the variables above
-4. Simple rules turned into conditions when loaded, so both types are checked the same way, with *Make advanced*
-5. Worked examples in the docs: the live install's bird and known person scenario conditions as simple rules, and
-   an unknown car at night as an advanced one
-6. Other AutoNotifiers that need rules take the same approach, with variables of their own domain
+1. Existing rules become simple rules, their *Scenarios* becoming *Tags*, unchanged
+2. *Tags* taking names Supernotify has no scenario for yet, typed, as well as chosen
+3. Simple rules gain *Object*, *Recognised as* and *Severity*, over RFC 0004's facts
+4. Advanced rules, with Home Assistant's condition editor and the variables above, `event.profile` among them,
+   warning of routing conditions
+5. Simple rules turned into conditions when loaded, so both types are checked the same way, with *Make advanced*
+6. Diagnostics following a notification from rules to tags to scenarios, and the tidiness checks in RFC 0006
+7. Worked examples in the docs, each with both the rule and the scenario
+8. Other AutoNotifiers that need rules take the same approach, with variables of their own domain
 
 ## Open questions
 
@@ -239,8 +306,16 @@ theirs.
   from (Supernotify #293), though no longer needed to scope rules there
 - **Order with scenarios**: rules run before Supernotify sees the notification, so a scenario condition sees the
   priority a rule set. Confirm, and document it
-- **Advanced conditions and Supernotify**: whether an advanced rule's condition on `occupancy` should read
-  Supernotify's, which only Supernotify knows, or be left to a scenario the rule applies
+- **What to call tags**: each of the obvious words is taken. Frigate's `label` is the object, Home Assistant's
+  labels are what Supernotify targets by, and Supernotify's `tag` is the mobile push tag, which its snoozing also
+  uses. While tags are scenario names, the form can call them *Scenarios*, as now, said to be what kind of event it
+  is, which avoids the question until Supernotify settles what a tag is
+- **The house's state**: time of day is settled as classification, and Frigate's profile brings the house's state
+  in where it changes what the event means. Whether rules should also read Supernotify's occupancy directly, or
+  the profile is enough, so the warning on routing conditions stays as it is
+- **Priority**: treated as how important the event is, so a rule's, with scenarios free to raise it by the house's
+  state. Whether that's clear enough in practice, or whether rules should give only tags, and leave priority to
+  scenarios too
 - **Removing text in advanced rules**: left out, since a condition has no text it matched. Whether that's missed, or
   better done as part of how the source words its own notifications
 - **Names to choose from**: read from each source, as Frigate's faces and classes, or typed, as plates mostly are

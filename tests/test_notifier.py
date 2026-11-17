@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from contextlib import AbstractContextManager
+from types import SimpleNamespace
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 from homeassistant.config_entries import ConfigSubentryData
@@ -9,6 +12,7 @@ from homeassistant.core import Context, HomeAssistant, ServiceCall
 from homeassistant.core_config import async_process_ha_core_config
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
+from homeassistant.loader import IntegrationNotLoaded
 
 from custom_components.camera_autonotify.const import (
     CONF_CUSTOM_TARGET,
@@ -26,6 +30,7 @@ from custom_components.camera_autonotify.const import (
     TYPE_ZONE,
 )
 from custom_components.camera_autonotify.notifier import Notifier, notification_rules
+from custom_components.camera_autonotify.supernotify_api import fallback_urls, parsed_version
 from custom_components.camera_autonotify.tracker import Decision, Reason, Review, Summary
 from tests.ha_testing import MockConfigEntry, async_mock_service
 
@@ -33,6 +38,7 @@ from .conftest import FRIGATE_ENTRY_ID, add_frigate, mock_supernotify
 
 BASE = "https://example.ui.nabu.casa"
 DETECTION = "1792602227.86265-dyoaxn"
+SUPERNOTIFY_API = "custom_components.camera_autonotify.supernotify_api"
 REVIEW_ID = "1792602227.99407-wz2vj1"
 
 
@@ -429,3 +435,66 @@ async def test_genai_image_global_then_camera(hass: HomeAssistant):
     assert notifier(hass, options={CONF_GENAI_IMAGE: "preview"}).image(decision(Reason.SUMMARY)) == "preview"
     # the camera's choice for what GenAI adds leaves its other notifications as they are
     assert notifier(hass, options={CONF_GENAI_IMAGE: "thumbnail"}).image(decision(Reason.NEW)) == "snapshot_box"
+
+
+@pytest.mark.parametrize(
+    ("version", "parsed"),
+    [("2.19.0b3", (2, 19, 0)), ("2.19.0-beta3", (2, 19, 0)), ("v2.18", (2, 18, 0)), ("dev", None), (None, None)],
+)
+def test_parsed_version(version: str | None, parsed: tuple[int, int, int] | None):
+    assert parsed_version(version) == parsed
+
+
+def loaded_supernotify(version: str | None) -> AbstractContextManager[object]:
+    """Supernotify as loaded, at the version given, or not loaded at all"""
+    if version is None:
+        return patch(f"{SUPERNOTIFY_API}.async_get_loaded_integration", side_effect=IntegrationNotLoaded("supernotify"))
+    return patch(f"{SUPERNOTIFY_API}.async_get_loaded_integration", return_value=SimpleNamespace(version=version))
+
+
+@pytest.mark.parametrize(("version", "fallback"), [("2.19.0b3", True), ("2.20.1", True), ("2.18.4", False), (None, False)])
+async def test_fallback_urls_from_supernotify_2_19(hass: HomeAssistant, version: str | None, fallback: bool):
+    """Its betas included, which are what's tested before it's released"""
+    with loaded_supernotify(version):
+        assert fallback_urls(hass) is fallback
+
+
+async def test_preview_with_still_image_behind_it(hass: HomeAssistant, external_url: None):
+    """Tried in order, the GIF not redrawn, and the still image, as chosen for the camera, as usual"""
+    add_frigate(hass, record=True)
+    data = notifier(hass, options={CONF_IMAGE: "preview"}).supernotify_data(decision(Reason.NEW, 1), fallback=True)
+    notifications = f"{BASE}/api/frigate/notifications/{DETECTION}"
+    assert data["media"]["snapshot_url"] == [
+        {"url": f"{notifications}/event_preview.gif", "reprocess": "never"},
+        f"{notifications}/snapshot.jpg?bbox=1",
+    ]
+    assert "reprocess" not in data["media"]
+    assert data["media"]["help_url"] == f"/config/integrations/integration/camera_autonotify#config_entry={ENTRY_ID}"
+
+
+async def test_genai_preview_falls_back_to_cameras_own_image(hass: HomeAssistant, external_url: None):
+    add_frigate(hass, record=True)
+    data = notifier(hass, options={CONF_IMAGE: "thumbnail"}).supernotify_data(decision(Reason.SUMMARY), fallback=True)
+    assert data["media"]["snapshot_url"][1].endswith("/thumbnail.jpg")
+
+
+async def test_still_image_alone_with_help(hass: HomeAssistant, external_url: None):
+    add_frigate(hass)
+    data = notifier(hass).supernotify_data(decision(), fallback=True)
+    assert data["media"]["snapshot_url"] == f"{BASE}/api/frigate/notifications/{DETECTION}/snapshot.jpg?bbox=1"
+    assert data["media"]["help_url"].endswith(ENTRY_ID)
+
+
+async def test_no_help_without_an_image(hass: HomeAssistant):
+    """Nothing for Supernotify to fetch, without Home Assistant's address"""
+    add_frigate(hass)
+    assert "help_url" not in notifier(hass).supernotify_data(decision(), fallback=True)["media"]
+
+
+async def test_sent_as_supernotify_takes_it(hass: HomeAssistant, external_url: None):
+    add_frigate(hass, record=True)
+    calls = mock_supernotify(hass)
+    for version, expected in (("2.18.4", str), ("2.19.0b3", list)):
+        with loaded_supernotify(version):
+            await notifier(hass, options={CONF_IMAGE: "preview"}).async_notify(decision(Reason.NEW, 1), Context())
+        assert isinstance(calls[-1].data["media"]["snapshot_url"], expected)
