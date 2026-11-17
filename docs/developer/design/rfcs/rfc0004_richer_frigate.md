@@ -1,12 +1,15 @@
 # RFC 0004 - Richer Frigate Integration
 
 **Status**: Ready for Review
-Reviewed 2026-11-13 against the Frigate integration's source, spiked against live MQTT messages, not yet built
+Reviewed 2026-11-13 against the Frigate integration's source, spiked against live MQTT messages, not yet built.
+Rescoped 2026-11-17: priority by what's recognised moved to [RFC 0005](rfc0005_rules.md), and one visit across
+cameras to [RFC 0008](rfc0008_visits.md), which isn't Frigate specific
 
 ## Summary
 
 Make more of what Frigate and its Home Assistant integration already offer beyond reviews: actions on a
-notification, recognition that reviews don't carry, and coping with cameras that move.
+notification, recognition that reviews don't carry, the tracked object's own facts in the message, and coping with
+cameras that move.
 
 [RFC 0002](rfc0002_frigate_genai.md) left notifying on `face`, `lpr` or `classification` messages by themselves out of
 scope, since reviews already carry what's recognised as sub labels, and an update is sent when one appears
@@ -30,14 +33,14 @@ Supernotify's handling of mobile actions.
 |------|--------------------|---------|
 | Face detection | `{prefix}/tracked_object_update` with `type: face`, `name` and `score`. Known faces are already review sub labels | Partly covered. What's new is a face **not** recognised, and the score |
 | Licence plates | `type: lpr`, with `name` for a known plate, and the `plate` read otherwise. Only known plates become sub labels | A real gap for unknown plates, but it overlaps [RFC 0003](rfc0003_anpr2mqtt.md). Agree there which of them owns plates, or one car gets yet another notification |
-| Bird recognition | Bird classification sets the bird's sub label, so "Bird (Robin)" already comes through reviews | Notified already, but not prioritised: a rare visitor matters more than the daily robin. See [Priority by what's recognised](#priority-by-whats-recognised) |
+| Bird recognition | Bird classification sets the bird's sub label, so "Bird (Robin)" already comes through reviews | Notified already, but not prioritised: a rare visitor matters more than the daily robin. See [RFC 0005](rfc0005_rules.md#matching-whats-recognised) |
 
 ### Enrichment
 
 | Item | What Frigate gives | Verdict |
 |------|--------------------|---------|
 | Object classification, from 0.17 | `type: classification`, with `model`, and a `sub_label` or an `attribute` | A `sub_label` already reaches reviews. An `attribute`, such as a delivery company, doesn't, and could be added to the headline |
-| State classification, from 0.17 | `{prefix}/{camera}/classification/{model}`, such as a gate open or closed, already a sensor of the Frigate integration | A different kind of trigger, a change of state rather than a review. Better suited to Supernotify's [RFC 0010](https://supernotify.rhizomatics.org.uk/latest/developer/rfcs/0010-sensor_autonotify/), sensor autonotify |
+| State classification, from 0.17 | `{prefix}/{camera}/classification/{model}`, such as a gate open or closed, already a sensor of the Frigate integration | A different kind of trigger, a change of state rather than a review. Not covered by Supernotify's [RFC 0010](https://supernotify.rhizomatics.org.uk/latest/developer/rfcs/0010-sensor_autonotify/), sensor autonotify, which is only for motion sensors and traditional alarms, so it's Frigate enrichment, here: a fact added to a review on the same camera, such as the gate being open as a car arrives, and possibly a notification of its own for a chosen change |
 | PTZ info | `async_get_ptz_info(camera)`, the presets and what the camera can do | Little use in a notification, only as the preset names for an action |
 
 ### Enriching the message
@@ -52,7 +55,7 @@ against Frigate's `tracked_object.py`:
 | `current_estimated_speed`, `average_estimated_speed` | Speed, only through a zone with `distances` set, in km/h or mph by Frigate's `ui.unit_system` | "Car at 48 km/h on the lane", the highest seen over its updates, as the [findings](#findings-2026-11-13) show. Also a fact a rule could raise the priority on, such as a speeding car past the house |
 | `velocity_angle` | Direction of travel in the frame | Only "towards" or "away" once mapped per camera, so later, if at all |
 | `recognized_license_plate`, with its score | The plate read, recognised or not | The unknown plate itself, alongside the `lpr` messages, see [Triggers](#triggers) |
-| `sub_label`, with its score | Who or what was recognised, and how sure | Confidence for [priority by what's recognised](#priority-by-whats-recognised) |
+| `sub_label`, with its score | Who or what was recognised, and how sure | Confidence, for rules matching what's recognised, in [RFC 0005](rfc0005_rules.md#matching-whats-recognised) |
 | `current_attributes`, `attributes` | Attributes found on the object, such as a face, a plate, or a delivery company's logo with a Frigate+ model | "Person (Amazon)" without classification |
 | `stationary`, `motionless_count`, `position_changes` | Whether it has stopped, and for how long | "Car parked at the gate", or quieter updates for something that hasn't moved |
 | `top_score` | Detection confidence | A floor below which a detection isn't notified, or is quieter |
@@ -86,50 +89,44 @@ The same plumbing serves every action. A button whose action is, say, `CAMERA_AU
 `SUPERNOTIFY_`, so the two don't clash. Buttons only reach mobile push, and iOS shows three or four at most, so each
 must earn its place.
 
+Which actions a notification has is a setting, *Actions*, a choice of those Frigate's config says the server can
+do, all of them to begin with, in *Global Settings* and overridable for each camera or zone, as *GenAI image* is.
+So an action that doesn't work for someone, such as *Submit to Frigate+* for a camera whose snapshots Frigate+
+won't take, or one they don't want taking a place among iOS's few buttons, can be switched off, without needing the
+gating to be perfect.
+
+Actions are mobile only to begin with. E-mail can have them later, either once Supernotify supports actions for its
+e-mail delivery, or as links in the HTML e-mail of [RFC 0007](rfc0007_rich_email.md), each link being a Home
+Assistant webhook or a page that runs the action. Whichever it is, the action itself is the same, so only how it's offered
+changes.
+
 | Action | How | Verdict |
 |--------|-----|---------|
 | Move a PTZ camera | The integration's `frigate.ptz` action: move, zoom, stop or a preset | Feasible but niche, moving a camera you can't see from the notification |
 | Submit to Frigate+ | Frigate's `POST /api/events/{id}/plus`, which the integration's client has no method for, so through its general `api_wrapper` | Feasible, though it leans on more of the client than `frigate.py` does today. Needs Frigate+ set up and a snapshot saved, so offered only where Frigate's config says both are |
+| Keep | The integration's `frigate.favorite_event` action | Cheap, and keeps a clip someone cares about from Frigate's retention |
+| Seen | `async_set_reviews_viewed`, from a button, or on tapping the notification | Cheap, marking the review as viewed in Frigate's own UI too |
+| Export | `frigate.export_recording`, for a longer recording around the review | Lower priority than the others, and a button fewer for them where iOS runs out |
 
 ### Priority by what's recognised
 
-Recognition matters as much for **how urgent** a notification is as for what it says. Today the priority comes only
-from the review's severity, a GenAI threat level, or a rule matching the message text.
-
-- **Vehicles**: a known plate, the household's own car, can be quieter than usual, and an unknown one louder,
-  especially at night or with the house empty
-- **Birds**: a species seen every day can be `low` or silenced, and a rare or chosen one raised
-- **Faces**: the same, a known face quieter, a person with no face recognised louder
-
-#### Where it's done today
-
-On the live install this is done by Supernotify scenarios matching the message with a regular expression, for birds,
-and for known people named in GenAI descriptions. Text matching in general isn't Frigate specific, so where it lives
-and how it behaves is left to [RFC 0005](rfc0005_text_matching.md). This RFC covers only matching what Frigate
-recognised, as facts, which only Camera AutoNotify knows, and which can say "not recognised", as text can't.
-
-#### Proposed
-
-Extend rules to match on what was recognised, as well as on the message:
-
-- **What**: the object, such as `bird` or `car`, from the review or the description
-- **Recognised as**: one of a chosen list of names, such as faces, plates or bird species, from the review's sub
-  labels, the `face`, `lpr` and `classification` messages, and the names Frigate knows (`async_get_faces`, and each
-  classification model's classes)
-- **Or**: recognised as anything else, or not recognised at all, for an object that can be recognised but wasn't
-- **Then**: as rules already do, a priority, silence, or Supernotify scenarios
-
-A GenAI description naming a known person follows from the sub label it was written with, where Frigate gave the
-GenAI provider one, so it needn't be matched in the description's text, though matching the text stays possible.
-Unknown plates and faces need the `lpr` and `face` messages, since reviews only carry what was recognised.
-Supernotify's scenarios then still decide, as now, how the priority is delivered by who's home or whether the alarm
-is set, without needing to know about birds or faces.
-
-Moving the live install's scenario conditions over is covered by RFC 0005.
+Moved to [RFC 0005](rfc0005_rules.md#matching-whats-recognised), since rules matching what's recognised, as facts, are
+the same rules as those matching text, and the facts can come from sources other than Frigate, such as anpr2mqtt.
+What stays here is gathering the facts: what reviews don't carry, the tracked object's attributes, and their
+confidence, so a rule can say "not recognised", as text can't.
 
 ## Other possibilities
 
-Found in the review, and more useful than some of the outline:
+Found in the review, and more useful than some of the outline. Where each has gone:
+
+| Item | Now |
+|------|-----|
+| Keep, Seen, Export | Actions, in the [proposed scope](#proposed-scope), mobile only to begin with |
+| Unknown visitor, Unrecognised vehicle | Gathered here, as what reviews don't carry, and matched by rules in [RFC 0005](rfc0005_rules.md#matching-whats-recognised) |
+| Confidence | Gathered here, the threshold being a rule in RFC 0005 |
+| Version gating | In the [proposed scope](#proposed-scope) |
+
+As first found:
 
 1. **Keep**: a button for the integration's `frigate.favorite_event` action, so a clip someone cares about isn't
    lost to Frigate's retention
@@ -147,65 +144,29 @@ Found in the review, and more useful than some of the outline:
 
 ### One visit across cameras
 
-Found in the spikes above, and not in the outline. A vehicle or person passing several cameras is one visit, but each
-camera's review is notified by itself, with its own GenAI summary and descriptions. Two ideas decide which of those
-are worth a notification of their own.
-
-#### Activity type
-
-What's happening, where it can be known:
-
-| Activity | Where it can come from |
-|----------|------------------------|
-| Vehicle arriving | Zones entered in order, from the gate inwards, as *Zones in order* already checks. `velocity_angle`, once mapped per camera to inwards and outwards, above a speed. GenAI's observations, such as "enters the driveway" |
-| Vehicle departing | The same, the other way |
-| Person moving | A person review with no vehicle, or one leaving a vehicle, by GenAI's observations |
-| Suspicious behaviour | GenAI's threat level above 0, or `other_concerns`, or a rule matching a description's risk |
-
-Not every camera can give every activity, and GenAI may not have run, so an activity is known, or it isn't, and
-nothing is guessed. A camera's settings could say which way is in, as a zone order or a direction, for the
-cameras where that matters.
-
-#### Semantic richness
-
-The levels from RFC 0003, each saying more than the one before:
-
-1. A camera event, the object and where
-2. Recognition, a face or a plate, by Frigate or anpr2mqtt
-3. Enrichment, such as speed, a logo, or a plate looked up with the DVLA
-4. GenAI, a description or a summary
-
-#### Deciding
-
-Reviews on cameras next to each other, of the same label, starting within a short time, are taken as one visit.
-Within a visit:
-
-- **A new activity** is a new notification, such as the van departing after it arrived, or anything suspicious
-- **The same activity, richer** updates the visit's notification, silently, as a review's updates do now, such as
-  a plate read, or GenAI's summary
-- **The same activity, no richer** is dropped, such as the second camera's "Car detected" while the first already
-  said so, or a second GenAI summary of the same arrival
-
-For the two vans that's two notifications each, arriving and departing, each updated as recognition and GenAI
-catch up, rather than nine. Which cameras are next to each other, and the time between them, are settings of their
-own, or learnt from the order cameras usually see things. Supernotify's own duplicate detection works on the
-message, which GenAI words differently for each camera, so this belongs here, by the
-[design principles](../design_principles.md), being camera domain logic.
+Found in the spikes, and moved to [RFC 0008](rfc0008_visits.md), since a visit can be seen by more than Frigate, such
+as anpr2mqtt reading the plate of the car a Frigate camera saw, or a doorbell pressed by the person it saw. The
+enrichment here gives that RFC's semantic richness levels something to compare.
 
 ## Proposed scope
 
-1. **Actions first**: *Keep*, *Seen* and *Submit to Frigate+*. New, cheap, needing no new trigger, and they settle
-   the action plumbing for whatever follows
-2. **Priority by what's recognised**: rules matching known and unknown vehicles, birds and faces as facts, following
-   the [design principles](../design_principles.md), since recognition is camera domain logic
-3. **What reviews don't carry**: unknown faces, unknown plates with RFC 0003, classification attributes, and
-   confidence thresholds, which priority by what's recognised needs for its "not recognised" case
-4. **Enriching the message**: speed first, then the plate read, attributes, stationary and confidence, from
-   `{prefix}/events`, in the message and as facts passed on in Camera AutoNotify's own schema
-5. **One visit across cameras**: grouping by activity type and semantic richness, once enrichment and recognition
-   give the richness levels something to compare
-6. **Autotracking**: the settings warning only
-7. **Left out**: state classification, to Supernotify RFC 0010; PTZ info and PTZ actions, until someone asks
+1. **Actions first**: *Keep*, *Seen* and *Submit to Frigate+*, then *Export*. New, cheap, needing no new trigger,
+   and they settle the action plumbing for whatever follows. Each can be switched off, globally or per camera,
+   in an *Actions* setting. Mobile only to begin with, and in e-mail once
+   Supernotify supports it there, or as links in the HTML e-mail of [RFC 0007](rfc0007_rich_email.md)
+2. **What reviews don't carry**: unknown faces, unknown plates with RFC 0003, classification attributes, and the
+   confidence of each, which rules matching what's recognised in RFC 0005 need for their "not recognised" case
+3. **Enriching the message**: speed first, then the plate read, attributes, stationary and confidence, from
+   `{prefix}/events`, and state classification, such as a gate open, from the same camera, in the message and as
+   facts passed on in Camera AutoNotify's own schema
+4. **Autotracking**: the settings warning only
+5. **Version gating**: faces and plates from Frigate 0.16, classification and state classification from 0.17, read
+   from Frigate's config, as the GenAI settings already are, so nothing is offered that the server can't do, and
+   *Submit to Frigate+* only where `plus.enabled` says Frigate+ is set up, with or without a Frigate+ model, and
+   only for a detection with a snapshot
+6. **Moved**: priority by what's recognised to [RFC 0005](rfc0005_rules.md); one visit across cameras to
+   [RFC 0008](rfc0008_visits.md)
+7. **Left out**: PTZ info and PTZ actions, until someone asks
 
 ## Spikes, against a real Frigate with `ha-repl`
 
@@ -238,8 +199,8 @@ descriptions. Plates and anything else identifying are left out here.
   review never carried it**. Read the best scored, and only once the object has ended or the score settles.
   anpr2mqtt read the same plate worse, missing a character, which matters for [RFC 0003](rfc0003_anpr2mqtt.md)
 - **Known elsewhere**: the second van was a target known to anpr2mqtt, by its own name, while Frigate knew nothing
-  of it. Who knows a vehicle may not be Frigate, so priority by what's recognised should be able to take a name
-  from anpr2mqtt too, when RFC 0003 is built
+  of it. Who knows a vehicle may not be Frigate, so rules matching what's recognised, in RFC 0005, should be able to
+  take a name from anpr2mqtt too, when RFC 0003 is built
 - **Attributes**: only `license_plate` and `face`, and over seven days only the labels `car`, `bird` and `person`,
   although there's a Frigate+ model. Its config, read afterwards, showed why:
   - a camera's own `objects.track` replaces the global one, and the cameras the vans passed had no logo labels in
@@ -250,14 +211,15 @@ descriptions. Plates and anything else identifying are left out here.
   - an old `model.labelmap` override, from before the Frigate+ model, mapped a class that the Frigate+ model uses
     for `package` to `car`, so packages were being reported as cars
 
-  So the delivery company was only in **GenAI's text** here, matched by [RFC 0005](rfc0005_text_matching.md), until
-  the logos are tracked. Worth a settings warning, or a repair, where a camera's `objects.track` leaves out the
-  attributes its model has, and where `model.labelmap` overrides a Frigate+ model's labels
+  So the delivery company was only in **GenAI's text** here, matched by [RFC 0005](rfc0005_rules.md), until
+  the logos are tracked. A camera's `objects.track` leaving out the attributes its model has, and `model.labelmap`
+  overriding a Frigate+ model's labels, are for the [config health report](rfc0006_config_health_report.md)
 - **Frigate+**: set up, with a fine-tuned model. Frigate's config has `plus.enabled`, and `model.plus` with the
-  model's details and its `labelMap`, so the integration can tell, and offer *Submit to Frigate+* only then. Spike 2
-  is left with which detections have a snapshot to submit
+  model's details and its `labelMap`, so the integration can tell, and offer *Submit to Frigate+* only then.
+  Submitting needs only `plus.enabled`, Frigate+ being set up, not a Frigate+ model, since images are submitted to
+  train one in the first place. Spike 2 is left with which detections have a snapshot to submit
 - **GenAI summaries**: carry `observations`, a list of short sentences, and a `confidence`, neither used today.
   `observations` could make a better message than `shortSummary` for a long review
 - **One visit, many notifications**: each van passed three cameras, and each camera's review had its own
   notification, summary and description, so up to nine notifications for one delivery, all `LOW RISK` or
-  `NO RISK`. See [One visit across cameras](#one-visit-across-cameras)
+  `NO RISK`. See [RFC 0008](rfc0008_visits.md)

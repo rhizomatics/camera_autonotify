@@ -1,7 +1,8 @@
 # RFC 0005 Rules
 
 **Status**: Ready for Review
-2026-11-13, nothing yet to build
+2026-11-13, nothing yet to build. 2026-11-17, matching what's recognised moved here from
+[RFC 0004](rfc0004_richer_frigate.md)
 
 ## Summary
 
@@ -18,8 +19,10 @@ None of this is Frigate specific. Any source can send text worth matching: an ap
 LLM's summary, or a notification from an automation. So by the [design principles](../design_principles.md), text
 matching isn't unique to any one domain, and this RFC decides where it lives and how it behaves.
 
-Matching what a source knows as a fact, such as the object or who Frigate recognised, is domain logic, and is
-covered for cameras by [RFC 0004](rfc0004_richer_frigate.md), not here.
+Rules can also match what a source knows as a fact, such as the object, or who or what was recognised, and whether
+something that could be recognised wasn't, as text can't say. Working out those facts is domain logic, done by the
+source, such as Camera AutoNotify gathering them from Frigate in [RFC 0004](rfc0004_richer_frigate.md). Matching
+them is the same as matching text, so it's here, in [Matching what's recognised](#matching-whats-recognised).
 
 ## Where it's done today
 
@@ -57,6 +60,47 @@ nobody has to learn two:
 - **Explained**: which rules matched, and what they changed, shows in diagnostics, debug logs and Supernotify's
   archive
 - **Same words**: the same names for each of these in every form
+
+## Matching what's recognised
+
+Recognition matters as much for **how urgent** a notification is as for what it says. Today the priority comes only
+from the review's severity, a GenAI threat level, or a rule matching the message text.
+
+- **Vehicles**: a known plate, the household's own car, can be quieter than usual, and an unknown one louder,
+  especially at night or with the house empty
+- **Birds**: a species seen every day can be `low` or silenced, and a rare or chosen one raised
+- **Faces**: the same, a known face quieter, a person with no face recognised louder
+
+On the live install this is done by Supernotify scenarios matching the message with a regular expression, for birds,
+and for known people named in GenAI descriptions. That works only while the words do, and can't say that nothing was
+recognised.
+
+### Proposed
+
+Rules match on what was recognised, as well as on the text:
+
+- **What**: the object, such as `bird` or `car`
+- **Recognised as**: one of a chosen list of names, such as faces, plates or bird species
+- **Or**: recognised as anything else, or not recognised at all, for an object that can be recognised but wasn't
+- **Confidence**: a score below which a name isn't taken as recognised, so a doubtful name isn't treated as certain
+- **Then**: as rules already do, a priority, silence, or Supernotify scenarios
+
+The facts come from the source, in a schema of the source's kind rather than of one product, so the same rule works
+whoever recognised the car:
+
+| Source | Gives |
+|--------|-------|
+| Frigate, through Camera AutoNotify ([RFC 0004](rfc0004_richer_frigate.md)) | The review's sub labels, the `face`, `lpr` and `classification` messages, including what wasn't recognised, with their scores, and the names Frigate knows, from `async_get_faces` and each classification model's classes, to choose from |
+| anpr2mqtt ([RFC 0003](rfc0003_anpr2mqtt.md)) | A plate, and a name for a known target, which Frigate may know nothing of, as found on the live install |
+| UniFi Protect, later | Its own face and plate recognition |
+
+A GenAI description naming a known person follows from the sub label it was written with, where Frigate gave the
+GenAI provider one, so it needn't be matched in the description's text, though matching the text stays possible.
+Supernotify's scenarios then still decide, as now, how the priority is delivered by who's home or whether the alarm
+is set, without needing to know about birds or faces.
+
+Where these rules live follows the options below for text: in Camera AutoNotify's rules to begin with, and in
+Supernotify's once it has rules, matching the facts passed in a notification's data, scoped by source.
 
 ## Options
 
@@ -109,4 +153,7 @@ Without Supernotify, a notification is plain text to every phone, so losing rule
 - **Order with scenarios**: whether a rule's priority is set before Supernotify evaluates scenario conditions, so a
   condition can see it. Confirm, and document it
 - **Moving the live install over**: the scenario conditions for birds, and for known people in GenAI descriptions,
-  as worked examples in the docs
+  as worked examples in the docs, moved to rules matching what's recognised once they're built
+- **Facts schema**: the names of the facts passed on, shared by every camera source, decided with RFC 0004's
+  enrichment, so a rule in Supernotify needn't know which source it came from
+- **Names to choose from**: read from each source, as Frigate's faces and classes, or typed, as plates mostly are
