@@ -312,6 +312,27 @@ async def test_linked_by_name(hass: HomeAssistant):
     assert find_linked_camera(hass, er.async_get(hass).async_get(SENSOR), {}, "driveway") == camera
 
 
+async def test_linked_to_frigate_not_onvif_nor_anpr2mqtt(hass: HomeAssistant):
+    """The driveway as it is on the live install: anpr2mqtt's own camera, the same camera by ONVIF, and Frigate's,
+    all in the same area, only Frigate's being a camera whose events a plate belongs with"""
+    add_frigate(hass, cameras={"driveway": []})
+    device_id = add_anpr(hass, area="Front")
+    registry = er.async_get(hass)
+    mqtt = hass.config_entries.async_get_entry("01MQTT")
+    registry.async_get_or_create("camera", "mqtt", "anpr_driveway", device_id=device_id, config_entry=mqtt)
+    onvif = MockConfigEntry(domain="onvif")
+    onvif.add_to_hass(hass)
+    camera = dr.async_get(hass).async_get_or_create(config_entry_id=onvif.entry_id, identifiers={("onvif", "drive")})
+    registry.async_get_or_create(
+        "camera", "onvif", "drive_main", device_id=camera.id, config_entry=onvif, suggested_object_id="driveway_main"
+    )
+    front = ar.async_get(hass).async_get_area_by_name("Front")
+    assert front is not None
+    dr.async_get(hass).async_update_device(camera.id, area_id=front.id)
+    frigate = area_of_camera(hass, "driveway", "Front")
+    assert find_linked_camera(hass, registry.async_get(SENSOR), {}, "driveway") == frigate
+
+
 async def test_not_linked_when_unsure(hass: HomeAssistant):
     """Two cameras in the same area, so neither, rather than a guess"""
     add_frigate(hass, cameras={"drive": [], "garden": []})
@@ -421,6 +442,13 @@ async def test_settings_form(hass: HomeAssistant):
     assert "Driveway" in placeholders["linked"]
     shown = fields_of(dict(form))
     assert shown["vehicles.priority_known"].config["options"][0] == "anpr2mqtt"
+    # only cameras of integrations whose events a plate belongs with
+    assert {f["integration"] for f in shown["linked_camera"].config["filter"]} == {
+        "frigate",
+        "unifiprotect",
+        "viseron",
+        "blueiris",
+    }
     assert {"linked_camera_auto", "linked_camera", "vehicles.scenarios_unknown", "notify.deliveries"} <= set(shown)
     await hass.config_entries.options.async_configure(
         form["flow_id"],

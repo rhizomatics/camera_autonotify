@@ -39,7 +39,7 @@ from homeassistant.helpers.selector import (
 )
 
 from .actions import offered
-from .anpr import AnprNotifier, Sighting, find_linked_camera, sensor_entity
+from .anpr import PRIMARY_DOMAINS, AnprNotifier, Sighting, find_linked_camera, sensor_entity
 from .compat import vol
 from .const import (
     CONF_ACTIONS,
@@ -451,7 +451,10 @@ async def anpr_schema(hass: HomeAssistant) -> vol.Schema:
             )
     return vol.Schema({
         vol.Required(CONF_LINKED_CAMERA_AUTO, default=True): BooleanSelector(),
-        vol.Optional(CONF_LINKED_CAMERA): EntitySelector(EntitySelectorConfig(domain="camera")),
+        # only the cameras of primary integrations, not anpr2mqtt's own, nor the same camera by ONVIF
+        vol.Optional(CONF_LINKED_CAMERA): EntitySelector(
+            EntitySelectorConfig(filter=[{"integration": domain, "domain": "camera"} for domain in PRIMARY_DOMAINS])
+        ),
         vol.Required(SECTION_VEHICLES): section(vol.Schema(vehicles), {"collapsed": False}),
         vol.Required(SECTION_NOTIFY): section(vol.Schema(await target_fields(hass)), {"collapsed": True}),
     })

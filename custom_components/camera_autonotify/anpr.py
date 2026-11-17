@@ -83,9 +83,9 @@ MQTT_DOMAIN = "mqtt"
 SENSOR_DOMAIN = "sensor"
 IMAGE_DOMAIN = "image"
 CAMERA_DOMAIN = "camera"
-# a device that's anpr2mqtt's, for certain, from anpr2mqtt 1.3.0
-MANUFACTURER = "Rhizomatics"
-MODEL = "anpr2mqtt"
+# the integrations a linked camera can be of, those whose events a plate belongs with, so neither anpr2mqtt's own camera
+# nor one of the same camera by ONVIF or a stream, which are only pictures
+PRIMARY_DOMAINS: tuple[str, ...] = (FRIGATE_DOMAIN, "unifiprotect", "viseron", "blueiris")
 # the Frigate integration's unique id for a camera's entity, `{entry_id}:camera:{name}`
 FRIGATE_CAMERA = ":camera:"
 # seconds after the sensor is followed in which its state is what was retained, not a new sighting
@@ -206,11 +206,6 @@ def image_entity(hass: HomeAssistant, sensor: er.RegistryEntry) -> str | None:
     return er.async_get(hass).async_get_entity_id(IMAGE_DOMAIN, MQTT_DOMAIN, sensor.unique_id)
 
 
-@callback
-def is_anpr2mqtt(device: object) -> bool:
-    return isinstance(device, dr.DeviceEntry) and device.manufacturer == MANUFACTURER and device.model == MODEL
-
-
 def _area(hass: HomeAssistant, entity: er.RegistryEntry) -> str | None:
     if entity.area_id:
         return entity.area_id
@@ -224,11 +219,13 @@ def find_linked_camera(
 ) -> str | None:
     """The camera entity of a primary integration that's the same camera, best first: one named in anpr2mqtt's
     `linked_cameras`, Frigate's first, then one in the same area, then one of the same name, taken only where there's
-    one to take, and none where there's more than one, rather than a guess"""
+    one to take, and none where there's more than one, rather than a guess. Only primary integrations' cameras are
+    candidates, so the same camera by ONVIF, or anpr2mqtt's own, never makes it a guess"""
     registry = er.async_get(hass)
     devices = dr.async_get(hass)
-    cameras = [e for e in registry.entities.values() if e.domain == CAMERA_DOMAIN and not e.disabled]
-    cameras = [e for e in cameras if not is_anpr2mqtt(devices.async_get(e.device_id) if e.device_id else None)]
+    cameras = [
+        e for e in registry.entities.values() if e.domain == CAMERA_DOMAIN and not e.disabled and e.platform in PRIMARY_DOMAINS
+    ]
 
     def named(domain: str, camera: str) -> list[er.RegistryEntry]:
         if domain == FRIGATE_DOMAIN:

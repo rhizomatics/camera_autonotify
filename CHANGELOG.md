@@ -13,7 +13,7 @@ title: What's New
 - Each anpr2mqtt camera, from anpr2mqtt 1.3.0, found and set up like a Frigate camera, with or without Frigate
 - A new plate notified as anpr2mqtt describes the vehicle, with the plate, the sightings before and the DVLA's details, not the same plate again in the same visit, nor a republished sighting
 - Images that work away from home, by Frigate's notification proxy or anpr2mqtt's image entity
-- A linked camera, found from anpr2mqtt's `linked_cameras`, its area or its name, or chosen
+- A linked camera, of Frigate, UniFi Protect, Viseron or Blue Iris, never anpr2mqtt's own nor one by ONVIF, found from anpr2mqtt's `linked_cameras`, its area or its name, or chosen
 - A priority, or no notification, and Supernotify scenarios, for each kind of vehicle: dangerous, unknown, known and ignored
 - anpr2mqtt going unavailable notified, and coming back
 - Not yet: joining a plate to the Frigate review of the same car, nor anpr2mqtt's other kinds of detection, such as faces or lines crossed

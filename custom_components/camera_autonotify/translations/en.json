@@ -190,8 +190,8 @@
                     "linked_camera": "Linked camera"
                 },
                 "data_description": {
-                    "linked_camera_auto": "Find the same camera in Frigate or another camera integration, from what anpr2mqtt says of it, its area or its name. Switch off to choose it below, or leave that empty for none.",
-                    "linked_camera": "The camera whose name the notifications use, and that Supernotify's camera snooze covers. Only used when not chosen automatically."
+                    "linked_camera_auto": "Find the same camera in Frigate, or UniFi Protect, Viseron or Blue Iris, from what anpr2mqtt says of it, its area or its name, never anpr2mqtt's own camera nor one by ONVIF. Switch off to choose it below, or leave that empty for none.",
+                    "linked_camera": "Pick the same camera in Frigate, or UniFi Protect, Viseron or Blue Iris, so the notifications use its name and Supernotify's camera snooze covers it. Only their cameras are offered, not anpr2mqtt's own camera, nor the same camera by ONVIF. Only used when not chosen automatically."
                 },
                 "sections": {
                     "vehicles": {

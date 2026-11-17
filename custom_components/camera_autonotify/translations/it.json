@@ -190,8 +190,8 @@
                     "linked_camera": "Telecamera collegata"
                 },
                 "data_description": {
-                    "linked_camera_auto": "Trova la stessa telecamera in Frigate o in un'altra integrazione di telecamere, da ciò che anpr2mqtt ne dice, dalla sua area o dal suo nome. Disattiva per sceglierla qui sotto, o lascia vuoto per nessuna.",
-                    "linked_camera": "La telecamera il cui nome usano le notifiche, e che la sospensione delle telecamere di Supernotify copre. Usata solo se non scelta automaticamente."
+                    "linked_camera_auto": "Trova la stessa telecamera in Frigate, o UniFi Protect, Viseron o Blue Iris, da ciò che anpr2mqtt ne dice, dalla sua area o dal suo nome, mai quella di anpr2mqtt né una tramite ONVIF. Disattiva per sceglierla qui sotto, o lascia vuoto per nessuna.",
+                    "linked_camera": "Scegli la stessa telecamera in Frigate, o UniFi Protect, Viseron o Blue Iris, così le notifiche usano il suo nome e la sospensione delle telecamere di Supernotify la copre. Sono offerte solo le loro telecamere, non quella di anpr2mqtt né la stessa telecamera tramite ONVIF. Usata solo se non scelta automaticamente."
                 },
                 "sections": {
                     "vehicles": {
