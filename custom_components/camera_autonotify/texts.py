@@ -122,6 +122,11 @@ IMPORT_SETTING_LOOKUP_CACHE = "import_setting_lookup_cache_hours"
 IMPORT_SETTING_MIN_VISIT_GAP = "import_setting_min_visit_gap"
 IMPORT_NOT_IMPORTED = "import_not_imported"
 IMPORT_NOTHING = "import_nothing"
+# what an import from anpr2mqtt added, once done
+IMPORTED_CATEGORIES = "imported_categories"
+IMPORTED_PLATES = "imported_plates"
+IMPORTED_SIGHTINGS = "imported_sightings"
+IMPORTED_NOTHING = "imported_nothing"
 
 
 async def async_load_texts(hass: HomeAssistant) -> None:

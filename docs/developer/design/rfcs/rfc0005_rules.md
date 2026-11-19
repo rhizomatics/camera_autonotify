@@ -269,8 +269,8 @@ has a fixed condition, and a default priority and no scenarios, both editable:
 | Rule | Fixed condition | Default priority |
 |------|-----------------|------------------|
 | Dangerous vehicle | plate in a dangerous category | `high` |
-| Known vehicle | plate in any other category | `low` |
-| Unknown vehicle | plate read, in no category | `medium` |
+| Known vehicle | plate in any other category | `medium` |
+| Unknown vehicle | plate read, in no category | `high` |
 
 The match is made after a plate has been corrected (see [RFC0003](./rfc0003_anpr2mqtt.md#correcting-a-misread)). The list of plates isn't inside the rule, it's in the categories, with unknown vehicles being any that don't match them, and a category's *Ignore* dropping its plates before any rule. The outcome distinguishes known, unknown, dangerous and unreadable, plus derived categories identified (known or dangerous) and readable (all but unreadable).
 

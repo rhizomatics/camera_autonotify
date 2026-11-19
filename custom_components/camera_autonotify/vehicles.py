@@ -39,7 +39,7 @@ from .const import (
     VEHICLE_RULE_PRIORITIES,
 )
 from .entries import global_settings
-from .plates import KIND_IGNORED, KIND_KNOWN, Category, History, Match, PlateRegister, analyse, distance, normalised
+from .plates import KIND_IGNORED, KIND_KNOWN, Category, History, Match, PlateRegister, analyse, distance, normalised, visitor
 
 if TYPE_CHECKING:
     from aiohttp import ClientSession
@@ -397,6 +397,48 @@ class Vehicles:
                 removed += 1
                 self.hass.config_entries.async_update_subentry(entry, subentry, data={**subentry.data, "plates": kept})
         return removed
+
+    @callback
+    def categories(self, name: str | None = None) -> list[dict[str, Any]]:
+        """Every vehicle category, or the one named, with its plates"""
+        return [
+            {
+                "name": category.name,
+                "kind": category.kind,
+                "ignore": category.ignore,
+                "lookup": category.lookup,
+                **{key: value for key in ("description", "icon", "entity_id") if (value := getattr(category, key))},
+                "plates": [
+                    {
+                        "plate": entry.plate,
+                        **({"description": entry.description} if entry.description else {}),
+                        **({"corrections": list(entry.corrections)} if entry.corrections else {}),
+                    }
+                    for entry in category.plates
+                ],
+            }
+            for category in self.register().categories
+            if name is None or category.name == name
+        ]
+
+    async def async_sightings(self, plate: str | None = None) -> list[dict[str, Any]]:
+        """Every plate seen, or the one given, with when, and how regularly it's seen"""
+        await self._async_load()
+        now = dt_util.now()
+        wanted = normalised(plate) if plate else None
+        found = []
+        for seen in sorted(self._history or {}):
+            if wanted is not None and seen != wanted:
+                continue
+            times = self.sightings(seen)
+            found.append({
+                "plate": seen,
+                "count": len(times),
+                "last_seen": times[-1].isoformat() if times else None,
+                "visitor": visitor(times, now),
+                "sightings": [t.isoformat() for t in times],
+            })
+        return found
 
     async def async_import_history(self, sightings: dict[str, list[str]]) -> int:
         """Sightings from elsewhere, such as anpr2mqtt's tracker, merged with those here, returning how many were new"""

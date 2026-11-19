@@ -177,9 +177,9 @@ VEHICLE_RULES: Final[tuple[str, ...]] = ("known", "dangerous", "unknown", "unrea
 CONF_VEHICLE_PRIORITIES: Final[dict[str, str]] = {kind: f"vehicle_priority_{kind}" for kind in VEHICLE_RULES}
 CONF_VEHICLE_SCENARIOS: Final[dict[str, str]] = {kind: f"vehicle_scenarios_{kind}" for kind in VEHICLE_RULES}
 VEHICLE_RULE_PRIORITIES: Final[dict[str, str]] = {
-    "known": "low",
+    "known": "medium",
     "dangerous": "critical",
-    "unknown": "medium",
+    "unknown": "high",
     "unreadable": "high",
 }
 # what Frigate tracks that has a plate, a review of which with none read is of an unreadable vehicle

@@ -39,7 +39,10 @@
             }
         },
         "error": {
-            "archive_unreadable": "Couldn't read the archive. Upload a .tar or .tar.gz with anpr2mqtt's config.yaml in it."
+            "archive_unreadable": "Couldn't read the archive. Upload a .tar or .tar.gz with anpr2mqtt.yaml in it."
+        },
+        "create_entry": {
+            "anpr2mqtt_imported": "Imported from anpr2mqtt:\n\n{imported}"
         }
     },
     "options": {
@@ -119,13 +122,13 @@
                             "history_days": "Keep history for",
                             "vehicle_priority_unreadable": "Unreadable vehicle priority",
                             "vehicle_scenarios_unreadable": "Unreadable vehicle scenarios",
-                            "known_category": "Known vehicles category"
+                            "known_category": "Category for the Known vehicle button"
                         },
                         "data_description": {
                             "anpr_own_classification": "Keep anpr2mqtt's own known, dangerous and ignored, history and DVLA details for its sightings. Switch off to classify them here, with the vehicle categories, as Frigate's plates are, anpr2mqtt then being only the source of the plate and image.",
                             "min_visit_gap": "A plate seen again within this long is the same visit, and isn't counted again.",
                             "history_days": "How long each plate's sightings are kept, never leaving Home Assistant.",
-                            "known_category": "Where the Known vehicle button adds a plate, made if it isn't there."
+                            "known_category": "Notifications of an unknown vehicle have a Known vehicle button. Tapping it adds the plate, with any description typed, to this vehicle category, which is created if it doesn't exist."
                         }
                     },
                     "vehicle_lookup": {
@@ -318,7 +321,10 @@
         },
         "error": {
             "summary_undeliverable": "Periodic reports won't be delivered at all: no Deliveries are chosen for the Frigate GenAI Periodic Report, and Supernotify has no e-mail delivery to use instead. Choose a delivery, set Send a report to Off, or save again to keep it as it is.",
-            "archive_unreadable": "Couldn't read the archive. Upload a .tar or .tar.gz with anpr2mqtt's config.yaml in it."
+            "archive_unreadable": "Couldn't read the archive. Upload a .tar or .tar.gz with anpr2mqtt.yaml in it."
+        },
+        "create_entry": {
+            "anpr2mqtt_imported": "Imported from anpr2mqtt:\n\n{imported}"
         }
     },
     "selector": {
@@ -637,7 +643,11 @@
         "import_setting_lookup_cache_hours": "lookup cache",
         "import_setting_min_visit_gap": "minimum gap between visits",
         "import_not_imported": "Not imported: {item}",
-        "import_nothing": "Nothing to import"
+        "import_nothing": "Nothing to import",
+        "imported_categories": "New categories: {count}",
+        "imported_plates": "Plates added: {count}",
+        "imported_sightings": "Sightings added: {count}",
+        "imported_nothing": "Nothing new: everything in the archive was already here"
     },
     "issues": {
         "lookup_refused": {
@@ -697,6 +707,26 @@
                 "category": {
                     "name": "Category",
                     "description": "Only this category, rather than every one."
+                }
+            }
+        },
+        "list_vehicle_categories": {
+            "name": "List vehicle categories",
+            "description": "Every vehicle category, with its plates, descriptions and corrections.",
+            "fields": {
+                "category": {
+                    "name": "Category",
+                    "description": "Only this category, rather than every one."
+                }
+            }
+        },
+        "list_sightings": {
+            "name": "List sightings",
+            "description": "Each plate seen, with when, how many times, and how regularly.",
+            "fields": {
+                "plate": {
+                    "name": "Plate",
+                    "description": "Only this plate, rather than every one."
                 }
             }
         }

@@ -51,3 +51,19 @@ remove_plate:
       example: Known vehicles
       selector:
         text:
+
+list_vehicle_categories:
+  fields:
+    category:
+      required: false
+      example: Known vehicles
+      selector:
+        text:
+
+list_sightings:
+  fields:
+    plate:
+      required: false
+      example: PX19TVD
+      selector:
+        text:

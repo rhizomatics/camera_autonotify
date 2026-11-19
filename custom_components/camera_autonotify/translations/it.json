@@ -39,7 +39,10 @@
             }
         },
         "error": {
-            "archive_unreadable": "Impossibile leggere l'archivio. Carica un .tar o .tar.gz contenente il config.yaml di anpr2mqtt."
+            "archive_unreadable": "Impossibile leggere l'archivio. Carica un .tar o .tar.gz contenente anpr2mqtt.yaml."
+        },
+        "create_entry": {
+            "anpr2mqtt_imported": "Importato da anpr2mqtt:\n\n{imported}"
         }
     },
     "options": {
@@ -119,13 +122,13 @@
                             "history_days": "Conserva la cronologia per",
                             "vehicle_priority_unreadable": "Priorità veicoli illeggibili",
                             "vehicle_scenarios_unreadable": "Scenari veicoli illeggibili",
-                            "known_category": "Categoria veicoli noti"
+                            "known_category": "Categoria del pulsante Veicolo noto"
                         },
                         "data_description": {
                             "anpr_own_classification": "Mantieni la classificazione propria di anpr2mqtt, noto, pericoloso e ignorato, la cronologia e i dettagli DVLA per i suoi avvistamenti. Disattiva per classificarli qui, con le categorie di veicoli, come le targhe di Frigate, anpr2mqtt diventando solo la fonte della targa e dell'immagine.",
                             "min_visit_gap": "Una targa rivista entro questo tempo è la stessa visita, e non è contata di nuovo.",
                             "history_days": "Per quanto tempo sono conservati gli avvistamenti di ogni targa, senza mai lasciare Home Assistant.",
-                            "known_category": "Dove il pulsante Veicolo noto aggiunge una targa, creata se non c'è."
+                            "known_category": "Le notifiche di un veicolo sconosciuto hanno un pulsante Veicolo noto. Toccandolo, la targa, con la descrizione scritta, viene aggiunta a questa categoria di veicoli, creata se non esiste."
                         }
                     },
                     "vehicle_lookup": {
@@ -318,7 +321,10 @@
         },
         "error": {
             "summary_undeliverable": "I rapporti periodici non verranno mai consegnati: nessuna delivery è scelta per il rapporto periodico GenAI di Frigate, e Supernotify non ha una delivery e-mail da usare al suo posto. Scegli una delivery, imposta Invia un rapporto su Disattivato, o salva di nuovo per lasciarlo così.",
-            "archive_unreadable": "Impossibile leggere l'archivio. Carica un .tar o .tar.gz contenente il config.yaml di anpr2mqtt."
+            "archive_unreadable": "Impossibile leggere l'archivio. Carica un .tar o .tar.gz contenente anpr2mqtt.yaml."
+        },
+        "create_entry": {
+            "anpr2mqtt_imported": "Importato da anpr2mqtt:\n\n{imported}"
         }
     },
     "selector": {
@@ -637,7 +643,11 @@
         "import_setting_lookup_cache_hours": "cache delle ricerche",
         "import_setting_min_visit_gap": "intervallo minimo tra le visite",
         "import_not_imported": "Non importato: {item}",
-        "import_nothing": "Niente da importare"
+        "import_nothing": "Niente da importare",
+        "imported_categories": "Nuove categorie: {count}",
+        "imported_plates": "Targhe aggiunte: {count}",
+        "imported_sightings": "Avvistamenti aggiunti: {count}",
+        "imported_nothing": "Niente di nuovo: tutto ciò che è nell'archivio era già presente"
     },
     "issues": {
         "lookup_refused": {
@@ -697,6 +707,26 @@
                 "category": {
                     "name": "Categoria",
                     "description": "Solo questa categoria, invece di tutte."
+                }
+            }
+        },
+        "list_vehicle_categories": {
+            "name": "Elenca le categorie di veicoli",
+            "description": "Ogni categoria di veicoli, con le sue targhe, descrizioni e correzioni.",
+            "fields": {
+                "category": {
+                    "name": "Categoria",
+                    "description": "Solo questa categoria, invece di tutte."
+                }
+            }
+        },
+        "list_sightings": {
+            "name": "Elenca gli avvistamenti",
+            "description": "Ogni targa vista, con quando, quante volte e con quale regolarità.",
+            "fields": {
+                "plate": {
+                    "name": "Targa",
+                    "description": "Solo questa targa, invece di tutte."
                 }
             }
         }

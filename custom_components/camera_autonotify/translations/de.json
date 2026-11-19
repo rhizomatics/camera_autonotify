@@ -39,7 +39,10 @@
             }
         },
         "error": {
-            "archive_unreadable": "Das Archiv konnte nicht gelesen werden. Laden Sie ein .tar oder .tar.gz mit der config.yaml von anpr2mqtt hoch."
+            "archive_unreadable": "Das Archiv konnte nicht gelesen werden. Laden Sie ein .tar oder .tar.gz mit anpr2mqtt.yaml hoch."
+        },
+        "create_entry": {
+            "anpr2mqtt_imported": "Aus anpr2mqtt importiert:\n\n{imported}"
         }
     },
     "options": {
@@ -119,13 +122,13 @@
                             "history_days": "Verlauf behalten für",
                             "vehicle_priority_unreadable": "Priorität unlesbarer Fahrzeuge",
                             "vehicle_scenarios_unreadable": "Szenarien unlesbarer Fahrzeuge",
-                            "known_category": "Kategorie bekannter Fahrzeuge"
+                            "known_category": "Kategorie für die Schaltfläche Bekanntes Fahrzeug"
                         },
                         "data_description": {
                             "anpr_own_classification": "anpr2mqtts eigene Einordnung als bekannt, gefährlich und ignoriert, Verlauf und DVLA-Daten für seine Sichtungen behalten. Ausschalten, um sie hier mit den Fahrzeugkategorien einzuordnen, wie Frigates Kennzeichen, anpr2mqtt ist dann nur Quelle von Kennzeichen und Bild.",
                             "min_visit_gap": "Ein Kennzeichen, das innerhalb dieser Zeit erneut gesehen wird, ist derselbe Besuch und wird nicht erneut gezählt.",
                             "history_days": "Wie lange die Sichtungen jedes Kennzeichens behalten werden, ohne Home Assistant je zu verlassen.",
-                            "known_category": "Wohin die Schaltfläche Bekanntes Fahrzeug ein Kennzeichen hinzufügt, angelegt, falls nicht vorhanden."
+                            "known_category": "Benachrichtigungen zu einem unbekannten Fahrzeug haben eine Schaltfläche Bekanntes Fahrzeug. Sie fügt das Kennzeichen mit einer eingegebenen Beschreibung dieser Fahrzeugkategorie hinzu, die angelegt wird, falls sie nicht existiert."
                         }
                     },
                     "vehicle_lookup": {
@@ -318,7 +321,10 @@
         },
         "error": {
             "summary_undeliverable": "Regelmäßige Berichte werden gar nicht zugestellt: Für den regelmäßigen GenAI-Bericht von Frigate sind keine Zustellungen gewählt, und Supernotify hat keine E-Mail-Zustellung als Ersatz. Wähle eine Zustellung, setze Bericht senden auf Aus, oder speichere erneut, um es so zu belassen.",
-            "archive_unreadable": "Das Archiv konnte nicht gelesen werden. Laden Sie ein .tar oder .tar.gz mit der config.yaml von anpr2mqtt hoch."
+            "archive_unreadable": "Das Archiv konnte nicht gelesen werden. Laden Sie ein .tar oder .tar.gz mit anpr2mqtt.yaml hoch."
+        },
+        "create_entry": {
+            "anpr2mqtt_imported": "Aus anpr2mqtt importiert:\n\n{imported}"
         }
     },
     "selector": {
@@ -637,7 +643,11 @@
         "import_setting_lookup_cache_hours": "Abfrage-Cache",
         "import_setting_min_visit_gap": "Mindestabstand zwischen Besuchen",
         "import_not_imported": "Nicht importiert: {item}",
-        "import_nothing": "Nichts zu importieren"
+        "import_nothing": "Nichts zu importieren",
+        "imported_categories": "Neue Kategorien: {count}",
+        "imported_plates": "Hinzugefügte Kennzeichen: {count}",
+        "imported_sightings": "Hinzugefügte Sichtungen: {count}",
+        "imported_nothing": "Nichts Neues: alles im Archiv war bereits vorhanden"
     },
     "issues": {
         "lookup_refused": {
@@ -697,6 +707,26 @@
                 "category": {
                     "name": "Kategorie",
                     "description": "Nur diese Kategorie, statt jeder."
+                }
+            }
+        },
+        "list_vehicle_categories": {
+            "name": "Fahrzeugkategorien auflisten",
+            "description": "Jede Fahrzeugkategorie mit ihren Kennzeichen, Beschreibungen und Korrekturen.",
+            "fields": {
+                "category": {
+                    "name": "Kategorie",
+                    "description": "Nur diese Kategorie, statt jeder."
+                }
+            }
+        },
+        "list_sightings": {
+            "name": "Sichtungen auflisten",
+            "description": "Jedes gesehene Kennzeichen, mit wann, wie oft und wie regelmäßig.",
+            "fields": {
+                "plate": {
+                    "name": "Kennzeichen",
+                    "description": "Nur dieses Kennzeichen, statt jedes."
                 }
             }
         }

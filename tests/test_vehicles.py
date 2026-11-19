@@ -208,11 +208,11 @@ async def test_frigate_plate_classified(hass: HomeAssistant, register: FakeRegis
     vehicle = await found.async_vehicle(decision())
     _, outcome = found.ruled(decision(), vehicle)
     assert outcome.message == "Joe's mini (TJ912UKL)"
-    assert outcome.priority == "low"
+    assert outcome.priority == "medium"
     read_plate(hass)
     vehicle = await found.async_vehicle(decision())
     assert found.ruled(decision(), vehicle)[1].message == "PX19TVD - MITSUBISHI, WHITE, 2019, Taxed"
-    assert found.ruled(decision(), vehicle)[1].priority == "medium"
+    assert found.ruled(decision(), vehicle)[1].priority == "high"
 
 
 async def test_frigate_plate_priority_as_set(hass: HomeAssistant, register: FakeRegister):
@@ -577,6 +577,27 @@ async def test_add_and_remove_plate_actions(hass: HomeAssistant):
     assert removed == {"categories": 1}
     assert (await vehicles(hass).async_classify("MY13CAR")).kind == "unknown"
     assert await respond(hass, "remove_plate", {"plate": "B4DM3N", "category": "Family cars"}) == {"categories": 0}
+
+
+async def test_list_categories_and_sightings_actions(hass: HomeAssistant):
+    global_settings(hass, {"Family cars": FAMILY})
+    await set_up(hass)
+    listed = await respond(hass, "list_vehicle_categories", {})
+    family = listed["categories"][0]
+    assert family["name"] == "Family cars"
+    assert family["kind"] == "known"
+    assert family["plates"][0]["plate"] == "TJ912UKL"
+    assert await respond(hass, "list_vehicle_categories", {"category": "Nothing"}) == {"categories": []}
+
+    assert await respond(hass, "list_sightings", {}) == {"plates": []}
+    await vehicles(hass).async_classify("PX19TVD", record=True)
+    await vehicles(hass).async_classify("J912UKL", record=True)
+    sightings = await respond(hass, "list_sightings", {})
+    assert [p["plate"] for p in sightings["plates"]] == ["PX19TVD", "TJ912UKL"]
+    one = await respond(hass, "list_sightings", {"plate": "px19 tvd"})
+    assert len(one["plates"]) == 1
+    assert one["plates"][0]["count"] == 1
+    assert one["plates"][0]["last_seen"] == one["plates"][0]["sightings"][0]
 
 
 async def test_key_kept_as_a_credential(hass: HomeAssistant):

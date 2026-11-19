@@ -39,7 +39,10 @@
             }
         },
         "error": {
-            "archive_unreadable": "आर्काइव पढ़ा नहीं जा सका। anpr2mqtt की config.yaml वाला .tar या .tar.gz अपलोड करें।"
+            "archive_unreadable": "आर्काइव पढ़ा नहीं जा सका। anpr2mqtt.yaml वाला .tar या .tar.gz अपलोड करें।"
+        },
+        "create_entry": {
+            "anpr2mqtt_imported": "anpr2mqtt से आयात किया गया:\n\n{imported}"
         }
     },
     "options": {
@@ -119,13 +122,13 @@
                             "history_days": "इतिहास इतने समय रखें",
                             "vehicle_priority_unreadable": "अपठनीय वाहन की प्राथमिकता",
                             "vehicle_scenarios_unreadable": "अपठनीय वाहन के परिदृश्य",
-                            "known_category": "जाने-पहचाने वाहनों की श्रेणी"
+                            "known_category": "जाना-पहचाना वाहन बटन की श्रेणी"
                         },
                         "data_description": {
                             "anpr_own_classification": "anpr2mqtt के देखे गए वाहनों के लिए उसका अपना जाना-पहचाना, ख़तरनाक और अनदेखा वर्गीकरण, इतिहास और DVLA विवरण रखें। उन्हें यहाँ वाहन श्रेणियों से वर्गीकृत करने के लिए बंद करें, Frigate की प्लेटों की तरह, तब anpr2mqtt केवल प्लेट और छवि का स्रोत रहता है।",
                             "min_visit_gap": "इतने समय के भीतर फिर देखी गई प्लेट वही यात्रा है, और फिर से नहीं गिनी जाती।",
                             "history_days": "हर प्लेट की देखी जाने की जानकारी कितने समय रखी जाती है, कभी Home Assistant से बाहर नहीं जाती।",
-                            "known_category": "जाना-पहचाना वाहन बटन प्लेट कहाँ जोड़ता है, न हो तो बनाई जाती है।"
+                            "known_category": "किसी अनजान वाहन की सूचनाओं में जाना-पहचाना वाहन बटन होता है। इसे दबाने पर प्लेट, लिखे गए विवरण के साथ, इस वाहन श्रेणी में जुड़ जाती है, जो न हो तो बनाई जाती है।"
                         }
                     },
                     "vehicle_lookup": {
@@ -318,7 +321,10 @@
         },
         "error": {
             "summary_undeliverable": "आवधिक रिपोर्ट बिल्कुल नहीं भेजी जाएँगी: Frigate GenAI आवधिक रिपोर्ट के लिए कोई डिलीवरी नहीं चुनी गई है, और Supernotify में इसकी जगह उपयोग के लिए कोई ई-मेल डिलीवरी नहीं है। कोई डिलीवरी चुनें, रिपोर्ट भेजें को बंद करें, या जैसा है वैसा रखने के लिए फिर से सहेजें।",
-            "archive_unreadable": "आर्काइव पढ़ा नहीं जा सका। anpr2mqtt की config.yaml वाला .tar या .tar.gz अपलोड करें।"
+            "archive_unreadable": "आर्काइव पढ़ा नहीं जा सका। anpr2mqtt.yaml वाला .tar या .tar.gz अपलोड करें।"
+        },
+        "create_entry": {
+            "anpr2mqtt_imported": "anpr2mqtt से आयात किया गया:\n\n{imported}"
         }
     },
     "selector": {
@@ -637,7 +643,11 @@
         "import_setting_lookup_cache_hours": "लुकअप कैश",
         "import_setting_min_visit_gap": "आगमनों के बीच न्यूनतम अंतर",
         "import_not_imported": "आयात नहीं हुआ: {item}",
-        "import_nothing": "आयात करने के लिए कुछ नहीं"
+        "import_nothing": "आयात करने के लिए कुछ नहीं",
+        "imported_categories": "नई श्रेणियाँ: {count}",
+        "imported_plates": "जोड़ी गई प्लेटें: {count}",
+        "imported_sightings": "जोड़े गए दर्शन: {count}",
+        "imported_nothing": "कुछ नया नहीं: आर्काइव में सब कुछ पहले से मौजूद था"
     },
     "issues": {
         "lookup_refused": {
@@ -697,6 +707,26 @@
                 "category": {
                     "name": "श्रेणी",
                     "description": "केवल यह श्रेणी, सबके बजाय।"
+                }
+            }
+        },
+        "list_vehicle_categories": {
+            "name": "वाहन श्रेणियाँ सूचीबद्ध करें",
+            "description": "हर वाहन श्रेणी, उसकी प्लेटों, विवरणों और सुधारों के साथ।",
+            "fields": {
+                "category": {
+                    "name": "श्रेणी",
+                    "description": "केवल यह श्रेणी, सबके बजाय।"
+                }
+            }
+        },
+        "list_sightings": {
+            "name": "दर्शन सूचीबद्ध करें",
+            "description": "देखी गई हर प्लेट, कब, कितनी बार और कितनी नियमितता से।",
+            "fields": {
+                "plate": {
+                    "name": "प्लेट",
+                    "description": "केवल यह प्लेट, सबके बजाय।"
                 }
             }
         }

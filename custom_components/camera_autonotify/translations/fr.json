@@ -39,7 +39,10 @@
             }
         },
         "error": {
-            "archive_unreadable": "Impossible de lire l'archive. Envoyez un .tar ou .tar.gz contenant le config.yaml d'anpr2mqtt."
+            "archive_unreadable": "Impossible de lire l'archive. Envoyez un .tar ou .tar.gz contenant anpr2mqtt.yaml."
+        },
+        "create_entry": {
+            "anpr2mqtt_imported": "Importé depuis anpr2mqtt :\n\n{imported}"
         }
     },
     "options": {
@@ -119,13 +122,13 @@
                             "history_days": "Garder l'historique pendant",
                             "vehicle_priority_unreadable": "Priorité des véhicules illisibles",
                             "vehicle_scenarios_unreadable": "Scénarios des véhicules illisibles",
-                            "known_category": "Catégorie des véhicules connus"
+                            "known_category": "Catégorie du bouton Véhicule connu"
                         },
                         "data_description": {
                             "anpr_own_classification": "Garder la classification propre d'anpr2mqtt, connu, dangereux et ignoré, son historique et les détails DVLA pour ses passages. Désactiver pour les classer ici, avec les catégories de véhicules, comme les plaques de Frigate, anpr2mqtt n'étant alors que la source de la plaque et de l'image.",
                             "min_visit_gap": "Une plaque revue dans ce délai est la même visite, et n'est pas comptée à nouveau.",
                             "history_days": "Combien de temps les passages de chaque plaque sont gardés, sans jamais quitter Home Assistant.",
-                            "known_category": "Où le bouton Véhicule connu ajoute une plaque, créée si elle n'existe pas."
+                            "known_category": "Les notifications d'un véhicule inconnu ont un bouton Véhicule connu. Il ajoute la plaque, avec la description saisie, à cette catégorie de véhicules, créée si elle n'existe pas."
                         }
                     },
                     "vehicle_lookup": {
@@ -318,7 +321,10 @@
         },
         "error": {
             "summary_undeliverable": "Les rapports périodiques ne seront jamais envoyés : aucune livraison n'est choisie pour le rapport périodique GenAI de Frigate, et Supernotify n'a pas de livraison par e-mail à utiliser à la place. Choisissez une livraison, réglez Envoyer un rapport sur Désactivé, ou enregistrez à nouveau pour garder tel quel.",
-            "archive_unreadable": "Impossible de lire l'archive. Envoyez un .tar ou .tar.gz contenant le config.yaml d'anpr2mqtt."
+            "archive_unreadable": "Impossible de lire l'archive. Envoyez un .tar ou .tar.gz contenant anpr2mqtt.yaml."
+        },
+        "create_entry": {
+            "anpr2mqtt_imported": "Importé depuis anpr2mqtt :\n\n{imported}"
         }
     },
     "selector": {
@@ -637,7 +643,11 @@
         "import_setting_lookup_cache_hours": "cache des recherches",
         "import_setting_min_visit_gap": "écart minimal entre visites",
         "import_not_imported": "Non importé : {item}",
-        "import_nothing": "Rien à importer"
+        "import_nothing": "Rien à importer",
+        "imported_categories": "Nouvelles catégories : {count}",
+        "imported_plates": "Plaques ajoutées : {count}",
+        "imported_sightings": "Passages ajoutés : {count}",
+        "imported_nothing": "Rien de nouveau : tout le contenu de l'archive était déjà là"
     },
     "issues": {
         "lookup_refused": {
@@ -697,6 +707,26 @@
                 "category": {
                     "name": "Catégorie",
                     "description": "Seulement cette catégorie, plutôt que toutes."
+                }
+            }
+        },
+        "list_vehicle_categories": {
+            "name": "Lister les catégories de véhicules",
+            "description": "Chaque catégorie de véhicules, avec ses plaques, descriptions et corrections.",
+            "fields": {
+                "category": {
+                    "name": "Catégorie",
+                    "description": "Seulement cette catégorie, plutôt que toutes."
+                }
+            }
+        },
+        "list_sightings": {
+            "name": "Lister les passages",
+            "description": "Chaque plaque vue, avec quand, combien de fois et à quelle régularité.",
+            "fields": {
+                "plate": {
+                    "name": "Plaque",
+                    "description": "Seulement cette plaque, plutôt que toutes."
                 }
             }
         }

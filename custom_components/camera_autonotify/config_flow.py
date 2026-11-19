@@ -179,7 +179,16 @@ from .frigate import (
     zone_labels,
 )
 from .health import HealthSettings
-from .migrate import ARCHIVE_ACCEPT, ArchiveUnreadable, Imported, async_import, imported_options, new_plates, read_archive
+from .migrate import (
+    ARCHIVE_ACCEPT,
+    Added,
+    ArchiveUnreadable,
+    Imported,
+    async_import,
+    imported_options,
+    new_plates,
+    read_archive,
+)
 from .plates import KIND_DANGEROUS, KIND_KNOWN, is_pattern
 from .rules import compile_pattern
 from .supernotify_api import deliveries_by_transport, email_deliveries, scenario_names, supernotify_available
@@ -198,6 +207,10 @@ from .texts import (
     IMPORT_SETTING_LOOKUP_CACHE,
     IMPORT_SETTING_MIN_VISIT_GAP,
     IMPORT_SETTINGS,
+    IMPORTED_CATEGORIES,
+    IMPORTED_NOTHING,
+    IMPORTED_PLATES,
+    IMPORTED_SIGHTINGS,
     PROXY_EXPIRES,
     PROXY_OFF,
     SUPERNOTIFY_MISSING,
@@ -369,6 +382,27 @@ def import_summary(hass: HomeAssistant, entry: ConfigEntry, found: Imported) -> 
         lines.append(text(hass, IMPORT_SETTINGS, settings=named))
     lines.extend(text(hass, IMPORT_NOT_IMPORTED, item=item) for item in found.not_imported)
     return "\n".join(f"- {line}" for line in lines) if lines else text(hass, IMPORT_NOTHING)
+
+
+# the success dialog's text once imported from anpr2mqtt
+IMPORTED = "anpr2mqtt_imported"
+
+
+def added_summary(hass: HomeAssistant, added: Added) -> dict[str, str]:
+    """What an import added, as a list, for the success dialog's placeholders"""
+    lines = [
+        text(hass, key, count=count)
+        for key, count in (
+            (IMPORTED_CATEGORIES, added.categories),
+            (IMPORTED_PLATES, added.plates),
+            (IMPORTED_SIGHTINGS, added.sightings),
+        )
+        if count
+    ]
+    if added.settings:
+        named = ", ".join(text(hass, IMPORT_SETTING_NAMES[key]) for key in added.settings)
+        lines.append(text(hass, IMPORT_SETTINGS, settings=named))
+    return {"imported": "\n".join(f"- {line}" for line in lines) if lines else text(hass, IMPORTED_NOTHING)}
 
 
 def vehicles_schema(scenarios: list[str] | None) -> dict[vol.Marker, Any]:
@@ -776,9 +810,12 @@ class CameraAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
             return await self.async_step_confirm_anpr()
         return await self.async_step_confirm()
 
-    def _create_found(self) -> ConfigFlowResult:
+    def _create_found(self, added: Added | None = None) -> ConfigFlowResult:
         return self.async_create_entry(
-            title=self._found[CONF_NAME], data={k: v for k, v in self._found.items() if k in ENTRY_DATA}
+            title=self._found[CONF_NAME],
+            data={k: v for k, v in self._found.items() if k in ENTRY_DATA},
+            description=IMPORTED if added is not None else None,
+            description_placeholders=added_summary(self.hass, added) if added is not None else None,
         )
 
     async def async_step_confirm_anpr(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
@@ -811,8 +848,9 @@ class CameraAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
         if settings is None:
             return self.async_abort(reason="global_settings_missing")
         if user_input is not None:
-            await async_import(self.hass, settings, self._imported)
-            return self._create_found()
+            added = await async_import(self.hass, settings, self._imported)
+            await async_load_texts(self.hass)
+            return self._create_found(added)
         await async_load_texts(self.hass)
         return self.async_show_form(
             step_id=STEP_IMPORT, description_placeholders={"found": import_summary(self.hass, settings, self._imported)}
@@ -907,8 +945,13 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
     async def async_step_import_anpr2mqtt(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """What's imported from anpr2mqtt, to confirm, then imported and the global settings saved with it"""
         if user_input is not None:
-            await async_import(self.hass, self.config_entry, self._imported)
-            return self.async_create_entry(data=self._settings | imported_options(self._imported))
+            added = await async_import(self.hass, self.config_entry, self._imported)
+            await async_load_texts(self.hass)
+            return self.async_create_entry(
+                data=self._settings | imported_options(self._imported),
+                description=IMPORTED,
+                description_placeholders=added_summary(self.hass, added),
+            )
         await async_load_texts(self.hass)
         return self.async_show_form(
             step_id=STEP_IMPORT,

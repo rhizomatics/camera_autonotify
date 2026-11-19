@@ -6,6 +6,7 @@ from __future__ import annotations
 import io
 import json
 import tarfile
+from collections.abc import Mapping
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
@@ -67,11 +68,11 @@ def test_from_anpr2mqtt_older_style():
     assert found.categories["known"]["plates"] == [{"plate": "AB12CDE", "description": "Our car"}]
 
 
-def archive(folder: Path, files: dict[str, str], name: str = "anpr2mqtt.tgz") -> Path:
+def archive(folder: Path, files: Mapping[str, str | bytes], name: str = "anpr2mqtt.tgz") -> Path:
     path = folder / name
     with tarfile.open(path, "w:gz") as tar:
         for member, content in files.items():
-            data = content.encode()
+            data = content if isinstance(content, bytes) else content.encode()
             info = tarfile.TarInfo(member)
             info.size = len(data)
             tar.addfile(info, io.BytesIO(data))
@@ -83,7 +84,7 @@ def archive(folder: Path, files: dict[str, str], name: str = "anpr2mqtt.tgz") ->
 
 
 ANPR2MQTT_FILES = {
-    "anpr2mqtt/config/config.yaml": ANPR2MQTT_CONFIG,
+    "anpr2mqtt/config/anpr2mqtt.yaml": ANPR2MQTT_CONFIG,
     "anpr2mqtt/data/plate/PX19TVD.json": json.dumps(SEEN),
     "anpr2mqtt/data/plate/broken.json": "not json",
     "anpr2mqtt/data/cache/PX19TVD.json": "{}",
@@ -95,6 +96,25 @@ def test_read_archive(tmp_path: Path):
     assert set(found.categories) == {"known", "Amazon Prime", "dangerous", "Ignored reads"}
     # the tracker's plates only, not the DVLA's cache
     assert found.history == {"PX19TVD": SEEN}
+
+
+def test_archive_of_config_and_flat_data(tmp_path: Path):
+    """The older config name, and the plates' files in the data folder itself, the unread plates' file skipped"""
+    found = read_archive(
+        archive(
+            tmp_path,
+            {
+                "config/config.yaml": ANPR2MQTT_CONFIG,
+                "data/PX19TVD.json": json.dumps(SEEN),
+                "data/UNKNOWN.json": json.dumps(SEEN),
+                "data/plate/sk43kjf.json": json.dumps(SEEN),
+                "data/plate/._sk43kjf.json": b"\x00\x05\x16\x07\xa3",
+                "data/plate/binary.json": b"\xa3\xff",
+            },
+        )
+    )
+    assert "known" in found.categories
+    assert sorted(found.history) == ["PX19TVD", "SK43KJF"]
 
 
 @pytest.mark.parametrize(
@@ -160,6 +180,11 @@ async def test_import_in_global_settings(hass: HomeAssistant, tmp_path: Path):
 
     done = await hass.config_entries.options.async_configure(shown["flow_id"], {})
     assert done["type"] is FlowResultType.CREATE_ENTRY
+    assert done["description"] == "anpr2mqtt_imported"
+    imported = (done["description_placeholders"] or {})["imported"]
+    assert "- New categories: 4" in imported
+    assert "- Sightings added: 2" in imported
+    assert "DVLA API key" in imported
     await hass.async_block_till_done()
     assert sorted(s.title for s in entry.subentries.values()) == ["Amazon Prime", "Ignored reads", "dangerous", "known"]
     # the anpr2mqtt gap, over the form's own, and its key a credential
@@ -176,11 +201,13 @@ async def test_import_adds_only_new_plates(hass: HomeAssistant, tmp_path: Path):
 
     found = read_archive(archive(tmp_path, ANPR2MQTT_FILES))
     assert new_plates(entry, found)["known"] == (1, True)
-    assert await async_import(hass, entry, found) == 2
+    added = await async_import(hass, entry, found)
+    assert (added.categories, added.sightings) == (3, 2)
     known = next(s for s in entry.subentries.values() if s.title == "known")
     assert [p["plate"] for p in known.data["plates"]] == ["TJ912UKL", "P001PAT"]
     # again, adding nothing
-    assert await async_import(hass, entry, found) == 0
+    added = await async_import(hass, entry, found)
+    assert (added.categories, added.plates, added.sightings) == (0, 0, 0)
     assert all(count == 0 for count, _ in new_plates(entry, found).values())
 
 
@@ -230,6 +257,7 @@ async def test_import_as_anpr2mqtt_is_set_up(hass: HomeAssistant, tmp_path: Path
     done = await hass.config_entries.flow.async_configure(shown["flow_id"], {})
     assert done["type"] is FlowResultType.CREATE_ENTRY
     assert done["title"] == "Driveway ANPR"
+    assert "- New categories: 4" in (done["description_placeholders"] or {})["imported"]
     assert len(entry.subentries) == 4
     assert entry.data["dvla_api_key"] == "placeholder"
     assert entry.options["min_visit_gap"] == 60

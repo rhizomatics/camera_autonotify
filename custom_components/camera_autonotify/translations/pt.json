@@ -39,7 +39,10 @@
             }
         },
         "error": {
-            "archive_unreadable": "Não foi possível ler o arquivo. Envie um .tar ou .tar.gz com o config.yaml do anpr2mqtt."
+            "archive_unreadable": "Não foi possível ler o arquivo. Envie um .tar ou .tar.gz com o anpr2mqtt.yaml."
+        },
+        "create_entry": {
+            "anpr2mqtt_imported": "Importado do anpr2mqtt:\n\n{imported}"
         }
     },
     "options": {
@@ -119,13 +122,13 @@
                             "history_days": "Guardar histórico durante",
                             "vehicle_priority_unreadable": "Prioridade de veículos ilegíveis",
                             "vehicle_scenarios_unreadable": "Cenários de veículos ilegíveis",
-                            "known_category": "Categoria de veículos conhecidos"
+                            "known_category": "Categoria do botão Veículo conhecido"
                         },
                         "data_description": {
                             "anpr_own_classification": "Manter a classificação própria do anpr2mqtt, conhecido, perigoso e ignorado, o histórico e os detalhes da DVLA para os seus avistamentos. Desligue para os classificar aqui, com as categorias de veículos, como as matrículas do Frigate, sendo o anpr2mqtt apenas a fonte da matrícula e da imagem.",
                             "min_visit_gap": "Uma matrícula vista de novo dentro deste tempo é a mesma visita, e não é contada outra vez.",
                             "history_days": "Durante quanto tempo os avistamentos de cada matrícula são guardados, sem nunca sair do Home Assistant.",
-                            "known_category": "Onde o botão Veículo conhecido adiciona uma matrícula, criada se não existir."
+                            "known_category": "As notificações de um veículo desconhecido têm um botão Veículo conhecido. Ao tocá-lo, a matrícula, com a descrição escrita, é adicionada a esta categoria de veículos, criada se não existir."
                         }
                     },
                     "vehicle_lookup": {
@@ -318,7 +321,10 @@
         },
         "error": {
             "summary_undeliverable": "Os relatórios periódicos não serão entregues: não há Entregas escolhidas para o Relatório periódico de GenAI do Frigate, e o Supernotify não tem entrega de e-mail para usar em vez disso. Escolha uma entrega, defina Enviar um relatório como Desligado, ou guarde de novo para manter como está.",
-            "archive_unreadable": "Não foi possível ler o arquivo. Envie um .tar ou .tar.gz com o config.yaml do anpr2mqtt."
+            "archive_unreadable": "Não foi possível ler o arquivo. Envie um .tar ou .tar.gz com o anpr2mqtt.yaml."
+        },
+        "create_entry": {
+            "anpr2mqtt_imported": "Importado do anpr2mqtt:\n\n{imported}"
         }
     },
     "selector": {
@@ -637,7 +643,11 @@
         "import_setting_lookup_cache_hours": "cache de consultas",
         "import_setting_min_visit_gap": "intervalo mínimo entre visitas",
         "import_not_imported": "Não importado: {item}",
-        "import_nothing": "Nada para importar"
+        "import_nothing": "Nada para importar",
+        "imported_categories": "Novas categorias: {count}",
+        "imported_plates": "Matrículas adicionadas: {count}",
+        "imported_sightings": "Avistamentos adicionados: {count}",
+        "imported_nothing": "Nada de novo: tudo no arquivo já estava aqui"
     },
     "issues": {
         "lookup_refused": {
@@ -697,6 +707,26 @@
                 "category": {
                     "name": "Categoria",
                     "description": "Apenas esta categoria, em vez de todas."
+                }
+            }
+        },
+        "list_vehicle_categories": {
+            "name": "Listar categorias de veículos",
+            "description": "Cada categoria de veículos, com as suas matrículas, descrições e correções.",
+            "fields": {
+                "category": {
+                    "name": "Categoria",
+                    "description": "Apenas esta categoria, em vez de todas."
+                }
+            }
+        },
+        "list_sightings": {
+            "name": "Listar avistamentos",
+            "description": "Cada matrícula vista, com quando, quantas vezes e com que regularidade.",
+            "fields": {
+                "plate": {
+                    "name": "Matrícula",
+                    "description": "Apenas esta matrícula, em vez de todas."
                 }
             }
         }
