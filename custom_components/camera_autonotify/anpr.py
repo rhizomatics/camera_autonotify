@@ -367,7 +367,8 @@ class AnprNotifier:
             "title": title,
             "message": self.message(sighting),
             "priority": priority,
-            "spoken_message": f"{title}. {sighting.plate}",
+            # the plate only where the title is the vehicle's description, not the plate already
+            "spoken_message": f"{title}. {sighting.plate}" if sighting.description else title,
             "extra_data": {
                 "mobile_push_notification_tag": f"anpr_{self.entry.entry_id}_{slugify(sighting.plate)}",
                 "group": f"anpr_{slugify(sighting.camera) or self.entry.entry_id}",

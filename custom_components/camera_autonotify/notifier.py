@@ -82,6 +82,25 @@ PRIORITY_ALERT = "high"
 PRIORITY_DETECTION = "medium"
 # an update with alert once, no sound or interruption, iOS's passive
 PRIORITY_SILENT = "low"
+# the logos of a Frigate+ model, as its labels, by the name of the brand, rather than `Dpd` or `Royal mail`
+BRAND_NAMES: dict[str, str] = {
+    "amazon": "Amazon",
+    "an_post": "An Post",
+    "canada_post": "Canada Post",
+    "dhl": "DHL",
+    "dpd": "DPD",
+    "fedex": "FedEx",
+    "gls": "GLS",
+    "nzpost": "NZ Post",
+    "postnl": "PostNL",
+    "postnord": "PostNord",
+    "purolator": "Purolator",
+    "royal_mail": "Royal Mail",
+    "ups": "UPS",
+    "usps": "USPS",
+}
+# between the facts said under the headline, plain, so it reads the same in every delivery
+FACTS_SEPARATOR = " - "
 # a camera's or zone's own entry on the integration's page, by its entry id
 HELP_PATH = f"/config/integrations/integration/{DOMAIN}#config_entry="
 SEVERITY_ALERT = "alert"
@@ -109,11 +128,11 @@ def notification_rules(hass: HomeAssistant) -> list[Rule]:
 @callback
 def object_names(hass: HomeAssistant) -> dict[str, str]:
     """What each of Frigate's objects is called in a notification, where the global settings give it a name, read as
-    each is sent so a change applies straight away"""
+    each is sent so a change applies straight away, and otherwise a delivery company's logo by its brand"""
+    names: dict[str, str] = dict(BRAND_NAMES)
     if (entry := global_settings(hass)) is None:
-        return {}
+        return names
     named = entry.options.get(CONF_OBJECT_NAMES) or []
-    names: dict[str, str] = {}
     for item in named if isinstance(named, list) else []:
         if not isinstance(item, dict):
             continue
@@ -241,13 +260,14 @@ class Notifier:
             unit = preferred_speed_unit(self.hass, settings.options.get(CONF_SPEED_UNIT) if settings else None)
             said.append(said_speed(found.speed, speed_unit(config), unit))
         said.extend(found.plates)
-        said.extend(names.get(label) or _friendly(label) for label in found.attributes)
+        # not one already said in the headline, such as a van that's also a DPD logo
+        said.extend(names.get(label) or _friendly(label) for label in found.attributes if label not in review.objects)
         if found.face_unknown:
             said.append(text(self.hass, FACT_FACE_UNKNOWN))
         if found.stationary:
             said.append(text(self.hass, FACT_STATIONARY))
         said.extend(text(self.hass, FACT_STATE, model=_friendly(m), state=s.replace("_", " ")) for m, s in found.states)
-        return " · ".join(said)
+        return FACTS_SEPARATOR.join(said)
 
     def priority(self, decision: Decision, outcome: Outcome) -> str:
         """By the review's severity, or a summary's threat level, raised by a rule, and only sounding again for an
@@ -297,6 +317,13 @@ class Notifier:
         entry = global_settings(self.hass)
         return (entry.options.get(CONF_GENAI_IMAGE) if entry else None) or DEFAULT_GENAI_IMAGE
 
+    def spoken(self, decision: Decision, title: str, outcome: Outcome) -> str:
+        """What a voice assistant or speaker says: the headline, and GenAI's summary or description where there's
+        one, being written to be read, but never the facts under the headline, which are for reading, not hearing"""
+        if self.message(decision) and outcome.message:
+            return f"{title}. {outcome.message}"
+        return title
+
     def supernotify_data(
         self, decision: Decision, ruled: tuple[str, Outcome] | None = None, fallback: bool = False
     ) -> dict[str, Any]:
@@ -307,6 +334,7 @@ class Notifier:
         data: dict[str, Any] = {
             "title": title,
             "message": outcome.message,
+            "spoken_message": self.spoken(decision, title, outcome),
             "priority": self.priority(decision, outcome),
             "extra_data": {
                 # each update of a review takes the place of its last notification
