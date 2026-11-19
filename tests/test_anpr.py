@@ -354,10 +354,25 @@ async def test_linked_as_chosen(hass: HomeAssistant):
 # --- found, set up, and notified
 
 
+async def set_up_anpr(hass: HomeAssistant) -> None:
+    """Global Settings set up, and each anpr2mqtt source found confirmed, as it's offered even with automatic setup"""
+    await set_up_discovery(hass)
+    await confirm_anpr(hass)
+
+
+async def confirm_anpr(hass: HomeAssistant) -> None:
+    for flow in hass.config_entries.flow.async_progress_by_handler(DOMAIN):
+        if flow["step_id"] == "confirm_anpr":
+            await hass.config_entries.flow.async_configure(flow["flow_id"], {})
+    await hass.async_block_till_done()
+
+
 async def test_found_and_set_up(hass: HomeAssistant):
-    """Only anpr2mqtt's camera sensors, by its device, one entry each, by the sensor's unique id"""
+    """Only anpr2mqtt's camera sensors, by its device, one entry each, by the sensor's unique id, once confirmed"""
     add_anpr(hass)
     await set_up_discovery(hass)
+    assert [e for e in hass.config_entries.async_entries(DOMAIN) if e.data.get(CONF_TYPE) == TYPE_ANPR] == []
+    await confirm_anpr(hass)
     entries = [e for e in hass.config_entries.async_entries(DOMAIN) if e.data.get(CONF_TYPE) == TYPE_ANPR]
     assert [(e.unique_id, e.data["source_name"]) for e in entries] == [("anpr2mqtt:anpr_driveway", "anpr_driveway")]
 
@@ -366,7 +381,7 @@ async def test_notified_on_a_new_sighting(hass: HomeAssistant, frozen: FrozenDat
     calls = mock_supernotify(hass)
     add_anpr(hass)
     hass.states.async_set(SENSOR, "RETAINED", attributes())
-    await set_up_discovery(hass)
+    await set_up_anpr(hass)
     hass.states.async_set(SENSOR, "PX19TVD", attributes())
     await hass.async_block_till_done()
     # too soon after starting, so taken as retained
@@ -402,7 +417,7 @@ async def test_anpr2mqtt_down_and_back(hass: HomeAssistant, frozen: FrozenDateTi
     calls = mock_supernotify(hass)
     add_anpr(hass)
     hass.states.async_set(SENSOR, "PX19TVD", attributes())
-    await set_up_discovery(hass)
+    await set_up_anpr(hass)
     hass.states.async_set(SENSOR, "unavailable", {})
     await hass.async_block_till_done()
     frozen.tick(60 * 4 + 1)
@@ -418,7 +433,7 @@ async def test_brief_outage_not_notified(hass: HomeAssistant, frozen: FrozenDate
     calls = mock_supernotify(hass)
     add_anpr(hass)
     hass.states.async_set(SENSOR, "PX19TVD", attributes())
-    await set_up_discovery(hass)
+    await set_up_anpr(hass)
     hass.states.async_set(SENSOR, "unavailable", {})
     hass.states.async_set(SENSOR, "unknown", {})
     frozen.tick(60 * 5)
@@ -435,7 +450,7 @@ async def test_settings_form(hass: HomeAssistant):
     add_frigate(hass, cameras={"driveway": []})
     add_anpr(hass)
     hass.states.async_set(SENSOR, "PX19TVD", attributes(linked_cameras={"frigate": "driveway"}))
-    await set_up_discovery(hass)
+    await set_up_anpr(hass)
     entry = next(e for e in hass.config_entries.async_entries(DOMAIN) if e.data.get(CONF_TYPE) == TYPE_ANPR)
     form = await hass.config_entries.options.async_init(entry.entry_id)
     assert form["step_id"] == "anpr"
@@ -466,7 +481,7 @@ async def test_settings_form(hass: HomeAssistant):
 
 async def test_settings_without_linked_camera(hass: HomeAssistant):
     add_anpr(hass)
-    await set_up_discovery(hass)
+    await set_up_anpr(hass)
     entry = next(e for e in hass.config_entries.async_entries(DOMAIN) if e.data.get(CONF_TYPE) == TYPE_ANPR)
     form = await hass.config_entries.options.async_init(entry.entry_id)
     placeholders = form["description_placeholders"] or {}

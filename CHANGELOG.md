@@ -22,7 +22,7 @@ Features from `anpr2mqtt` are now brought directly into this plugin, so classify
 - A *Known vehicle* button on a notification of an unknown plate, with a description typed on the phone
 - **OpenALPR**, or any image processing ANPR/ALPR entity, as a camera's source of plates where Frigate reads none, delaying its notifications by the time it takes, up to 10 seconds
 - A *Last notification snapshot* camera entity, an option of any camera, on where an ANPR/ALPR entity is chosen, for a dashboard or as OpenALPR's `source`
-- An anpr2mqtt source's setup asks about anpr2mqtt, not Frigate
+- An anpr2mqtt source is always offered as discovered, and its setup asks about anpr2mqtt, not Frigate
 - A `camera_autonotify_vehicle` event for each sighting, with OpenALPR's `plate`, `entity_id` and `confidence`
 - Implements next phase of [RFC0003](./developer/design/rfcs/rfc0003_anpr2mqtt.md)
 ## 🐞 Fixes

@@ -129,18 +129,19 @@ def _discovery_options(hass: HomeAssistant) -> dict[str, bool]:
 
 @callback
 def async_discover(hass: HomeAssistant) -> None:
-    """Set up every camera found, or with automatic discovery off, offer each to be added, and zones only if wanted"""
+    """Set up every camera found, or with automatic discovery off, offer each to be added, and zones only if wanted.
+    An anpr2mqtt source is always offered, so its setup can import from anpr2mqtt"""
     options = _discovery_options(hass)
     if not options:
         return
-    source = SOURCE_IMPORT if options[CONF_AUTO_DISCOVER] else SOURCE_INTEGRATION_DISCOVERY
+    automatic = SOURCE_IMPORT if options[CONF_AUTO_DISCOVER] else SOURCE_INTEGRATION_DISCOVERY
     found = find_cameras(hass) + (find_zones(hass) if options[CONF_DISCOVER_ZONES] else []) + find_anpr(hass)
     for item in found:
         # those already configured, ignored or in progress are dropped by the flow's unique id
         discovery_flow.async_create_flow(
             hass,
             DOMAIN,
-            context={"source": source},
+            context={"source": SOURCE_INTEGRATION_DISCOVERY if item.type == TYPE_ANPR else automatic},
             data={
                 CONF_DEVICE_ID: item.device_id,
                 CONF_NAME: item.name,

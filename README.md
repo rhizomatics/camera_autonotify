@@ -117,7 +117,7 @@ Every plate read, by Frigate's plate recognition (ANPR/ALPR) or anpr2mqtt, is cl
 
 Camera AutoNotify notifies the number plates of the first two, with no automation, in place of the example automation in anpr2mqtt's docs. Other kinds of detection are left alone for now:
 
-- **What you need**: anpr2mqtt 1.3.0 or later, with its Home Assistant devices on (`device_creation`, as it comes). Each anpr2mqtt camera is then found and set up like a Frigate camera, by *Set up cameras automatically*. Frigate isn't needed
+- **What you need**: anpr2mqtt 1.3.0 or later, with its Home Assistant devices on (`device_creation`, as it comes). Each anpr2mqtt camera is then found and offered as *Discovered*, even with *Set up cameras automatically* on, so its setup can import from anpr2mqtt. Frigate isn't needed
 - **What's sent**: the vehicle as anpr2mqtt describes it, or its plate, at the camera, such as *Jey's Outlander at Driveway*, with the plate, the sightings before, and the DVLA's details where anpr2mqtt has them. Only a new plate is notified, not the same one again in the same visit, nor a sighting republished as Home Assistant starts
 - **Images**: from Frigate's notification proxy for a plate Frigate read, and from anpr2mqtt's image entity otherwise, so they work away from home
 - **Linked camera**: the same camera in Frigate, or UniFi Protect, Viseron or Blue Iris, found by itself from anpr2mqtt's `linked_cameras`, its area or its name, or chosen in its settings, so the notification is named by it, and Supernotify's camera snooze covers both. Only those integrations' cameras are considered, so anpr2mqtt's own camera, and the same camera by ONVIF, are never taken for it, and it's usually found by itself. Where it isn't, pick the Frigate camera

@@ -141,7 +141,7 @@ Made for anpr2mqtt 1.3.0, 2026-11-11, for the sensor, image and camera discovery
 ### Entries
 
 A new entry type, `anpr`, with source `anpr2mqtt`, one per anpr2mqtt camera and event, keyed by the sensor's unique
-id. Found like Frigate cameras, set up automatically or offered as discovered as *Global Settings* says, and also
+id. Found like Frigate cameras, but always offered as discovered, so its setup can import from anpr2mqtt, and also
 added by hand by choosing an MQTT sensor. Disabled entities and target sensors are left out. The entry's device is
 linked to anpr2mqtt's, as a camera's is to Frigate's.
 

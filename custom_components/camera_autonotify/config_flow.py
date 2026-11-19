@@ -767,7 +767,7 @@ class CameraAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_integration_discovery(self, discovery_info: dict[str, Any]) -> ConfigFlowResult:
-        """A camera found with automatic discovery off, or a zone, so offered to be added"""
+        """A camera found with automatic discovery off, a zone, or an anpr2mqtt source, so offered to be added"""
         self._found = dict(discovery_info)
         await self.async_set_unique_id(_unique_id(discovery_info))
         self._abort_if_unique_id_configured()
