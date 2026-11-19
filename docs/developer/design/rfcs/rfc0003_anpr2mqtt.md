@@ -287,7 +287,7 @@ Per decision 17, a lookup is a provider, with the DVLA only the first:
 - **Choosing**: one or more providers, each with its own settings, in the *Vehicle lookup* section of *Global
   Settings*, which replaces *DVLA*. A plate goes to the provider for its country, or to the one chosen where the
   plate's format can't tell
-- **OpenALPR** - compatibility with OpenALPR
+- **HA Image Processing** - compatibility with OpenALPR, and with others at https://www.home-assistant.io/integrations/image_processing/ where feasible
 - **Others**: a provider for another country is added beside the DVLA's, without changing the rest. Some countries'
   registers are open data, needing no key, such as the Netherlands' RDW, which makes them a good second to prove the interface, though each is to be checked for its terms and limits first.
 - **Caching, failures and correcting a misread** are the same for every provider, done once around them, not in each
