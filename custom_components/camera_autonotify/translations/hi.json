@@ -3,7 +3,8 @@
         "flow_title": "{name}",
         "abort": {
             "already_configured": "यह पहले से सेट अप है",
-            "already_in_progress": "इसका सेट अप पहले से चल रहा है"
+            "already_in_progress": "इसका सेट अप पहले से चल रहा है",
+            "global_settings_missing": "पहले Camera AutoNotify की वैश्विक सेटिंग्स सेट करें"
         },
         "step": {
             "user": {
@@ -21,7 +22,24 @@
             "confirm": {
                 "title": "{name} की सूचनाएँ",
                 "description": "जब Frigate को {name} पर कुछ दिखे तो सूचना पाएँ?\n\n{supernotify}{proxy}"
+            },
+            "import_anpr2mqtt": {
+                "title": "anpr2mqtt से आयात करें",
+                "description": "आर्काइव में मिला:\n\n{found}\n\nइसे आयात करें? पहले से मौजूद श्रेणियाँ अपनी प्लेटें रखती हैं, और केवल नई प्लेटें पाती हैं।"
+            },
+            "confirm_anpr": {
+                "title": "{name} के लिए सूचनाएँ",
+                "description": "जब anpr2mqtt {name} पर कोई प्लेट पढ़े तो सूचना पाएँ?\n\n{supernotify}",
+                "data": {
+                    "anpr2mqtt_archive": "anpr2mqtt आर्काइव"
+                },
+                "data_description": {
+                    "anpr2mqtt_archive": "anpr2mqtt के प्लेट समूहों को वाहन श्रेणियों के रूप में लाएँ, उनके सुधारों और अनदेखियों, उसकी DVLA सेटिंग्स और उसके आगमन इतिहास के साथ। कुछ भी आयात होने से पहले आप देखेंगे कि क्या मिला। anpr2mqtt के config और data फ़ोल्डरों का .tar या .tar.gz, जैसे इससे बना: tar czf anpr2mqtt.tgz config data/plate"
+                }
             }
+        },
+        "error": {
+            "archive_unreadable": "आर्काइव पढ़ा नहीं जा सका। anpr2mqtt की config.yaml वाला .tar या .tar.gz अपलोड करें।"
         }
     },
     "options": {
@@ -123,6 +141,16 @@
                             "lookup_cache_hours": "फिर से पूछने से पहले किसी प्लेट का विवरण कितने समय रखा जाता है।",
                             "dvla_api_key_clear": "DVLA की कुंजी हटा दें, ताकि प्लेटें न देखी जाएँ।"
                         }
+                    },
+                    "anpr2mqtt_import": {
+                        "name": "anpr2mqtt से आयात करें",
+                        "description": "anpr2mqtt के प्लेट समूहों को वाहन श्रेणियों के रूप में लाएँ, उनके सुधारों और अनदेखियों, उसकी DVLA सेटिंग्स और उसके आगमन इतिहास के साथ। कुछ भी आयात होने से पहले आप देखेंगे कि क्या मिला।",
+                        "data": {
+                            "anpr2mqtt_archive": "anpr2mqtt आर्काइव"
+                        },
+                        "data_description": {
+                            "anpr2mqtt_archive": "anpr2mqtt के config और data फ़ोल्डरों का .tar या .tar.gz, जैसे इससे बना: tar czf anpr2mqtt.tgz config data/plate"
+                        }
                     }
                 }
             },
@@ -208,7 +236,8 @@
                             "custom_target": "कस्टम प्राप्तकर्ता",
                             "deliveries": "डिलीवरी",
                             "actions_global": "क्रियाएँ वैश्विक सेटिंग्स के अनुसार",
-                            "actions": "क्रियाएँ"
+                            "actions": "क्रियाएँ",
+                            "last_snapshot": "अंतिम सूचना स्नैपशॉट कैमरा"
                         },
                         "data_description": {
                             "image": "हर सूचना की छवि। Frigate ख़ुद बॉक्स बनाता है या स्नैपशॉट काटता है। एनिमेटेड प्रीव्यू में बॉक्स या कटाई नहीं होती, और इसके लिए कैमरे पर रिकॉर्डिंग चालू होनी चाहिए; इसके तैयार होने तक, और रिकॉर्डिंग न होने पर हमेशा, स्नैपशॉट दिखाया जाता है। स्नैपशॉट देखें बटन हमेशा पूरा स्नैपशॉट दिखाता है।",
@@ -217,12 +246,13 @@
                             "custom_target": "Home Assistant से बाहर के प्राप्तकर्ता, जैसे ई-मेल पते या फ़ोन नंबर।",
                             "deliveries": "सूचनाओं को इन Supernotify डिलीवरी तक सीमित करें। Supernotify को चुनने देने के लिए खाली छोड़ें।",
                             "actions_global": "वैश्विक सेटिंग्स में चुनी गई क्रियाएँ उपयोग करें। इस कैमरे या ज़ोन की अपनी, या कोई नहीं, नीचे चुनने के लिए बंद करें।",
-                            "actions": "इस कैमरे या ज़ोन की सूचनाओं के बटन, जब वैश्विक सेटिंग्स के अनुसार न हों। कोई नहीं के लिए खाली छोड़ें।"
+                            "actions": "इस कैमरे या ज़ोन की सूचनाओं के बटन, जब वैश्विक सेटिंग्स के अनुसार न हों। कोई नहीं के लिए खाली छोड़ें।",
+                            "last_snapshot": "पिछली सूचना का स्नैपशॉट दिखाने वाली कैमरा एंटिटी, डैशबोर्ड के लिए, या OpenALPR जैसी ANPR/ALPR एंटिटी के स्रोत के रूप में। जहाँ ANPR/ALPR एंटिटी चुनी गई हो, वहाँ शुरू में चालू।"
                         }
                     },
                     "plates": {
                         "name": "नंबर प्लेट",
-                        "description": "जहाँ Frigate कोई प्लेट नहीं पढ़ता, वहाँ ANPR/ALPR छवि प्रोसेसिंग एंटिटी से प्लेटें पढ़ें, जैसे OpenALPR की। हर सूचना इसका इंतज़ार करती है, 10 सेकंड तक, हर समीक्षा के लिए एक बार।",
+                        "description": "जहाँ Frigate कोई प्लेट नहीं पढ़ता, वहाँ ANPR/ALPR छवि प्रोसेसिंग एंटिटी से प्लेटें पढ़ें, जैसे OpenALPR की। हर सूचना इसका इंतज़ार करती है, 10 सेकंड तक, हर समीक्षा के लिए एक बार। इसका स्रोत इस कैमरे का अंतिम सूचना स्नैपशॉट कैमरा रखें, ताकि यह लाइव दृश्य नहीं, सूचित स्नैपशॉट पढ़े।",
                         "data": {
                             "alpr_entity": "ANPR/ALPR एंटिटी",
                             "alpr_vehicles_only": "केवल वाहनों के लिए"
@@ -280,10 +310,15 @@
                         }
                     }
                 }
+            },
+            "import_anpr2mqtt": {
+                "title": "anpr2mqtt से आयात करें",
+                "description": "आर्काइव में मिला:\n\n{found}\n\nइसे आयात करें? पहले से मौजूद श्रेणियाँ अपनी प्लेटें रखती हैं, और केवल नई प्लेटें पाती हैं।"
             }
         },
         "error": {
-            "summary_undeliverable": "आवधिक रिपोर्ट बिल्कुल नहीं भेजी जाएँगी: Frigate GenAI आवधिक रिपोर्ट के लिए कोई डिलीवरी नहीं चुनी गई है, और Supernotify में इसकी जगह उपयोग के लिए कोई ई-मेल डिलीवरी नहीं है। कोई डिलीवरी चुनें, रिपोर्ट भेजें को बंद करें, या जैसा है वैसा रखने के लिए फिर से सहेजें।"
+            "summary_undeliverable": "आवधिक रिपोर्ट बिल्कुल नहीं भेजी जाएँगी: Frigate GenAI आवधिक रिपोर्ट के लिए कोई डिलीवरी नहीं चुनी गई है, और Supernotify में इसकी जगह उपयोग के लिए कोई ई-मेल डिलीवरी नहीं है। कोई डिलीवरी चुनें, रिपोर्ट भेजें को बंद करें, या जैसा है वैसा रखने के लिए फिर से सहेजें।",
+            "archive_unreadable": "आर्काइव पढ़ा नहीं जा सका। anpr2mqtt की config.yaml वाला .tar या .tar.gz अपलोड करें।"
         }
     },
     "selector": {
@@ -593,7 +628,16 @@
         "cameras_none": "अभी तक कोई Frigate कैमरा नहीं मिला।",
         "action_known_vehicle": "जाना-पहचाना वाहन",
         "action_known_vehicle_add": "जोड़ें",
-        "action_known_vehicle_placeholder": "विवरण, जैसे डाकिया"
+        "action_known_vehicle_placeholder": "विवरण, जैसे डाकिया",
+        "import_category": "{name} में प्लेटें: {count}",
+        "import_category_existing": "{name} के लिए नई प्लेटें, पहले से मौजूद: {count}",
+        "import_history": "आगमन इतिहास: {plates} प्लेटें, {sightings} दर्शन",
+        "import_settings": "सेटिंग्स: {settings}",
+        "import_setting_dvla_api_key": "DVLA API कुंजी",
+        "import_setting_lookup_cache_hours": "लुकअप कैश",
+        "import_setting_min_visit_gap": "आगमनों के बीच न्यूनतम अंतर",
+        "import_not_imported": "आयात नहीं हुआ: {item}",
+        "import_nothing": "आयात करने के लिए कुछ नहीं"
     },
     "issues": {
         "lookup_refused": {
@@ -617,24 +661,6 @@
                 "record_sighting": {
                     "name": "देखा जाना दर्ज करें",
                     "description": "इसे प्लेट के यात्रा इतिहास में देखे जाने के रूप में भी गिनें।"
-                }
-            }
-        },
-        "import_anpr2mqtt": {
-            "name": "anpr2mqtt से आयात करें",
-            "description": "anpr2mqtt की कॉन्फ़िगरेशन और ट्रैकर से वाहन श्रेणियाँ, सुधार, अनदेखे, जानकारी सेटिंग्स और यात्रा इतिहास आयात करें।",
-            "fields": {
-                "config_path": {
-                    "name": "कॉन्फ़िगरेशन पथ",
-                    "description": "anpr2mqtt की कॉन्फ़िगरेशन फ़ाइल, Home Assistant की कॉन्फ़िगरेशन डायरेक्टरी के सापेक्ष।"
-                },
-                "history_path": {
-                    "name": "इतिहास पथ",
-                    "description": "anpr2mqtt के ट्रैकर का प्लेटों वाला फ़ोल्डर, उसका data_dir/plate, Home Assistant की कॉन्फ़िगरेशन डायरेक्टरी के सापेक्ष।"
-                },
-                "dry_run": {
-                    "name": "परीक्षण चलाएँ",
-                    "description": "केवल बताएँ कि क्या आयात होगा, कुछ भी बदले बिना।"
                 }
             }
         },
@@ -672,6 +698,13 @@
                     "name": "श्रेणी",
                     "description": "केवल यह श्रेणी, सबके बजाय।"
                 }
+            }
+        }
+    },
+    "entity": {
+        "camera": {
+            "last_snapshot": {
+                "name": "अंतिम सूचना स्नैपशॉट"
             }
         }
     }

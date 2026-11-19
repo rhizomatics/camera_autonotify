@@ -3,7 +3,8 @@
         "flow_title": "{name}",
         "abort": {
             "already_configured": "Ya está configurado",
-            "already_in_progress": "La configuración ya está en curso"
+            "already_in_progress": "La configuración ya está en curso",
+            "global_settings_missing": "Configure primero los Ajustes globales de Camera AutoNotify"
         },
         "step": {
             "user": {
@@ -21,7 +22,24 @@
             "confirm": {
                 "title": "Notificaciones de {name}",
                 "description": "¿Recibir una notificación cuando Frigate vea algo en {name}?\n\n{supernotify}{proxy}"
+            },
+            "import_anpr2mqtt": {
+                "title": "Importar desde anpr2mqtt",
+                "description": "Encontrado en el archivo:\n\n{found}\n\n¿Importarlo? Las categorías ya existentes conservan sus matrículas y solo reciben las nuevas."
+            },
+            "confirm_anpr": {
+                "title": "Notificaciones para {name}",
+                "description": "¿Recibir avisos cuando anpr2mqtt lea una matrícula en {name}?\n\n{supernotify}",
+                "data": {
+                    "anpr2mqtt_archive": "Archivo de anpr2mqtt"
+                },
+                "data_description": {
+                    "anpr2mqtt_archive": "Trae los grupos de matrículas de anpr2mqtt como categorías de vehículos, con sus correcciones e ignorados, sus ajustes de DVLA y su historial de visitas. Verá lo encontrado antes de importar nada. Un .tar o .tar.gz de las carpetas config y data de anpr2mqtt, por ejemplo hecho con: tar czf anpr2mqtt.tgz config data/plate"
+                }
             }
+        },
+        "error": {
+            "archive_unreadable": "No se pudo leer el archivo. Suba un .tar o .tar.gz que contenga el config.yaml de anpr2mqtt."
         }
     },
     "options": {
@@ -123,6 +141,16 @@
                             "lookup_cache_hours": "Cuánto tiempo se guardan los detalles de una matrícula antes de volver a preguntar.",
                             "dvla_api_key_clear": "Quitar la clave de la DVLA, para que no se consulten matrículas."
                         }
+                    },
+                    "anpr2mqtt_import": {
+                        "name": "Importar desde anpr2mqtt",
+                        "description": "Trae los grupos de matrículas de anpr2mqtt como categorías de vehículos, con sus correcciones e ignorados, sus ajustes de DVLA y su historial de visitas. Verá lo encontrado antes de importar nada.",
+                        "data": {
+                            "anpr2mqtt_archive": "Archivo de anpr2mqtt"
+                        },
+                        "data_description": {
+                            "anpr2mqtt_archive": "Un .tar o .tar.gz de las carpetas config y data de anpr2mqtt, por ejemplo hecho con: tar czf anpr2mqtt.tgz config data/plate"
+                        }
                     }
                 }
             },
@@ -208,7 +236,8 @@
                             "custom_target": "Destinatarios personalizados",
                             "deliveries": "Entregas",
                             "actions_global": "Acciones como los Ajustes globales",
-                            "actions": "Acciones"
+                            "actions": "Acciones",
+                            "last_snapshot": "Cámara Última instantánea notificada"
                         },
                         "data_description": {
                             "image": "La imagen de cada notificación. Frigate dibuja el recuadro o recorta la instantánea por sí mismo. La vista previa animada no tiene recuadro ni recorte, y necesita que la cámara grabe; hasta que esté lista, y siempre si la cámara no graba, se muestra la instantánea. El botón Ver instantánea siempre muestra la instantánea completa.",
@@ -217,12 +246,13 @@
                             "custom_target": "Destinatarios fuera de Home Assistant, como direcciones de correo o números de teléfono.",
                             "deliveries": "Limitar las notificaciones a estas entregas de Supernotify. Déjalo vacío para que elija Supernotify.",
                             "actions_global": "Usar las Acciones elegidas en los Ajustes globales. Desactívalo para elegir abajo las de esta cámara o zona, o ninguna.",
-                            "actions": "Los botones de las notificaciones de esta cámara o zona, cuando no son como los Ajustes globales. Déjalo vacío para ninguno."
+                            "actions": "Los botones de las notificaciones de esta cámara o zona, cuando no son como los Ajustes globales. Déjalo vacío para ninguno.",
+                            "last_snapshot": "Una entidad de cámara con la instantánea de la última notificación, para un panel o como fuente de una entidad ANPR/ALPR como OpenALPR. Activada al principio donde se elige una entidad ANPR/ALPR."
                         }
                     },
                     "plates": {
                         "name": "Matrículas",
-                        "description": "Leer matrículas con una entidad de procesamiento de imagen ANPR/ALPR, como la de OpenALPR, cuando Frigate no lee ninguna. Cada notificación la espera, hasta 10 segundos, una vez por revisión.",
+                        "description": "Leer matrículas con una entidad de procesamiento de imagen ANPR/ALPR, como la de OpenALPR, cuando Frigate no lee ninguna. Cada notificación la espera, hasta 10 segundos, una vez por revisión. Configure su fuente como la cámara Última instantánea notificada de esta cámara, para que lea la instantánea notificada, no la imagen en directo.",
                         "data": {
                             "alpr_entity": "Entidad ANPR/ALPR",
                             "alpr_vehicles_only": "Solo para vehículos"
@@ -280,10 +310,15 @@
                         }
                     }
                 }
+            },
+            "import_anpr2mqtt": {
+                "title": "Importar desde anpr2mqtt",
+                "description": "Encontrado en el archivo:\n\n{found}\n\n¿Importarlo? Las categorías ya existentes conservan sus matrículas y solo reciben las nuevas."
             }
         },
         "error": {
-            "summary_undeliverable": "Los informes periódicos no se entregarán: no hay Entregas elegidas para el Informe periódico de GenAI de Frigate, y Supernotify no tiene entrega de correo para usar en su lugar. Elige una entrega, pon Enviar un informe en Desactivado, o guarda de nuevo para dejarlo como está."
+            "summary_undeliverable": "Los informes periódicos no se entregarán: no hay Entregas elegidas para el Informe periódico de GenAI de Frigate, y Supernotify no tiene entrega de correo para usar en su lugar. Elige una entrega, pon Enviar un informe en Desactivado, o guarda de nuevo para dejarlo como está.",
+            "archive_unreadable": "No se pudo leer el archivo. Suba un .tar o .tar.gz que contenga el config.yaml de anpr2mqtt."
         }
     },
     "selector": {
@@ -593,7 +628,16 @@
         "cameras_none": "Aún no se han encontrado cámaras de Frigate.",
         "action_known_vehicle": "Vehículo conocido",
         "action_known_vehicle_add": "Añadir",
-        "action_known_vehicle_placeholder": "Descripción, como el cartero"
+        "action_known_vehicle_placeholder": "Descripción, como el cartero",
+        "import_category": "Matrículas en {name}: {count}",
+        "import_category_existing": "Matrículas nuevas para {name}, ya existente: {count}",
+        "import_history": "Historial de visitas: {plates} matrículas, {sightings} avistamientos",
+        "import_settings": "Ajustes: {settings}",
+        "import_setting_dvla_api_key": "clave de API de DVLA",
+        "import_setting_lookup_cache_hours": "caché de consultas",
+        "import_setting_min_visit_gap": "intervalo mínimo entre visitas",
+        "import_not_imported": "No importado: {item}",
+        "import_nothing": "Nada que importar"
     },
     "issues": {
         "lookup_refused": {
@@ -617,24 +661,6 @@
                 "record_sighting": {
                     "name": "Registrar avistamiento",
                     "description": "Contarla también como un avistamiento en el historial de visitas de la matrícula."
-                }
-            }
-        },
-        "import_anpr2mqtt": {
-            "name": "Importar desde anpr2mqtt",
-            "description": "Importar categorías de vehículos, correcciones, ignorados, ajustes de consulta e historial de visitas desde la configuración y el tracker de anpr2mqtt.",
-            "fields": {
-                "config_path": {
-                    "name": "Ruta de la configuración",
-                    "description": "El archivo de configuración de anpr2mqtt, relativo al directorio de configuración de Home Assistant."
-                },
-                "history_path": {
-                    "name": "Ruta del historial",
-                    "description": "La carpeta de matrículas del tracker de anpr2mqtt, su data_dir/plate, relativa al directorio de configuración de Home Assistant."
-                },
-                "dry_run": {
-                    "name": "Simulación",
-                    "description": "Solo decir lo que se importaría, sin cambiar nada."
                 }
             }
         },
@@ -672,6 +698,13 @@
                     "name": "Categoría",
                     "description": "Solo esta categoría, en lugar de todas."
                 }
+            }
+        }
+    },
+    "entity": {
+        "camera": {
+            "last_snapshot": {
+                "name": "Última instantánea notificada"
             }
         }
     }

@@ -124,7 +124,8 @@ async def test_settings_shown_as_saved(hass: HomeAssistant):
         for name, marker in keys.items():
             if marker.description and "suggested_value" in marker.description:
                 suggested[name] = marker.description["suggested_value"]
-    assert suggested == {"labels": ["car"], "timing.cooldown": 10}
+    # the Last notification snapshot camera shown as it is, off without an ANPR/ALPR entity
+    assert suggested == {"labels": ["car"], "timing.cooldown": 10, "notify.last_snapshot": False}
 
 
 async def test_supernotify_targets(hass: HomeAssistant):

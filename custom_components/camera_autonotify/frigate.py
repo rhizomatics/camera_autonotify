@@ -147,10 +147,11 @@ def topic_prefix(config: dict[str, Any] | None) -> str:
 
 
 @callback
-def base_url(hass: HomeAssistant) -> str | None:
-    """The address a phone can reach Home Assistant at, away from home if there's one for that"""
+def base_url(hass: HomeAssistant, internal: bool = False) -> str | None:
+    """The address a phone can reach Home Assistant at, away from home if there's one for that, or else Home Assistant
+    reaches itself at"""
     try:
-        return get_url(hass, prefer_external=True)
+        return get_url(hass, prefer_external=not internal)
     except NoURLAvailableError:
         return None
 
@@ -161,10 +162,10 @@ def instance_id(config: dict[str, Any] | None) -> str | None:
 
 
 @callback
-def notifications_url(hass: HomeAssistant, source_entry_id: str) -> str | None:
+def notifications_url(hass: HomeAssistant, source_entry_id: str, internal: bool = False) -> str | None:
     """Where a Frigate server's notification proxy is, with the server's instance id only when there's more than
     one server, since without it the Frigate integration serves the first"""
-    base = base_url(hass)
+    base = base_url(hass, internal)
     if base is None:
         return None
     instance = instance_id(frigate_config(hass, source_entry_id))

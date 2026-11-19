@@ -287,7 +287,7 @@ Per decision 17, a lookup is a provider, with the DVLA only the first:
 - **Choosing**: one or more providers, each with its own settings, in the *Vehicle lookup* section of *Global
   Settings*, which replaces *DVLA*. A plate goes to the provider for its country, or to the one chosen where the
   plate's format can't tell
-- **HA Image Processing**: OpenALPR, and any image processing entity of the `alpr` device class, is a source of plates rather than a lookup, chosen per camera, where Frigate reads none, built in 1.0.0
+- **HA Image Processing**: OpenALPR, and any image processing entity of the `alpr` device class, is a source of plates rather than a lookup, chosen per camera, where Frigate reads none, built in 1.0.0. A scan reads only the entity's source camera, so a *Last notification snapshot* camera, an option of any camera, serves the notified detection's snapshot for it
 - **Others**: a provider for another country is added beside the DVLA's, without changing the rest. Some countries'
   registers are open data, needing no key, such as the Netherlands' RDW, which makes them a good second to prove the interface, though each is to be checked for its terms and limits first.
 - **Caching, failures and correcting a misread** are the same for every provider, done once around them, not in each
@@ -368,8 +368,7 @@ rather than typing plates in. A plate added this way is matched from its next si
 ## Migrating from anpr2mqtt
 
 For those moving vehicles, lookup and history from anpr2mqtt, by an *Import from anpr2mqtt* step in *Global
-Settings*, given anpr2mqtt's config file and, optionally, its tracker's `data_dir/plate` folder, both copied into Home
-Assistant's config directory, or uploaded:
+Settings*, given an uploaded archive of anpr2mqtt's config file and, optionally, its tracker's `data_dir/plate` folder:
 
 | anpr2mqtt | Camera AutoNotify |
 |-----------|-------------------|
@@ -417,12 +416,12 @@ Phase 2, released in 0.11.0 as early access, to get feedback from use before the
     - the visit history and the source's own details, such as the OCR derived `vehicle_direction`, for richer deliveries, held back, as RFC 0004's facts are, until Supernotify has a data field it doesn't pass on to transports
     - phase 1's form tidy, the missing labels found in review looking like a stale translation cache, to be checked
       on the live install
-    - the discovery confirm screen, which still asks about Frigate for an anpr2mqtt camera
 - **Full user documentation**, once it's had some use
 
 Phase 3, in 1.0.0, differing from the design:
 
-- **Import** is the `import_anpr2mqtt` action, a dry run to begin with, rather than a step in *Global Settings*
+- **Import** is an upload of anpr2mqtt's `config` and `data` folders as a tar archive, in *Global Settings* or as an
+  anpr2mqtt source is set up, showing what's found before importing it, since anpr2mqtt runs on another server
 - **Pre-defined rules** change a priority only once there's a vehicle category, so an upgrade changes nothing
   without one
 - **Minimum gap between visits** is 5 minutes to begin with, anpr2mqtt's being none, an import keeping its own

@@ -193,6 +193,10 @@ DEFAULT_KNOWN_CATEGORY: Final[str] = "Known vehicles"
 # only for a vehicle to begin with, a plate taken only at OpenALPR's own default confidence, as a percentage
 CONF_ALPR_ENTITY: Final[str] = "alpr_entity"
 CONF_ALPR_VEHICLES_ONLY: Final[str] = "alpr_vehicles_only"
+# a camera's Last notification snapshot camera entity, on where an ANPR/ALPR entity is chosen unless switched off
+CONF_LAST_SNAPSHOT: Final[str] = "last_snapshot"
+# an archive of anpr2mqtt's config and data folders, uploaded to import from
+CONF_ANPR2MQTT_ARCHIVE: Final[str] = "anpr2mqtt_archive"
 ALPR_MIN_CONFIDENCE: Final[float] = 80
 ALPR_TIMEOUT: Final[float] = 10
 # fired for each sighting of a plate, as OpenALPR's `image_processing.found_plate` with more

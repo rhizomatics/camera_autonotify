@@ -3,10 +3,8 @@ anpr2mqtt's, by an action, and imported from anpr2mqtt"""
 
 from __future__ import annotations
 
-import json
 from dataclasses import replace
 from datetime import datetime, timedelta
-from pathlib import Path
 from typing import Any, Self, cast
 
 import pytest
@@ -24,7 +22,6 @@ from custom_components.camera_autonotify.anpr import AnprNotifier, Sighting
 from custom_components.camera_autonotify.const import DOMAIN, SUBENTRY_PLATES, TYPE_DISCOVERY
 from custom_components.camera_autonotify.facts import FactStore
 from custom_components.camera_autonotify.frigate import fact_stores
-from custom_components.camera_autonotify.services import from_anpr2mqtt
 from custom_components.camera_autonotify.texts import async_load_texts
 from custom_components.camera_autonotify.vehicles import (
     ISSUE_LOOKUP_REFUSED,
@@ -380,69 +377,6 @@ tracker:
 """
 
 
-def test_from_anpr2mqtt():
-    import yaml
-
-    categories, settings, not_imported = from_anpr2mqtt(yaml.safe_load(ANPR2MQTT_CONFIG))
-    assert set(categories) == {"known", "Amazon Prime", "dangerous", "Ignored reads"}
-    assert categories["known"]["plates"] == [
-        {"plate": "TJ912UKL", "description": "joe's mini conv", "corrections": ["J912UKL"]},
-        {"plate": "P001PAT", "corrections": ["P0O1PAT"]},
-    ]
-    assert categories["dangerous"]["kind"] == "dangerous"
-    assert categories["Amazon Prime"]["icon"] == "mdi:truck-delivery"
-    assert categories["Ignored reads"] == {"kind": "known", "ignore": True, "plates": [{"plate": "^I\\dZ$"}]}
-    assert settings == {"dvla_api_key": "placeholder", "lookup_cache_hours": 2, "min_visit_gap": 60}
-    assert not_imported == [
-        "priority critical of dangerous, priority being set by the vehicle rules",
-        "corrections to UN001TST, in no category",
-    ]
-
-
-def test_from_anpr2mqtt_older_style():
-    categories, _, _ = from_anpr2mqtt({"targets": {"plate": {"known": {"AB12CDE": "Our car"}}}})
-    assert categories["known"]["plates"] == [{"plate": "AB12CDE", "description": "Our car"}]
-
-
-async def test_import_anpr2mqtt(hass: HomeAssistant, tmp_path: Path):
-    hass.config.config_dir = str(tmp_path)
-    entry = global_settings(hass, {"known": {"plates": [{"plate": "TJ912UKL"}]}})
-    folder = Path(hass.config.path("anpr2mqtt"))
-    (folder / "plate").mkdir(parents=True, exist_ok=True)
-    (folder / "config.yaml").write_text(ANPR2MQTT_CONFIG)
-    (folder / "plate" / "PX19TVD.json").write_text(json.dumps(["2026-11-09T14:25:03+00:00", "2026-11-10T08:01:00"]))
-    (folder / "plate" / "broken.json").write_text("not json")
-    await set_up(hass)
-    call = {"config_path": "anpr2mqtt/config.yaml", "history_path": "anpr2mqtt/plate"}
-    # a dry run first, changing nothing
-    dry = await respond(hass, "import_anpr2mqtt", call)
-    assert dry["dry_run"] is True
-    assert {c["category"]: c["new_plates"] for c in dry["categories"]}["known"] == 1
-    assert len(entry.subentries) == 1
-    done = await respond(hass, "import_anpr2mqtt", {**call, "dry_run": False})
-    assert done["history"] == {"plates": 1, "sightings_added": 2}
-    titles = sorted(s.title for s in entry.subentries.values())
-    assert titles == ["Amazon Prime", "Ignored reads", "dangerous", "known"]
-    known = next(s for s in entry.subentries.values() if s.title == "known")
-    assert [p["plate"] for p in known.data["plates"]] == ["TJ912UKL", "P001PAT"]
-    assert entry.options["min_visit_gap"] == 60
-    assert len(vehicles(hass).sightings("PX19TVD")) == 2
-    # again, adding nothing
-    again = await respond(hass, "import_anpr2mqtt", {**call, "dry_run": False})
-    assert again["history"]["sightings_added"] == 0
-    assert all(c["new_plates"] == 0 for c in again["categories"])
-
-
-async def test_import_without_config(hass: HomeAssistant, tmp_path: Path):
-    hass.config.config_dir = str(tmp_path)
-    global_settings(hass)
-    await set_up(hass)
-    with pytest.raises(Exception, match="Can't read"):
-        await hass.services.async_call(
-            DOMAIN, "import_anpr2mqtt", {"config_path": "missing.yaml"}, blocking=True, return_response=True
-        )
-
-
 # --- the settings
 
 
@@ -675,21 +609,6 @@ async def test_key_kept_as_a_credential(hass: HomeAssistant):
     await save({"dvla_api_key_clear": True})
     assert "dvla_api_key" not in entry.data
     assert "dvla_api_key_clear" not in entry.options
-
-
-def write_config(folder: Path) -> None:
-    folder.mkdir(parents=True, exist_ok=True)
-    (folder / "config.yaml").write_text(ANPR2MQTT_CONFIG)
-
-
-async def test_import_key_as_a_credential(hass: HomeAssistant, tmp_path: Path):
-    hass.config.config_dir = str(tmp_path)
-    entry = global_settings(hass)
-    await hass.async_add_executor_job(write_config, Path(hass.config.path("anpr2mqtt")))
-    await set_up(hass)
-    await respond(hass, "import_anpr2mqtt", {"config_path": "anpr2mqtt/config.yaml", "dry_run": False})
-    assert entry.data["dvla_api_key"] == "placeholder"
-    assert "dvla_api_key" not in entry.options
 
 
 async def test_visitor_said(hass: HomeAssistant):

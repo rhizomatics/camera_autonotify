@@ -220,6 +220,8 @@ class Notifier:
         self.source_entry_id: str = entry.data[CONF_SOURCE_ENTRY_ID]
         # each review's plate read by ANPR/ALPR image processing, or none, so it's scanned once
         self._alpr: dict[str, tuple[str, float] | None] = {}
+        # the detection whose snapshot was last notified or read for a plate, for the Last notification snapshot camera
+        self.last_snapshot: str | None = None
 
     def headline(self, decision: Decision) -> str:
         """What was seen and where, `Person detected at Barn Door`, the zone's own name for a zone, or else the
@@ -334,6 +336,8 @@ class Notifier:
         if review.id in self._alpr:
             return self._alpr[review.id]
         found: tuple[str, float] | None = None
+        # the snapshot for the Last notification snapshot camera, which the entity reads where it's chosen as its source
+        self.last_snapshot = decision.detection_id
         try:
             async with asyncio.timeout(ALPR_TIMEOUT):
                 await self.hass.services.async_call("image_processing", "scan", {ATTR_ENTITY_ID: entity_id}, blocking=True)
@@ -495,6 +499,7 @@ class Notifier:
         if outcome.silence:
             _LOGGER.debug("CAMERA_AUTONOTIFY Silenced for %s by %s", self.name, ", ".join(outcome.matched) or "vehicle")
             return
+        self.last_snapshot = decision.detection_id
         if not supernotify_available(self.hass):
             await self._send_message(decision, title, outcome.message, context)
             return

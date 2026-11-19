@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from homeassistant.components import mqtt
-from homeassistant.const import CONF_TYPE
+from homeassistant.const import CONF_TYPE, Platform
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
 
@@ -27,6 +27,9 @@ if TYPE_CHECKING:
     from homeassistant.helpers.typing import ConfigType
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+# of a camera's or zone's entry, the Last snapshot camera only where an ANPR/ALPR entity is chosen
+PLATFORMS: list[Platform] = [Platform.CAMERA]
 
 # a camera's or zone's reviews, or the health checks of the discovery entry, unless switched off
 type CameraAutoNotifyConfigEntry = ConfigEntry[ReviewWatcher | AnprWatcher | HealthMonitor | None]
@@ -70,9 +73,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: CameraAutoNotifyConfigEn
     entry.async_on_unload(await async_watch(hass, topic_prefix(config), watcher))
     entry.runtime_data = watcher
     async_register_device(hass, entry, entry.title)
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: CameraAutoNotifyConfigEntry) -> bool:
     # the subscription and timers are stopped by the entry's own unload callbacks
+    if isinstance(entry.runtime_data, ReviewWatcher):
+        return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     return True

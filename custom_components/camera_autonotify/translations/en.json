@@ -3,7 +3,8 @@
         "flow_title": "{name}",
         "abort": {
             "already_configured": "This is already set up",
-            "already_in_progress": "Set up of this is already in progress"
+            "already_in_progress": "Set up of this is already in progress",
+            "global_settings_missing": "Set up Camera AutoNotify's Global Settings first"
         },
         "step": {
             "user": {
@@ -21,7 +22,24 @@
             "confirm": {
                 "title": "Notifications for {name}",
                 "description": "Get notified when Frigate sees something at {name}?\n\n{supernotify}{proxy}"
+            },
+            "import_anpr2mqtt": {
+                "title": "Import from anpr2mqtt",
+                "description": "Found in the archive:\n\n{found}\n\nImport it? Categories already here keep their plates, and get only the new ones."
+            },
+            "confirm_anpr": {
+                "title": "Notifications for {name}",
+                "description": "Get notified when anpr2mqtt reads a plate at {name}?\n\n{supernotify}",
+                "data": {
+                    "anpr2mqtt_archive": "anpr2mqtt archive"
+                },
+                "data_description": {
+                    "anpr2mqtt_archive": "Bring over anpr2mqtt's plate groups as vehicle categories, with their corrections and ignores, its DVLA settings and its visit history. You'll see what's found before anything is imported. A .tar or .tar.gz of anpr2mqtt's config and data folders, such as made with: tar czf anpr2mqtt.tgz config data/plate"
+                }
             }
+        },
+        "error": {
+            "archive_unreadable": "Couldn't read the archive. Upload a .tar or .tar.gz with anpr2mqtt's config.yaml in it."
         }
     },
     "options": {
@@ -123,6 +141,16 @@
                             "lookup_cache_hours": "How long a plate's details are kept before asking again.",
                             "dvla_api_key_clear": "Take the DVLA's key away, so plates aren't looked up."
                         }
+                    },
+                    "anpr2mqtt_import": {
+                        "name": "Import from anpr2mqtt",
+                        "description": "Bring over anpr2mqtt's plate groups as vehicle categories, with their corrections and ignores, its DVLA settings and its visit history. You'll see what's found before anything is imported.",
+                        "data": {
+                            "anpr2mqtt_archive": "anpr2mqtt archive"
+                        },
+                        "data_description": {
+                            "anpr2mqtt_archive": "A .tar or .tar.gz of anpr2mqtt's config and data folders, such as made with: tar czf anpr2mqtt.tgz config data/plate"
+                        }
                     }
                 }
             },
@@ -208,7 +236,8 @@
                             "custom_target": "Custom targets",
                             "deliveries": "Deliveries",
                             "actions_global": "Actions as Global Settings",
-                            "actions": "Actions"
+                            "actions": "Actions",
+                            "last_snapshot": "Last notification snapshot camera"
                         },
                         "data_description": {
                             "image": "The image of each notification. Frigate draws the box or crops the snapshot itself. The animated preview has no box or crop, and needs recording on for the camera, the snapshot being shown until it's ready, and always where the camera doesn't record. The View snapshot button always shows the whole snapshot.",
@@ -217,12 +246,13 @@
                             "custom_target": "Targets outside of Home Assistant, such as e-mail addresses or phone numbers.",
                             "deliveries": "Limit notifications to these Supernotify deliveries. Leave empty for Supernotify to choose.",
                             "actions_global": "Use the Actions chosen in Global Settings. Switch off to choose this camera's or zone's own below, or none.",
-                            "actions": "The buttons on this camera's or zone's notifications, when not as Global Settings. Leave empty for none."
+                            "actions": "The buttons on this camera's or zone's notifications, when not as Global Settings. Leave empty for none.",
+                            "last_snapshot": "A camera entity showing the snapshot of the last notification, for a dashboard, or as the source of an ANPR/ALPR entity such as OpenALPR. On to begin with where an ANPR/ALPR entity is chosen."
                         }
                     },
                     "plates": {
                         "name": "Number plates",
-                        "description": "Read plates with an image processing ANPR/ALPR entity, such as OpenALPR's, where Frigate reads none. Each notification waits for it, up to 10 seconds, once for each review.",
+                        "description": "Read plates with an image processing ANPR/ALPR entity, such as OpenALPR's, where Frigate reads none. Each notification waits for it, up to 10 seconds, once for each review. Set its source to this camera's Last notification snapshot camera, so it reads the snapshot notified, not the live view.",
                         "data": {
                             "alpr_entity": "ANPR/ALPR entity",
                             "alpr_vehicles_only": "Only for vehicles"
@@ -280,10 +310,15 @@
                         }
                     }
                 }
+            },
+            "import_anpr2mqtt": {
+                "title": "Import from anpr2mqtt",
+                "description": "Found in the archive:\n\n{found}\n\nImport it? Categories already here keep their plates, and get only the new ones."
             }
         },
         "error": {
-            "summary_undeliverable": "Periodic reports won't be delivered at all: no Deliveries are chosen for the Frigate GenAI Periodic Report, and Supernotify has no e-mail delivery to use instead. Choose a delivery, set Send a report to Off, or save again to keep it as it is."
+            "summary_undeliverable": "Periodic reports won't be delivered at all: no Deliveries are chosen for the Frigate GenAI Periodic Report, and Supernotify has no e-mail delivery to use instead. Choose a delivery, set Send a report to Off, or save again to keep it as it is.",
+            "archive_unreadable": "Couldn't read the archive. Upload a .tar or .tar.gz with anpr2mqtt's config.yaml in it."
         }
     },
     "selector": {
@@ -593,7 +628,16 @@
         "cameras_none": "No Frigate cameras found yet.",
         "action_known_vehicle": "Known vehicle",
         "action_known_vehicle_add": "Add",
-        "action_known_vehicle_placeholder": "Description, such as the postman"
+        "action_known_vehicle_placeholder": "Description, such as the postman",
+        "import_category": "Plates in {name}: {count}",
+        "import_category_existing": "New plates for {name}, already here: {count}",
+        "import_history": "Visit history: {plates} plates, {sightings} sightings",
+        "import_settings": "Settings: {settings}",
+        "import_setting_dvla_api_key": "DVLA API key",
+        "import_setting_lookup_cache_hours": "lookup cache",
+        "import_setting_min_visit_gap": "minimum gap between visits",
+        "import_not_imported": "Not imported: {item}",
+        "import_nothing": "Nothing to import"
     },
     "issues": {
         "lookup_refused": {
@@ -617,24 +661,6 @@
                 "record_sighting": {
                     "name": "Record sighting",
                     "description": "Also count it as a sighting in the plate's visit history."
-                }
-            }
-        },
-        "import_anpr2mqtt": {
-            "name": "Import from anpr2mqtt",
-            "description": "Import vehicle categories, corrections, ignores, lookup settings and visit history from anpr2mqtt's config and tracker.",
-            "fields": {
-                "config_path": {
-                    "name": "Config path",
-                    "description": "anpr2mqtt's config file, relative to Home Assistant's config directory."
-                },
-                "history_path": {
-                    "name": "History path",
-                    "description": "anpr2mqtt's tracker folder of plates, its data_dir/plate, relative to Home Assistant's config directory."
-                },
-                "dry_run": {
-                    "name": "Dry run",
-                    "description": "Only say what would be imported, changing nothing."
                 }
             }
         },
@@ -672,6 +698,13 @@
                     "name": "Category",
                     "description": "Only this category, rather than every one."
                 }
+            }
+        }
+    },
+    "entity": {
+        "camera": {
+            "last_snapshot": {
+                "name": "Last notification snapshot"
             }
         }
     }

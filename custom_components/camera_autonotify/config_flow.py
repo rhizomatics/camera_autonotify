@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from collections.abc import Mapping
 from dataclasses import fields
 from typing import Any
 
+from homeassistant.components.file_upload import process_uploaded_file
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
@@ -22,6 +24,8 @@ from homeassistant.helpers.selector import (
     BooleanSelector,
     EntitySelector,
     EntitySelectorConfig,
+    FileSelector,
+    FileSelectorConfig,
     IconSelector,
     NumberSelector,
     NumberSelectorConfig,
@@ -49,6 +53,7 @@ from .const import (
     CONF_ALERT_ONCE,
     CONF_ALPR_ENTITY,
     CONF_ALPR_VEHICLES_ONLY,
+    CONF_ANPR2MQTT_ARCHIVE,
     CONF_ANPR_OWN_CLASSIFICATION,
     CONF_AUTO_DISCOVER,
     CONF_COOLDOWN,
@@ -73,6 +78,7 @@ from .const import (
     CONF_KIND_SCENARIOS,
     CONF_KNOWN_CATEGORY,
     CONF_LABELS,
+    CONF_LAST_SNAPSHOT,
     CONF_LINKED_CAMERA,
     CONF_LINKED_CAMERA_AUTO,
     CONF_LOOKUP_CACHE_HOURS,
@@ -161,6 +167,7 @@ from .const import (
     VEHICLE_RULE_PRIORITIES,
 )
 from .discovery import find_anpr, find_cameras
+from .entries import global_settings, wants_last_snapshot
 from .frigate import (
     all_labels,
     camera_autotracks,
@@ -172,6 +179,7 @@ from .frigate import (
     zone_labels,
 )
 from .health import HealthSettings
+from .migrate import ARCHIVE_ACCEPT, ArchiveUnreadable, Imported, async_import, imported_options, new_plates, read_archive
 from .plates import KIND_DANGEROUS, KIND_KNOWN, is_pattern
 from .rules import compile_pattern
 from .supernotify_api import deliveries_by_transport, email_deliveries, scenario_names, supernotify_available
@@ -181,6 +189,15 @@ from .texts import (
     AUTOTRACKING,
     CAMERAS_FOUND,
     CAMERAS_NONE,
+    IMPORT_CATEGORY,
+    IMPORT_CATEGORY_EXISTING,
+    IMPORT_HISTORY,
+    IMPORT_NOT_IMPORTED,
+    IMPORT_NOTHING,
+    IMPORT_SETTING_DVLA_API_KEY,
+    IMPORT_SETTING_LOOKUP_CACHE,
+    IMPORT_SETTING_MIN_VISIT_GAP,
+    IMPORT_SETTINGS,
     PROXY_EXPIRES,
     PROXY_OFF,
     SUPERNOTIFY_MISSING,
@@ -190,9 +207,13 @@ from .texts import (
 )
 from .tracker import Settings
 
+_LOGGER = logging.getLogger(__name__)
+
 STEP_DISCOVERY = "discovery"
 STEP_SETTINGS = "settings"
 STEP_ANPR = "anpr"
+STEP_CONFIRM_ANPR = "confirm_anpr"
+STEP_IMPORT = "import_anpr2mqtt"
 SECTION_VEHICLES = "vehicles"
 SECTION_VEHICLE_LOOKUP = "vehicle_lookup"
 SECTION_PLATES = "plates"
@@ -201,6 +222,7 @@ SECTION_GENAI = "genai"
 SECTION_NOTIFY = "notify"
 SECTION_HEALTH = "health"
 SECTION_SUMMARY = "summary"
+SECTION_IMPORT = "anpr2mqtt_import"
 # the daily summary without Supernotify, with nothing to set, only saying it needs Supernotify
 SECTION_SUMMARY_UNAVAILABLE = "summary_unavailable"
 SECTIONS = (
@@ -213,6 +235,7 @@ SECTIONS = (
     SECTION_VEHICLES,
     SECTION_VEHICLE_LOOKUP,
     SECTION_PLATES,
+    SECTION_IMPORT,
 )
 # an anpr2mqtt entry's settings as they come, not stored
 ANPR_DEFAULTS: dict[str, Any] = {
@@ -300,7 +323,52 @@ def discovery_schema(
             fields_[vol.Optional(SECTION_SUMMARY_UNAVAILABLE)] = section(vol.Schema({}), {"collapsed": True})
         fields_[vol.Optional(SECTION_VEHICLES)] = section(vol.Schema(vehicles_schema(scenarios)), {"collapsed": True})
         fields_[vol.Optional(SECTION_VEHICLE_LOOKUP)] = section(vol.Schema(lookup_schema()), {"collapsed": True})
+        fields_[vol.Optional(SECTION_IMPORT)] = section(vol.Schema(archive_schema()), {"collapsed": True})
     return vol.Schema(fields_)
+
+
+# the name of each setting an import can bring
+IMPORT_SETTING_NAMES = {
+    CONF_DVLA_API_KEY: IMPORT_SETTING_DVLA_API_KEY,
+    CONF_LOOKUP_CACHE_HOURS: IMPORT_SETTING_LOOKUP_CACHE,
+    CONF_MIN_VISIT_GAP: IMPORT_SETTING_MIN_VISIT_GAP,
+}
+
+
+def archive_schema() -> dict[vol.Marker, Any]:
+    """An archive of anpr2mqtt's config and data folders, to import from"""
+    return {vol.Optional(CONF_ANPR2MQTT_ARCHIVE): FileSelector(FileSelectorConfig(accept=ARCHIVE_ACCEPT))}
+
+
+async def async_read_upload(hass: HomeAssistant, file_id: str) -> Imported:
+    """What's in an uploaded archive of anpr2mqtt's, the upload being removed once read"""
+
+    def read() -> Imported:
+        with process_uploaded_file(hass, file_id) as path:
+            return read_archive(path)
+
+    try:
+        return await hass.async_add_executor_job(read)
+    except ValueError as error:
+        # the upload gone, as after a restart
+        raise ArchiveUnreadable(str(error)) from error
+
+
+def import_summary(hass: HomeAssistant, entry: ConfigEntry, found: Imported) -> str:
+    """What an import adds, as a list: each category's new plates, the visit history, the settings, and what can't be
+    imported"""
+    lines = [
+        text(hass, IMPORT_CATEGORY_EXISTING if existing else IMPORT_CATEGORY, name=name, count=count)
+        for name, (count, existing) in new_plates(entry, found).items()
+    ]
+    if found.history:
+        sightings = sum(len(times) for times in found.history.values())
+        lines.append(text(hass, IMPORT_HISTORY, plates=len(found.history), sightings=sightings))
+    if found.settings:
+        named = ", ".join(text(hass, IMPORT_SETTING_NAMES[key]) for key in found.settings)
+        lines.append(text(hass, IMPORT_SETTINGS, settings=named))
+    lines.extend(text(hass, IMPORT_NOT_IMPORTED, item=item) for item in found.not_imported)
+    return "\n".join(f"- {line}" for line in lines) if lines else text(hass, IMPORT_NOTHING)
 
 
 def vehicles_schema(scenarios: list[str] | None) -> dict[vol.Marker, Any]:
@@ -556,6 +624,9 @@ async def settings_schema(
             SelectSelectorConfig(options=list(IMAGES), mode=SelectSelectorMode.DROPDOWN, translation_key=CONF_IMAGE)
         )
     }
+    if zones is not None:
+        # a camera's own, shown as it is, which is on where an ANPR/ALPR entity is chosen until switched off
+        notify[vol.Optional(CONF_LAST_SNAPSHOT)] = BooleanSelector()
     if supernotify_available(hass) and actions:
         # the buttons on a phone, as the global settings unless chosen here, of those Frigate can do for the camera
         notify[vol.Required(CONF_ACTIONS_GLOBAL, default=DEFAULTS[CONF_ACTIONS_GLOBAL])] = BooleanSelector()
@@ -648,6 +719,7 @@ class CameraAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
 
     def __init__(self) -> None:
         self._found: dict[str, Any] = {}
+        self._imported = Imported()
 
     @staticmethod
     @callback
@@ -700,13 +772,55 @@ class CameraAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(_unique_id(discovery_info))
         self._abort_if_unique_id_configured()
         self.context["title_placeholders"] = {"name": discovery_info[CONF_NAME]}
+        if discovery_info.get(CONF_TYPE) == TYPE_ANPR:
+            return await self.async_step_confirm_anpr()
         return await self.async_step_confirm()
+
+    def _create_found(self) -> ConfigFlowResult:
+        return self.async_create_entry(
+            title=self._found[CONF_NAME], data={k: v for k, v in self._found.items() if k in ENTRY_DATA}
+        )
+
+    async def async_step_confirm_anpr(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """An anpr2mqtt source, offering to import from anpr2mqtt itself until there are vehicle categories"""
+        settings = global_settings(self.hass)
+        upload = settings is not None and not any(
+            subentry.subentry_type == SUBENTRY_PLATES for subentry in settings.subentries.values()
+        )
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            if not (archive := user_input.get(CONF_ANPR2MQTT_ARCHIVE)):
+                return self._create_found()
+            try:
+                self._imported = await async_read_upload(self.hass, archive)
+            except ArchiveUnreadable as error:
+                _LOGGER.warning("CAMERA_AUTONOTIFY Can't import from anpr2mqtt's archive: %s", error)
+                errors["base"] = "archive_unreadable"
+            else:
+                return await self.async_step_import_anpr2mqtt()
+        return self.async_show_form(
+            step_id=STEP_CONFIRM_ANPR,
+            data_schema=vol.Schema(archive_schema() if upload else {}),
+            errors=errors,
+            description_placeholders={"name": self._found[CONF_NAME], "supernotify": await supernotify_status(self.hass)},
+        )
+
+    async def async_step_import_anpr2mqtt(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """What's imported from anpr2mqtt into the global settings, to confirm, then the source set up"""
+        settings = global_settings(self.hass)
+        if settings is None:
+            return self.async_abort(reason="global_settings_missing")
+        if user_input is not None:
+            await async_import(self.hass, settings, self._imported)
+            return self._create_found()
+        await async_load_texts(self.hass)
+        return self.async_show_form(
+            step_id=STEP_IMPORT, description_placeholders={"found": import_summary(self.hass, settings, self._imported)}
+        )
 
     async def async_step_confirm(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
-            return self.async_create_entry(
-                title=self._found[CONF_NAME], data={k: v for k, v in self._found.items() if k in ENTRY_DATA}
-            )
+            return self._create_found()
         return self.async_show_form(
             step_id="confirm",
             description_placeholders={
@@ -720,6 +834,9 @@ class CameraAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
 class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
     # warned once that summaries have no delivery, saved as they are if sent again
     _undeliverable_warned: bool = False
+    # an anpr2mqtt archive read, and the global settings to save once it's imported
+    _imported: Imported
+    _settings: dict[str, Any]
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if self.config_entry.data.get(CONF_TYPE) == TYPE_DISCOVERY:
@@ -773,9 +890,30 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
                 else {key: value for key, value in self.config_entry.options.items() if key in SUMMARY_OPTIONS}
             )
             settings = kept | flattened(user_input)
+            archive = settings.pop(CONF_ANPR2MQTT_ARCHIVE, None)
             self._keep_credentials(settings)
+            if archive:
+                try:
+                    self._imported = await async_read_upload(self.hass, archive)
+                except ArchiveUnreadable as error:
+                    _LOGGER.warning("CAMERA_AUTONOTIFY Can't import from anpr2mqtt's archive: %s", error)
+                    shown = dict(self.config_entry.options) | settings
+                    return await self._show_discovery(shown, shown_as_is=True, errors={"base": "archive_unreadable"})
+                self._settings = settings
+                return await self.async_step_import_anpr2mqtt()
             return self.async_create_entry(data=settings)
         return await self._show_discovery(dict(self.config_entry.options))
+
+    async def async_step_import_anpr2mqtt(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """What's imported from anpr2mqtt, to confirm, then imported and the global settings saved with it"""
+        if user_input is not None:
+            await async_import(self.hass, self.config_entry, self._imported)
+            return self.async_create_entry(data=self._settings | imported_options(self._imported))
+        await async_load_texts(self.hass)
+        return self.async_show_form(
+            step_id=STEP_IMPORT,
+            description_placeholders={"found": import_summary(self.hass, self.config_entry, self._imported)},
+        )
 
     async def _show_discovery(
         self, shown: dict[str, Any], shown_as_is: bool = False, errors: dict[str, str] | None = None
@@ -828,6 +966,9 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
                 for key, value in flattened(user_input).items()
                 if (value or value is False or value == 0) and value != DEFAULTS.get(key)
             }
+            if settings.get(CONF_ALPR_ENTITY) and not self.config_entry.options.get(CONF_ALPR_ENTITY):
+                # for the ANPR/ALPR entity to read the snapshot notified, chosen as its source
+                settings[CONF_LAST_SNAPSHOT] = True
             return self.async_create_entry(data=settings)
         data = self.config_entry.data
         config = frigate_config(self.hass, data[CONF_SOURCE_ENTRY_ID])
@@ -847,6 +988,8 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
         schema = await settings_schema(self.hass, labels, zones, genai, actions, alpr)
         await async_load_texts(self.hass)
         shown = dict(self.config_entry.options)
+        if not is_zone:
+            shown[CONF_LAST_SNAPSHOT] = wants_last_snapshot(self.config_entry)
         if CONF_ACTIONS in shown:
             shown[CONF_ACTIONS] = [kind for kind in shown[CONF_ACTIONS] if kind in actions]
         moving = [camera for camera in cameras if camera_autotracks(config, camera)]

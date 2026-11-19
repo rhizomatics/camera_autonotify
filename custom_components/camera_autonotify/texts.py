@@ -112,6 +112,16 @@ PROXY_OFF = "proxy_off"
 PROXY_EXPIRES = "proxy_expires"
 CAMERAS_FOUND = "cameras_found"
 CAMERAS_NONE = "cameras_none"
+# what an import from anpr2mqtt adds
+IMPORT_CATEGORY = "import_category"
+IMPORT_CATEGORY_EXISTING = "import_category_existing"
+IMPORT_HISTORY = "import_history"
+IMPORT_SETTINGS = "import_settings"
+IMPORT_SETTING_DVLA_API_KEY = "import_setting_dvla_api_key"
+IMPORT_SETTING_LOOKUP_CACHE = "import_setting_lookup_cache_hours"
+IMPORT_SETTING_MIN_VISIT_GAP = "import_setting_min_visit_gap"
+IMPORT_NOT_IMPORTED = "import_not_imported"
+IMPORT_NOTHING = "import_nothing"
 
 
 async def async_load_texts(hass: HomeAssistant) -> None:

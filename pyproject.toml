@@ -19,7 +19,10 @@ dev = [
     "mypy",
     "homeassistant-repl",
     "genbadge[all]",
-    "ty"
+    "ty",
+    "numpy==2.3.2",
+    "av==19.0.0",
+    "pyturbojpeg==1.8.3",
 ]
 docs=[
     "pymdown-extensions",

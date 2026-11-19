@@ -3,7 +3,8 @@
         "flow_title": "{name}",
         "abort": {
             "already_configured": "Dies ist bereits eingerichtet",
-            "already_in_progress": "Die Einrichtung läuft bereits"
+            "already_in_progress": "Die Einrichtung läuft bereits",
+            "global_settings_missing": "Richten Sie zuerst die globalen Einstellungen von Camera AutoNotify ein"
         },
         "step": {
             "user": {
@@ -21,7 +22,24 @@
             "confirm": {
                 "title": "Benachrichtigungen für {name}",
                 "description": "Benachrichtigt werden, wenn Frigate bei {name} etwas sieht?\n\n{supernotify}{proxy}"
+            },
+            "import_anpr2mqtt": {
+                "title": "Aus anpr2mqtt importieren",
+                "description": "Im Archiv gefunden:\n\n{found}\n\nImportieren? Bereits vorhandene Kategorien behalten ihre Kennzeichen und erhalten nur die neuen."
+            },
+            "confirm_anpr": {
+                "title": "Benachrichtigungen für {name}",
+                "description": "Benachrichtigen, wenn anpr2mqtt ein Kennzeichen bei {name} liest?\n\n{supernotify}",
+                "data": {
+                    "anpr2mqtt_archive": "anpr2mqtt-Archiv"
+                },
+                "data_description": {
+                    "anpr2mqtt_archive": "Übernimmt die Kennzeichengruppen von anpr2mqtt als Fahrzeugkategorien, mit ihren Korrekturen und Ignorierungen, seinen DVLA-Einstellungen und seinem Besuchsverlauf. Sie sehen, was gefunden wurde, bevor etwas importiert wird. Ein .tar oder .tar.gz der Ordner config und data von anpr2mqtt, etwa erstellt mit: tar czf anpr2mqtt.tgz config data/plate"
+                }
             }
+        },
+        "error": {
+            "archive_unreadable": "Das Archiv konnte nicht gelesen werden. Laden Sie ein .tar oder .tar.gz mit der config.yaml von anpr2mqtt hoch."
         }
     },
     "options": {
@@ -123,6 +141,16 @@
                             "lookup_cache_hours": "Wie lange die Daten eines Kennzeichens behalten werden, bevor erneut gefragt wird.",
                             "dvla_api_key_clear": "Den DVLA-Schlüssel entfernen, sodass keine Kennzeichen nachgeschlagen werden."
                         }
+                    },
+                    "anpr2mqtt_import": {
+                        "name": "Aus anpr2mqtt importieren",
+                        "description": "Übernimmt die Kennzeichengruppen von anpr2mqtt als Fahrzeugkategorien, mit ihren Korrekturen und Ignorierungen, seinen DVLA-Einstellungen und seinem Besuchsverlauf. Sie sehen, was gefunden wurde, bevor etwas importiert wird.",
+                        "data": {
+                            "anpr2mqtt_archive": "anpr2mqtt-Archiv"
+                        },
+                        "data_description": {
+                            "anpr2mqtt_archive": "Ein .tar oder .tar.gz der Ordner config und data von anpr2mqtt, etwa erstellt mit: tar czf anpr2mqtt.tgz config data/plate"
+                        }
                     }
                 }
             },
@@ -208,7 +236,8 @@
                             "custom_target": "Benutzerdefinierte Ziele",
                             "deliveries": "Zustellungen",
                             "actions_global": "Aktionen wie globale Einstellungen",
-                            "actions": "Aktionen"
+                            "actions": "Aktionen",
+                            "last_snapshot": "Kamera „Letzter Benachrichtigungs-Schnappschuss“"
                         },
                         "data_description": {
                             "image": "Das Bild jeder Benachrichtigung. Frigate zeichnet den Rahmen oder schneidet den Schnappschuss selbst zu. Die animierte Vorschau hat keinen Rahmen und keinen Zuschnitt und braucht eine Aufnahme der Kamera; bis sie bereit ist, und immer ohne Aufnahme, wird der Schnappschuss gezeigt. Die Schaltfläche Schnappschuss ansehen zeigt immer den ganzen Schnappschuss.",
@@ -217,12 +246,13 @@
                             "custom_target": "Ziele außerhalb von Home Assistant, etwa E-Mail-Adressen oder Telefonnummern.",
                             "deliveries": "Benachrichtigungen auf diese Supernotify-Zustellungen beschränken. Leer lassen, damit Supernotify wählt.",
                             "actions_global": "Die in den globalen Einstellungen gewählten Aktionen verwenden. Ausschalten, um unten eigene für diese Kamera oder Zone zu wählen, oder keine.",
-                            "actions": "Die Schaltflächen der Benachrichtigungen dieser Kamera oder Zone, wenn nicht wie globale Einstellungen. Leer lassen für keine."
+                            "actions": "Die Schaltflächen der Benachrichtigungen dieser Kamera oder Zone, wenn nicht wie globale Einstellungen. Leer lassen für keine.",
+                            "last_snapshot": "Eine Kamera-Entität mit dem Schnappschuss der letzten Benachrichtigung, für ein Dashboard oder als Quelle einer ANPR/ALPR-Entität wie OpenALPR. Anfangs an, wo eine ANPR/ALPR-Entität gewählt ist."
                         }
                     },
                     "plates": {
                         "name": "Kennzeichen",
-                        "description": "Kennzeichen mit einer ANPR/ALPR-Bildverarbeitungsentität lesen, etwa der von OpenALPR, wo Frigate keines liest. Jede Benachrichtigung wartet darauf, bis zu 10 Sekunden, einmal pro Review.",
+                        "description": "Kennzeichen mit einer ANPR/ALPR-Bildverarbeitungsentität lesen, etwa der von OpenALPR, wo Frigate keines liest. Jede Benachrichtigung wartet darauf, bis zu 10 Sekunden, einmal pro Review. Setzen Sie ihre Quelle auf die Kamera „Letzter Benachrichtigungs-Schnappschuss“ dieser Kamera, damit sie den benachrichtigten Schnappschuss liest, nicht das Livebild.",
                         "data": {
                             "alpr_entity": "ANPR/ALPR-Entität",
                             "alpr_vehicles_only": "Nur für Fahrzeuge"
@@ -280,10 +310,15 @@
                         }
                     }
                 }
+            },
+            "import_anpr2mqtt": {
+                "title": "Aus anpr2mqtt importieren",
+                "description": "Im Archiv gefunden:\n\n{found}\n\nImportieren? Bereits vorhandene Kategorien behalten ihre Kennzeichen und erhalten nur die neuen."
             }
         },
         "error": {
-            "summary_undeliverable": "Regelmäßige Berichte werden gar nicht zugestellt: Für den regelmäßigen GenAI-Bericht von Frigate sind keine Zustellungen gewählt, und Supernotify hat keine E-Mail-Zustellung als Ersatz. Wähle eine Zustellung, setze Bericht senden auf Aus, oder speichere erneut, um es so zu belassen."
+            "summary_undeliverable": "Regelmäßige Berichte werden gar nicht zugestellt: Für den regelmäßigen GenAI-Bericht von Frigate sind keine Zustellungen gewählt, und Supernotify hat keine E-Mail-Zustellung als Ersatz. Wähle eine Zustellung, setze Bericht senden auf Aus, oder speichere erneut, um es so zu belassen.",
+            "archive_unreadable": "Das Archiv konnte nicht gelesen werden. Laden Sie ein .tar oder .tar.gz mit der config.yaml von anpr2mqtt hoch."
         }
     },
     "selector": {
@@ -593,7 +628,16 @@
         "cameras_none": "Noch keine Frigate-Kameras gefunden.",
         "action_known_vehicle": "Bekanntes Fahrzeug",
         "action_known_vehicle_add": "Hinzufügen",
-        "action_known_vehicle_placeholder": "Beschreibung, etwa der Postbote"
+        "action_known_vehicle_placeholder": "Beschreibung, etwa der Postbote",
+        "import_category": "Kennzeichen in {name}: {count}",
+        "import_category_existing": "Neue Kennzeichen für {name}, bereits vorhanden: {count}",
+        "import_history": "Besuchsverlauf: {plates} Kennzeichen, {sightings} Sichtungen",
+        "import_settings": "Einstellungen: {settings}",
+        "import_setting_dvla_api_key": "DVLA-API-Schlüssel",
+        "import_setting_lookup_cache_hours": "Abfrage-Cache",
+        "import_setting_min_visit_gap": "Mindestabstand zwischen Besuchen",
+        "import_not_imported": "Nicht importiert: {item}",
+        "import_nothing": "Nichts zu importieren"
     },
     "issues": {
         "lookup_refused": {
@@ -617,24 +661,6 @@
                 "record_sighting": {
                     "name": "Sichtung erfassen",
                     "description": "Es auch als Sichtung im Besuchsverlauf des Kennzeichens zählen."
-                }
-            }
-        },
-        "import_anpr2mqtt": {
-            "name": "Aus anpr2mqtt importieren",
-            "description": "Fahrzeugkategorien, Korrekturen, Ignorierte, Abfrageeinstellungen und Besuchsverlauf aus anpr2mqtts Konfiguration und Tracker importieren.",
-            "fields": {
-                "config_path": {
-                    "name": "Konfigurationspfad",
-                    "description": "anpr2mqtts Konfigurationsdatei, relativ zum Konfigurationsverzeichnis von Home Assistant."
-                },
-                "history_path": {
-                    "name": "Verlaufspfad",
-                    "description": "anpr2mqtts Tracker-Ordner der Kennzeichen, sein data_dir/plate, relativ zum Konfigurationsverzeichnis von Home Assistant."
-                },
-                "dry_run": {
-                    "name": "Probelauf",
-                    "description": "Nur sagen, was importiert würde, ohne etwas zu ändern."
                 }
             }
         },
@@ -672,6 +698,13 @@
                     "name": "Kategorie",
                     "description": "Nur diese Kategorie, statt jeder."
                 }
+            }
+        }
+    },
+    "entity": {
+        "camera": {
+            "last_snapshot": {
+                "name": "Letzter Benachrichtigungs-Schnappschuss"
             }
         }
     }
