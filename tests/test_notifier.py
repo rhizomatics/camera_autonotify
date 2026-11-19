@@ -101,8 +101,8 @@ async def test_new_alert(hass: HomeAssistant, external_url: None):
                 "uri": f"{BASE}/api/frigate/notifications/{DETECTION}/snapshot.jpg",
             },
             # the actions of the global settings, to begin with, of those Frigate can do here
-            {"action": f"CAMERA_AUTONOTIFY_KEEP|{ENTRY_ID}|{DETECTION}", "title": "Keep"},
-            {"action": f"CAMERA_AUTONOTIFY_SEEN|{ENTRY_ID}|{REVIEW_ID}", "title": "Seen"},
+            {"action": f"CAMERA_AUTONOTIFY_KEEP|{ENTRY_ID}|{DETECTION}", "title": "Keep clip"},
+            {"action": f"CAMERA_AUTONOTIFY_SEEN|{ENTRY_ID}|{REVIEW_ID}", "title": "Mark reviewed"},
         ],
     }
 
@@ -150,7 +150,7 @@ async def test_no_media_without_camera_or_detection(hass: HomeAssistant, externa
     data = notifier(hass).supernotify_data(decision(detections=()))
     assert "media" not in data
     # only seen, the others needing a detection
-    assert [action["title"] for action in data["actions"]] == ["Seen"]
+    assert [action["title"] for action in data["actions"]] == ["Mark reviewed"]
 
 
 async def test_deliveries_and_targets(hass: HomeAssistant):

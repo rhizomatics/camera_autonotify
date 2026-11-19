@@ -395,8 +395,7 @@ Phase 2, released in 0.11.0 as early access, to get feedback from use before the
       sighting to its Frigate review, and vehicle rules
     - adding a sensor by hand, for anpr2mqtt without devices
     - the linked camera by `live_url`, and by `frigate_event_id` learned from sightings
-    - the visit history and the source's own details, such as `vehicle_direction`, for richer deliveries, held back,
-      as RFC 0004's facts are, until Supernotify has a data field it doesn't pass on to transports
+    - the visit history and the source's own details, such as the OCR derived `vehicle_direction`, for richer deliveries, held back, as RFC 0004's facts are, until Supernotify has a data field it doesn't pass on to transports
     - phase 1's form tidy, the missing labels found in review looking like a stale translation cache, to be checked
       on the live install
     - the discovery confirm screen, which still asks about Frigate for an anpr2mqtt camera

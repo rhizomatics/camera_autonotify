@@ -85,7 +85,7 @@ The integration also notifies when a Frigate server stops responding, and when a
 
 ### Actions
 
-With Supernotify, each notification on a phone has buttons for what Frigate can do with the review: *Keep* the clip from Frigate's retention, mark it *Seen* in Frigate's own UI, submit the snapshot to *Frigate+*, or *Export* the recording around it. Which are offered is set by *Actions* in *Global Settings*, keep, seen and Frigate+ to begin with, and each camera or zone can choose its own. Only those Frigate can do are offered: Frigate+ where it's set up and the camera saves snapshots, and exporting where the camera records. Switch off any that doesn't work for you, or that you'd rather not have taking a place among a phone's buttons. They're on phones only for now, not in e-mail.
+With Supernotify, each notification on a phone has buttons for what Frigate can do with the review: *Keep clip*, keeping it from Frigate's retention, *Mark reviewed*, in Frigate's own UI, *Submit to Frigate+*, sending the snapshot to improve its model, and *Export recording*, of the recording around it. Which are offered is set by *Actions* in *Global Settings*, keep, seen and Frigate+ to begin with, and each camera or zone can choose its own. Only those Frigate can do are offered: Frigate+ where it's set up and the camera saves snapshots, and exporting where the camera records. Switch off any that doesn't work for you, or that you'd rather not have taking a place among a phone's buttons. They're on phones only for now, not in e-mail.
 
 ### GenAI Periodic Reports
 

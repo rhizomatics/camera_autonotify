@@ -23,7 +23,7 @@ What a voice assistant or speaker says, by Supernotify's spoken message, is the 
 With Supernotify, each notification:
 
 - shows the snapshot of the review, or the *Image* chosen instead, and opens the clip when tapped, played from Frigate as HLS. See [When the Image Can't Be Fetched](#when-the-image-cant-be-fetched)
-- has a *View snapshot* button, and the buttons of the [*Actions*](index.md#actions) chosen, such as *Keep* and *Seen*
+- has a *View snapshot* button, and the buttons of the [*Actions*](index.md#actions) chosen, such as *Keep clip* and *Mark reviewed*
 - is grouped with the others of the same camera
 - passes the camera entity, so Supernotify's camera snooze works
 

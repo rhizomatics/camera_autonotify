@@ -17,8 +17,7 @@ Rules never route. Who's told, by which deliveries, and how that changes with wh
 Supernotify's, by its scenarios, which a rule's tags select.
 
 Rules are built on Home Assistant's own conditions and templates, so there's nothing new to learn, and set up in a
-form. A **simple** rule is a few fields for the common case, such as one word to look for. An **advanced** rule is
-any Home Assistant condition, for anything else.
+form. A **simple** rule is a few fields for the common case, such as one word to look for or avoid. An **advanced** rule is any Home Assistant condition, for anything else.
 
 ## Motivation
 
@@ -94,6 +93,7 @@ as they are.
 |------|-----|---------|
 | Simple | The common cases: a word in the message, or what was seen and recognised | A few fields, each optional, all of those filled in needing to match |
 | Advanced | Anything else | Home Assistant conditions, in its condition editor |
+| Pre-defined | Known cases like vehicle classification | Known, unknown, dangerous |
 
 #### Simple rules
 
@@ -110,6 +110,8 @@ text:
 A rule of only a word, `boring`, or only an object and *nothing recognised*, takes a single field or two. A simple
 rule is turned into a condition when it's loaded, the same as an advanced rule is made of, so it behaves exactly the
 same, and can be turned into an advanced rule in its form, showing the condition it was, as a start for more.
+
+A rule can fire if text is found in a message or for messages that don't include that rule.
 
 #### Advanced rules
 
@@ -261,8 +263,7 @@ rule's tags, without needing to know about birds or faces.
 ### Vehicles
 
 Known, dangerous, unknown and ignored vehicles, as anpr2mqtt classifies them today, are four simple rules, for
-Frigate's plates and anpr2mqtt's alike, replacing anpr2mqtt's classification for those using Home Assistant, per
-[RFC 0003](rfc0003_anpr2mqtt.md)'s decision 15:
+Frigate's plates and anpr2mqtt's alike, replacing anpr2mqtt's classification for those using Home Assistant, per [RFC 0003](rfc0003_anpr2mqtt.md)'s decision 15:
 
 | Rule | Object | Recognised as | Then |
 |------|--------|---------------|------|
@@ -271,22 +272,9 @@ Frigate's plates and anpr2mqtt's alike, replacing anpr2mqtt's classification for
 | Known vehicle | the same | any name but: *Stolen van*, *Neighbour's car*, ... | `medium`, tag `known_vehicle` |
 | Unknown vehicle | the same | a plate read, but not recognised | `high`, tag `unknown_vehicle` |
 
-Known and dangerous are easy, a name from a list. **Unknown is the test of the rule structure**, being the inverse of
-the others: a plate was read, so the vehicle could have been recognised, and it wasn't, as any of the names known.
-Without *seen but not recognised*, it couldn't be said at all, since a car with no plate read isn't an unknown
-vehicle, only one whose plate wasn't seen. Known needs *any name but* the dangerous and ignored ones, or a dangerous
-vehicle would be known too. Where they overlap anyway, combining keeps it safe: silence wins only for the ignored, and
-otherwise the most urgent priority.
+The match is made after a plate has been corrected (see [RFC0003](./rfc0003_anpr2mqtt.md#correcting-a-misread)). The list of plates isn't inside the rule, its in a set of known and suspicious categories, with unknown vehicles being any that don't match these categories. Pre-defined rules assign low priority for known, medium for unknown and high for suspicious, and the outcome of the rules can be edited by user from ConfigFlow UI. The outcome distinguishes known, unknown, suspicious and unreadable, plus derived categories identified (known or suspicious) and readable (all but unreadable).
 
-The names are those of the vehicle categories registered in Camera AutoNotify, per
-[RFC 0003](rfc0003_anpr2mqtt.md#vehicles-in-camera-autonotify), modelled on anpr2mqtt's target groups: a single vehicle,
-every family car, or a delivery company's vans, each matching plates or expressions, after corrections and ignores. So
-a plate's category is set in one place, for every source, and the rules only say what each category means here.
-anpr2mqtt's sightings that are in none of them are still recognised by its targets' descriptions.
-
-A plate's visit history is there too, as `event.vehicle.history`: the previous sightings, the count by hour, whether
-it's a new visit, the earliest and latest times of day it's been seen, and whether this sighting is within them. So
-an advanced rule can raise a known vehicle seen at an unusual time:
+Additional attributes may be available from Frigate's GenAI or an LPR lookup like UK DVLA. Additionally, a readable plate can be identified as previously seen, frequently seen, seen at usual time or seen at unusual time, using the plate's visit history, also available as `event.vehicle.history`: the previous sightings, the count by hour, whether it's a new visit, the earliest and latest times of day it's been seen, and whether this sighting is within them. So an advanced rule can raise a known vehicle seen at an unusual time:
 
 ```yaml
 condition: template
@@ -294,12 +282,10 @@ value_template: >
   {{ event.vehicle.category == 'Family cars' and event.vehicle.history.within_time_range == false }}
 ```
 
-A plate looked up with the DVLA, or another country's register
-([RFC 0003](rfc0003_anpr2mqtt.md#dvla-enrichment-of-frigates-plates)), also gives `event.vehicle.lookup` to advanced
-rules, in a common schema whichever register it came from, such as raising an untaxed or uninspected vehicle.
+A plate looked up with the DVLA, or another country's register ([RFC 0003](rfc0003_anpr2mqtt.md#dvla-enrichment-of-frigates-plates)), also gives `event.vehicle.lookup` to advanced rules, in a common schema whichever register it came from, such as raising an untaxed or uninspected vehicle. Common attributes, such as colour, manufacturer and tax status will be normalized so not specific to the licence plate lookup source.
 
-anpr2mqtt keeps its own classification, `known`, `dangerous` and `ignore`, for those who use it without Home
-Assistant, and phase 2's vehicle settings keep following it for anpr2mqtt's sightings, but with Home Assistant its
+
+anpr2mqtt retains all of its current functionality for those who use it without Home Assistant, and phase 2's vehicle settings keep following it for anpr2mqtt's sightings, but with Home Assistant its
 docs recommend these rules instead, so the meaning of a vehicle is decided in one place, for every source.
 
 ## Feasibility

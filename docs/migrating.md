@@ -51,7 +51,7 @@ and deliveries in Supernotify itself, once, for every camera.
 | `attachment` | *Image*, under *Image and targets*: the snapshot, the snapshot with its bounding box, the snapshot cropped to the object, the thumbnail, or an animated GIF preview, which has no bounding box or crop, and shows the snapshot until it's ready |
 | `attachment_2` | The same *Image* for the first notification and its updates, and *GenAI image* for what GenAI adds, the animated preview to begin with |
 | `video`, `ios_live_view` | Not attached, see [Video on iPhones](how_it_works.md#video-on-iphones). Tapping the notification plays the clip |
-| `tap_action`, `button_1` to `button_3` | Tap for the clip, a *View snapshot* button, and the buttons of *Actions*, such as *Keep* and *Seen*. See [Actions](index.md#actions) |
+| `tap_action`, `button_1` to `button_3` | Tap for the clip, a *View snapshot* button, and the buttons of *Actions*, such as *Keep clip* and *Mark reviewed*. See [Actions](index.md#actions) |
 | `button_3` silence, `silence_timer` | Supernotify's camera snooze |
 | `title`, `message`, `subtitle` | Fixed wording, not editable, translated into Home Assistant's language where there's a translation |
 | `genai_notification_title` | Frigate's own title for a GenAI review summary, with no prefix, since the threat level sets the notification's priority instead. See [GenAI Notifications](genai.md) |
@@ -110,8 +110,8 @@ Things the blueprint doesn't do:
 - **Zones of their own**, each notifying for reviews from any camera it's on. See [Zones](index.md#zones)
 - **GenAI review summaries and object descriptions**, each updating the review's notification, with the priority set by the threat level Frigate's GenAI gives. See [GenAI Notifications](genai.md)
 - **Rules** on what any notification says, to raise its priority, silence it, or apply Supernotify scenarios
-- **Buttons for what Frigate can do**: *Keep* the clip from Frigate's retention, mark the review *Seen* in Frigate,
-  submit the snapshot to *Frigate+*, or *Export* the recording, each offered only where Frigate can do it, and chosen
+- **Buttons for what Frigate can do**: *Keep clip* from Frigate's retention, *Mark reviewed* in Frigate,
+  *Submit to Frigate+* the snapshot, or *Export recording*, each offered only where Frigate can do it, and chosen
   for every camera or each one. See [Actions](index.md#actions)
 - **What Frigate knows, beyond the review**, said under the headline: the speed through a speed zone, a plate read
   that Frigate doesn't know, a delivery company's logo, a face seen but not recognised, a car that has stopped, or a

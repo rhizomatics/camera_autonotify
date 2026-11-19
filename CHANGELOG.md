@@ -12,6 +12,7 @@ title: What's New
 - A delivery company's logo from a Frigate+ model is said as its brand, such as *DPD* or *Royal Mail*, rather than *Dpd*, unless *Object names* names it otherwise, and isn't said again under the headline when it's already the object in it
 - The facts under the headline are separated by a plain `-` rather than `·`
 - anpr2mqtt's spoken message only adds the plate where the title is the vehicle's description, so an unknown vehicle's plate isn't said twice
+- The buttons on a phone say what they do: *Keep clip*, *Mark reviewed*, *Submit to Frigate+* and *Export recording*, rather than *Keep*, *Seen*, *Frigate+* and *Export*
 
 # 0.11.1
 ## ✨ Enhancements
