@@ -9,7 +9,9 @@ title: What's New
 # 1.0.0
 ## ✨ Enhancements
 ### Vehicle Classification and Enrichment
+
 Features from `anpr2mqtt` are now brought directly into this plugin, so classifying, tracking and looking up plates happens here, for any source of plates, and `anpr2mqtt` is no longer need for Frigate LPR enrichment (e.g. DVLA):
+
 - Vehicle categories, known or dangerous, by plates or regular expressions, with each plate's corrections, and *Ignore*
 - Pre-defined vehicle rules, once there's a category: a priority and scenarios for known (`low`), unknown (`medium`), unreadable (`high`) and dangerous (`critical`) vehicles. A misread plate matching a dangerous one can raise a false `critical`
 - Each plate's visit history: previous sightings, count by hour, new visits, the times of day it's usually seen, and whether it's a *Daily visitor* (5 days of 7, each of the last two weeks), *Weekly visitor* (each of the last two weeks) or *Occasional visitor* (every month back to its first sighting), or otherwise previously seen
