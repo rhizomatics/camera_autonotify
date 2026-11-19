@@ -5,7 +5,11 @@ from homeassistant.const import CONF_TYPE
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 
-from custom_components.camera_autonotify.config_flow import CameraAutoNotifyConfigFlow, RuleSubentryFlow
+from custom_components.camera_autonotify.config_flow import (
+    CameraAutoNotifyConfigFlow,
+    PlateCategorySubentryFlow,
+    RuleSubentryFlow,
+)
 from custom_components.camera_autonotify.const import (
     CONF_AUTO_DISCOVER,
     CONF_DISCOVER_ZONES,
@@ -178,6 +182,9 @@ async def test_rule_changed(hass: HomeAssistant):
 
 async def test_rules_only_on_discovery_entry(hass: HomeAssistant):
     entry = await discovery_entry(hass)
-    assert CameraAutoNotifyConfigFlow.async_get_supported_subentry_types(entry) == {SUBENTRY_RULE: RuleSubentryFlow}
+    assert CameraAutoNotifyConfigFlow.async_get_supported_subentry_types(entry) == {
+        SUBENTRY_RULE: RuleSubentryFlow,
+        "plate_category": PlateCategorySubentryFlow,
+    }
     camera = MockConfigEntry(domain=DOMAIN, data={CONF_TYPE: "camera"})
     assert CameraAutoNotifyConfigFlow.async_get_supported_subentry_types(camera) == {}

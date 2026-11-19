@@ -1,6 +1,6 @@
 # RFC 0003 - ANPR2MQTT Integration
 
-**Status**: Phase 2 built in 0.11.0, as early access
+**Status**: Phases 2 and 3 built, in 0.11.0 and 1.0.0, as early access
 Reviewed 2026-11-11, design agreed, upstream changes released in anpr2mqtt 1.3.0. Phase 2 built 2026-11-17, see
 [As built](#as-built). 2026-11-17, the DVLA lookup moved here for Frigate's own plates, see
 [DVLA enrichment of Frigate's plates](#dvla-enrichment-of-frigates-plates)
@@ -287,7 +287,7 @@ Per decision 17, a lookup is a provider, with the DVLA only the first:
 - **Choosing**: one or more providers, each with its own settings, in the *Vehicle lookup* section of *Global
   Settings*, which replaces *DVLA*. A plate goes to the provider for its country, or to the one chosen where the
   plate's format can't tell
-- **HA Image Processing** - compatibility with OpenALPR, and with others at https://www.home-assistant.io/integrations/image_processing/ where feasible
+- **HA Image Processing**: OpenALPR, and any image processing entity of the `alpr` device class, is a source of plates rather than a lookup, chosen per camera, where Frigate reads none, built in 1.0.0
 - **Others**: a provider for another country is added beside the DVLA's, without changing the rest. Some countries'
   registers are open data, needing no key, such as the Netherlands' RDW, which makes them a good second to prove the interface, though each is to be checked for its terms and limits first.
 - **Caching, failures and correcting a misread** are the same for every provider, done once around them, not in each
@@ -419,6 +419,19 @@ Phase 2, released in 0.11.0 as early access, to get feedback from use before the
       on the live install
     - the discovery confirm screen, which still asks about Frigate for an anpr2mqtt camera
 - **Full user documentation**, once it's had some use
+
+Phase 3, in 1.0.0, differing from the design:
+
+- **Import** is the `import_anpr2mqtt` action, a dry run to begin with, rather than a step in *Global Settings*
+- **Pre-defined rules** change a priority only once there's a vehicle category, so an upgrade changes nothing
+  without one
+- **Minimum gap between visits** is 5 minutes to begin with, anpr2mqtt's being none, an import keeping its own
+- **Unreadable** is a pre-defined rule too, `high`, and dangerous is `critical`, to begin with
+- **The event** is `camera_autonotify_vehicle`, with OpenALPR's `plate`, `entity_id` and `confidence` first
+- **Visitor**, in place of *Frequently seen*: daily, on 5 days of 7 in each of the last two weeks; weekly, at least
+  once in each; occasional, at least once every 30 days back to a first sighting a month or more ago; otherwise
+  previously seen
+- **Not yet**: a category's entity, and other countries' registers
 
 ## Roadmap
 

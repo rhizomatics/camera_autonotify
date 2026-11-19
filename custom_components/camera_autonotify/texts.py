@@ -36,12 +36,23 @@ BUTTON_KEEP = "action_keep"
 BUTTON_SEEN = "action_seen"
 BUTTON_PLUS = "action_plus"
 BUTTON_EXPORT = "action_export"
+BUTTON_KNOWN = "action_known_vehicle"
+BUTTON_KNOWN_ADD = "action_known_vehicle_add"
+BUTTON_KNOWN_PLACEHOLDER = "action_known_vehicle_placeholder"
 # a camera that follows what it sees, so its zones move
 AUTOTRACKING = "autotracking"
 # what's known of a review's objects beyond the review, as said under the headline
 FACT_FACE_UNKNOWN = "fact_face_unknown"
 FACT_STATIONARY = "fact_stationary"
 FACT_STATE = "fact_state"
+# a vehicle's sightings before, and one seen outside the times of day it's been seen before
+FACT_SIGHTINGS = "fact_sightings"
+FACT_UNUSUAL_TIME = "fact_unusual_time"
+# how regularly a vehicle has been seen
+FACT_DAILY_VISITOR = "fact_daily_visitor"
+FACT_WEEKLY_VISITOR = "fact_weekly_visitor"
+FACT_OCCASIONAL_VISITOR = "fact_occasional_visitor"
+FACT_VISITORS = {"daily": FACT_DAILY_VISITOR, "weekly": FACT_WEEKLY_VISITOR, "occasional": FACT_OCCASIONAL_VISITOR}
 # a Frigate server failing its health check, and answering again, named by its title
 HEALTH_DOWN_TITLE = "health_down_title"
 HEALTH_DOWN = "health_down"

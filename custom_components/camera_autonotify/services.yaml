@@ -1,0 +1,71 @@
+classify_plate:
+  fields:
+    plate:
+      required: true
+      example: PX19TVD
+      selector:
+        text:
+    camera:
+      required: false
+      example: driveway
+      selector:
+        text:
+    record_sighting:
+      required: false
+      default: false
+      selector:
+        boolean:
+
+import_anpr2mqtt:
+  fields:
+    config_path:
+      required: true
+      example: anpr2mqtt/config.yaml
+      selector:
+        text:
+    history_path:
+      required: false
+      example: anpr2mqtt/plate
+      selector:
+        text:
+    dry_run:
+      required: false
+      default: true
+      selector:
+        boolean:
+
+add_plate:
+  fields:
+    category:
+      required: true
+      example: Known vehicles
+      selector:
+        text:
+    plate:
+      required: true
+      example: PX19TVD
+      selector:
+        text:
+    description:
+      required: false
+      example: Jey's Outlander
+      selector:
+        text:
+    corrections:
+      required: false
+      selector:
+        text:
+          multiple: true
+
+remove_plate:
+  fields:
+    plate:
+      required: true
+      example: PX19TVD
+      selector:
+        text:
+    category:
+      required: false
+      example: Known vehicles
+      selector:
+        text:

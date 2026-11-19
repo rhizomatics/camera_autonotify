@@ -85,6 +85,44 @@
                     "summary_unavailable": {
                         "name": "Regelmäßiger GenAI-Bericht von Frigate",
                         "description": "Ein Bericht über die vergangenen Stunden, von Frigates GenAI aus ihren Reviews geschrieben, einmal am Tag oder öfter. Er ist für eine Handy-Benachrichtigung oder einen Sprachassistenten zu lang und braucht daher Supernotify zum Senden - installiere es aus dem Marketplace, mit einer E-Mail- oder anderen Zustellung, um ihn hier einzuschalten."
+                    },
+                    "vehicles": {
+                        "name": "Fahrzeuge",
+                        "description": "Was die Fahrzeugkategorie eines Kennzeichens bedeutet, für jede Kennzeichenquelle: eine Priorität für jede und ihre Supernotify-Szenarien. Sie gelten, sobald es eine Fahrzeugkategorie gibt.",
+                        "data": {
+                            "vehicle_priority_known": "Priorität bekannter Fahrzeuge",
+                            "vehicle_priority_dangerous": "Priorität gefährlicher Fahrzeuge",
+                            "vehicle_priority_unknown": "Priorität unbekannter Fahrzeuge",
+                            "vehicle_scenarios_known": "Szenarien bekannter Fahrzeuge",
+                            "vehicle_scenarios_dangerous": "Szenarien gefährlicher Fahrzeuge",
+                            "vehicle_scenarios_unknown": "Szenarien unbekannter Fahrzeuge",
+                            "anpr_own_classification": "anpr2mqtts eigene Einordnung verwenden",
+                            "min_visit_gap": "Mindestabstand zwischen Besuchen",
+                            "history_days": "Verlauf behalten für",
+                            "vehicle_priority_unreadable": "Priorität unlesbarer Fahrzeuge",
+                            "vehicle_scenarios_unreadable": "Szenarien unlesbarer Fahrzeuge",
+                            "known_category": "Kategorie bekannter Fahrzeuge"
+                        },
+                        "data_description": {
+                            "anpr_own_classification": "anpr2mqtts eigene Einordnung als bekannt, gefährlich und ignoriert, Verlauf und DVLA-Daten für seine Sichtungen behalten. Ausschalten, um sie hier mit den Fahrzeugkategorien einzuordnen, wie Frigates Kennzeichen, anpr2mqtt ist dann nur Quelle von Kennzeichen und Bild.",
+                            "min_visit_gap": "Ein Kennzeichen, das innerhalb dieser Zeit erneut gesehen wird, ist derselbe Besuch und wird nicht erneut gezählt.",
+                            "history_days": "Wie lange die Sichtungen jedes Kennzeichens behalten werden, ohne Home Assistant je zu verlassen.",
+                            "known_category": "Wohin die Schaltfläche Bekanntes Fahrzeug ein Kennzeichen hinzufügt, angelegt, falls nicht vorhanden."
+                        }
+                    },
+                    "vehicle_lookup": {
+                        "name": "Fahrzeugabfrage",
+                        "description": "Kennzeichen in einem Fahrzeugregister nachschlagen, für Marke, Farbe, Steuer und Prüfung. Das der DVLA für britische Kennzeichen, über ihren Vehicle Enquiry Service.",
+                        "data": {
+                            "dvla_api_key": "DVLA-API-Schlüssel",
+                            "lookup_cache_hours": "Abfragen zwischenspeichern für",
+                            "dvla_api_key_clear": "Schlüssel vergessen"
+                        },
+                        "data_description": {
+                            "dvla_api_key": "Von der DVLA für ihren Vehicle Enquiry Service ausgegeben, als Zugangsdaten gespeichert und nie wieder angezeigt. Leer lassen, um den bereits gesetzten Schlüssel zu behalten.",
+                            "lookup_cache_hours": "Wie lange die Daten eines Kennzeichens behalten werden, bevor erneut gefragt wird.",
+                            "dvla_api_key_clear": "Den DVLA-Schlüssel entfernen, sodass keine Kennzeichen nachgeschlagen werden."
+                        }
                     }
                 }
             },
@@ -180,6 +218,18 @@
                             "deliveries": "Benachrichtigungen auf diese Supernotify-Zustellungen beschränken. Leer lassen, damit Supernotify wählt.",
                             "actions_global": "Die in den globalen Einstellungen gewählten Aktionen verwenden. Ausschalten, um unten eigene für diese Kamera oder Zone zu wählen, oder keine.",
                             "actions": "Die Schaltflächen der Benachrichtigungen dieser Kamera oder Zone, wenn nicht wie globale Einstellungen. Leer lassen für keine."
+                        }
+                    },
+                    "plates": {
+                        "name": "Kennzeichen",
+                        "description": "Kennzeichen mit einer ANPR/ALPR-Bildverarbeitungsentität lesen, etwa der von OpenALPR, wo Frigate keines liest. Jede Benachrichtigung wartet darauf, bis zu 10 Sekunden, einmal pro Review.",
+                        "data": {
+                            "alpr_entity": "ANPR/ALPR-Entität",
+                            "alpr_vehicles_only": "Nur für Fahrzeuge"
+                        },
+                        "data_description": {
+                            "alpr_entity": "Die Bildverarbeitungsentität, die die Kennzeichen dieser Kamera liest, etwa die von OpenALPR.",
+                            "alpr_vehicles_only": "Nur Kennzeichen lesen, wo ein Auto, Transporter, Lkw, Bus oder Motorrad gesehen wurde."
                         }
                     }
                 }
@@ -308,7 +358,8 @@
                 "keep": "Clip behalten",
                 "seen": "Als gesehen markieren",
                 "plus": "An Frigate+ senden",
-                "export": "Aufnahme exportieren"
+                "export": "Aufnahme exportieren",
+                "known_vehicle": "Zu bekannten Fahrzeugen hinzufügen"
             }
         },
         "vehicle_priority": {
@@ -327,6 +378,12 @@
                 "auto": "Automatisch",
                 "kmh": "km/h",
                 "mph": "mph"
+            }
+        },
+        "kind": {
+            "options": {
+                "known": "Bekannt",
+                "dangerous": "Gefährlich"
             }
         }
     },
@@ -386,6 +443,58 @@
             "abort": {
                 "reconfigure_successful": "Die Regel ist geändert."
             }
+        },
+        "plate_category": {
+            "entry_type": "Fahrzeugkategorie",
+            "initiate_flow": {
+                "user": "Fahrzeugkategorie hinzufügen"
+            },
+            "step": {
+                "user": {
+                    "title": "Fahrzeugkategorie",
+                    "description": "Ein einzelnes Fahrzeug, alle Familienautos oder die Transporter eines Lieferdienstes, nach ihren Kennzeichen. Ein gelesenes Kennzeichen wird korrigiert, dann genau, per Ausdruck oder bis auf ein Zeichen abgeglichen.",
+                    "data": {
+                        "name": "Name",
+                        "kind": "Art",
+                        "ignore": "Ignorieren",
+                        "description": "Beschreibung",
+                        "icon": "Symbol",
+                        "lookup": "Nachschlagen",
+                        "plates": "Kennzeichen"
+                    },
+                    "data_description": {
+                        "ignore": "Ihre Kennzeichen verwerfen, ohne Benachrichtigung oder Sichtung, etwa das als Kennzeichen falsch gelesene Logo eines Tankwagens.",
+                        "description": "In einer Benachrichtigung genannt, wo ein Kennzeichen keine eigene Beschreibung hat.",
+                        "lookup": "Ihre Kennzeichen im Fahrzeugregister nachschlagen. Kennzeichen ohne Kategorie werden immer nachgeschlagen.",
+                        "plates": "Jeweils ein Kennzeichen oder ein regulärer Ausdruck für eine Reihe von Kennzeichen, mit eigener Beschreibung und den Lesungen, die eigentlich es sind."
+                    }
+                },
+                "reconfigure": {
+                    "title": "Fahrzeugkategorie ändern",
+                    "description": "Ein einzelnes Fahrzeug, alle Familienautos oder die Transporter eines Lieferdienstes, nach ihren Kennzeichen. Ein gelesenes Kennzeichen wird korrigiert, dann genau, per Ausdruck oder bis auf ein Zeichen abgeglichen.",
+                    "data": {
+                        "name": "Name",
+                        "kind": "Art",
+                        "ignore": "Ignorieren",
+                        "description": "Beschreibung",
+                        "icon": "Symbol",
+                        "lookup": "Nachschlagen",
+                        "plates": "Kennzeichen"
+                    },
+                    "data_description": {
+                        "ignore": "Ihre Kennzeichen verwerfen, ohne Benachrichtigung oder Sichtung, etwa das als Kennzeichen falsch gelesene Logo eines Tankwagens.",
+                        "description": "In einer Benachrichtigung genannt, wo ein Kennzeichen keine eigene Beschreibung hat.",
+                        "lookup": "Ihre Kennzeichen im Fahrzeugregister nachschlagen. Kennzeichen ohne Kategorie werden immer nachgeschlagen.",
+                        "plates": "Jeweils ein Kennzeichen oder ein regulärer Ausdruck für eine Reihe von Kennzeichen, mit eigener Beschreibung und den Lesungen, die eigentlich es sind."
+                    }
+                }
+            },
+            "error": {
+                "invalid_pattern": "Ein Kennzeichen oder eine Korrektur ist kein verwendbarer regulärer Ausdruck."
+            },
+            "abort": {
+                "reconfigure_successful": "Die Fahrzeugkategorie wurde geändert."
+            }
         }
     },
     "exceptions": {
@@ -410,6 +519,11 @@
         "fact_face_unknown": "Gesicht nicht erkannt",
         "fact_stationary": "Bewegt sich nicht",
         "fact_state": "{model}: {state}",
+        "fact_sightings": "Frühere Sichtungen: {count}",
+        "fact_unusual_time": "Zu ungewöhnlicher Zeit",
+        "fact_daily_visitor": "Täglicher Besucher",
+        "fact_weekly_visitor": "Wöchentlicher Besucher",
+        "fact_occasional_visitor": "Gelegentlicher Besucher",
         "health_down_title": "Frigate antwortet nicht",
         "health_down": "{server} besteht die Zustandsprüfung seit {since} nicht, daher wurden Kamera-Benachrichtigungen möglicherweise unterbrochen.",
         "health_up_title": "Frigate ist zurück",
@@ -476,6 +590,89 @@
         "proxy_off": "**Frigates Benachrichtigungs-Proxy ist für {server} ausgeschaltet.** Benachrichtigungen haben keinen Schnappschuss, und Antippen spielt den Clip nicht ab. Schalte den Benachrichtigungs-Proxy in den Optionen der Frigate-Integration wieder ein.",
         "proxy_expires": "Frigates Benachrichtigungslinks für {server} funktionieren {seconds} Sekunden nach jeder Erkennung nicht mehr, daher verlieren ältere Benachrichtigungen Schnappschuss und Clip. Setze den Ablauf des Benachrichtigungs-Proxys in den Optionen der Frigate-Integration auf 0, um sie zu behalten.",
         "cameras_found": "Gefundene Kameras:",
-        "cameras_none": "Noch keine Frigate-Kameras gefunden."
+        "cameras_none": "Noch keine Frigate-Kameras gefunden.",
+        "action_known_vehicle": "Bekanntes Fahrzeug",
+        "action_known_vehicle_add": "Hinzufügen",
+        "action_known_vehicle_placeholder": "Beschreibung, etwa der Postbote"
+    },
+    "issues": {
+        "lookup_refused": {
+            "title": "Fahrzeugabfrage abgelehnt",
+            "description": "{provider} hat den API-Schlüssel abgelehnt, daher werden keine Kennzeichen nachgeschlagen. Den Schlüssel im Abschnitt Fahrzeugabfrage der globalen Einstellungen von Camera AutoNotify prüfen."
+        }
+    },
+    "services": {
+        "classify_plate": {
+            "name": "Kennzeichen einordnen",
+            "description": "Was über ein Kennzeichen bekannt ist: korrigiert, seine Fahrzeugkategorie und Einordnung, die Daten der Abfrage und sein Besuchsverlauf.",
+            "fields": {
+                "plate": {
+                    "name": "Kennzeichen",
+                    "description": "Das Kennzeichen wie gelesen."
+                },
+                "camera": {
+                    "name": "Kamera",
+                    "description": "Die Kamera, die es gelesen hat, zum Korrigieren einer Fehllesung."
+                },
+                "record_sighting": {
+                    "name": "Sichtung erfassen",
+                    "description": "Es auch als Sichtung im Besuchsverlauf des Kennzeichens zählen."
+                }
+            }
+        },
+        "import_anpr2mqtt": {
+            "name": "Aus anpr2mqtt importieren",
+            "description": "Fahrzeugkategorien, Korrekturen, Ignorierte, Abfrageeinstellungen und Besuchsverlauf aus anpr2mqtts Konfiguration und Tracker importieren.",
+            "fields": {
+                "config_path": {
+                    "name": "Konfigurationspfad",
+                    "description": "anpr2mqtts Konfigurationsdatei, relativ zum Konfigurationsverzeichnis von Home Assistant."
+                },
+                "history_path": {
+                    "name": "Verlaufspfad",
+                    "description": "anpr2mqtts Tracker-Ordner der Kennzeichen, sein data_dir/plate, relativ zum Konfigurationsverzeichnis von Home Assistant."
+                },
+                "dry_run": {
+                    "name": "Probelauf",
+                    "description": "Nur sagen, was importiert würde, ohne etwas zu ändern."
+                }
+            }
+        },
+        "add_plate": {
+            "name": "Kennzeichen hinzufügen",
+            "description": "Ein Kennzeichen zu einer Fahrzeugkategorie hinzufügen, als bekannt angelegt, falls nicht vorhanden.",
+            "fields": {
+                "category": {
+                    "name": "Kategorie",
+                    "description": "Die Fahrzeugkategorie, etwa Bekannte Fahrzeuge."
+                },
+                "plate": {
+                    "name": "Kennzeichen",
+                    "description": "Das Kennzeichen oder ein regulärer Ausdruck für eine Reihe von Kennzeichen."
+                },
+                "description": {
+                    "name": "Beschreibung",
+                    "description": "Wie das Fahrzeug in einer Benachrichtigung genannt wird."
+                },
+                "corrections": {
+                    "name": "Korrekturen",
+                    "description": "Lesungen, die eigentlich dieses Kennzeichen sind."
+                }
+            }
+        },
+        "remove_plate": {
+            "name": "Kennzeichen entfernen",
+            "description": "Ein Kennzeichen aus jeder Fahrzeugkategorie oder der angegebenen entfernen.",
+            "fields": {
+                "plate": {
+                    "name": "Kennzeichen",
+                    "description": "Das Kennzeichen oder ein regulärer Ausdruck für eine Reihe von Kennzeichen."
+                },
+                "category": {
+                    "name": "Kategorie",
+                    "description": "Nur diese Kategorie, statt jeder."
+                }
+            }
+        }
     }
 }

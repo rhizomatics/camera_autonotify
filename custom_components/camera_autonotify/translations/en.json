@@ -85,6 +85,44 @@
                     "summary_unavailable": {
                         "name": "Frigate GenAI Periodic Report",
                         "description": "A report of the hours before, written by Frigate's GenAI from their reviews, once a day or more often. It's too long for a phone's notification or a voice assistant, so it needs Supernotify to send it - install it from Marketplace, with an e-mail or alternative delivery, to switch it on here."
+                    },
+                    "vehicles": {
+                        "name": "Vehicles",
+                        "description": "What a plate's vehicle category means, for every source of plates: a priority for each, and its Supernotify scenarios. They apply once there's a vehicle category.",
+                        "data": {
+                            "vehicle_priority_known": "Known vehicle priority",
+                            "vehicle_priority_dangerous": "Dangerous vehicle priority",
+                            "vehicle_priority_unknown": "Unknown vehicle priority",
+                            "vehicle_scenarios_known": "Known vehicle scenarios",
+                            "vehicle_scenarios_dangerous": "Dangerous vehicle scenarios",
+                            "vehicle_scenarios_unknown": "Unknown vehicle scenarios",
+                            "anpr_own_classification": "Use anpr2mqtt's own classification",
+                            "min_visit_gap": "Minimum gap between visits",
+                            "history_days": "Keep history for",
+                            "vehicle_priority_unreadable": "Unreadable vehicle priority",
+                            "vehicle_scenarios_unreadable": "Unreadable vehicle scenarios",
+                            "known_category": "Known vehicles category"
+                        },
+                        "data_description": {
+                            "anpr_own_classification": "Keep anpr2mqtt's own known, dangerous and ignored, history and DVLA details for its sightings. Switch off to classify them here, with the vehicle categories, as Frigate's plates are, anpr2mqtt then being only the source of the plate and image.",
+                            "min_visit_gap": "A plate seen again within this long is the same visit, and isn't counted again.",
+                            "history_days": "How long each plate's sightings are kept, never leaving Home Assistant.",
+                            "known_category": "Where the Known vehicle button adds a plate, made if it isn't there."
+                        }
+                    },
+                    "vehicle_lookup": {
+                        "name": "Vehicle lookup",
+                        "description": "Look up plates with a vehicle register, for the make, colour, tax and inspection. The DVLA's for UK plates, by its Vehicle Enquiry Service.",
+                        "data": {
+                            "dvla_api_key": "DVLA API key",
+                            "lookup_cache_hours": "Cache lookups for",
+                            "dvla_api_key_clear": "Forget the key"
+                        },
+                        "data_description": {
+                            "dvla_api_key": "Issued by the DVLA for its Vehicle Enquiry Service, kept as a credential and never shown again. Leave empty to keep the key already set.",
+                            "lookup_cache_hours": "How long a plate's details are kept before asking again.",
+                            "dvla_api_key_clear": "Take the DVLA's key away, so plates aren't looked up."
+                        }
                     }
                 }
             },
@@ -180,6 +218,18 @@
                             "deliveries": "Limit notifications to these Supernotify deliveries. Leave empty for Supernotify to choose.",
                             "actions_global": "Use the Actions chosen in Global Settings. Switch off to choose this camera's or zone's own below, or none.",
                             "actions": "The buttons on this camera's or zone's notifications, when not as Global Settings. Leave empty for none."
+                        }
+                    },
+                    "plates": {
+                        "name": "Number plates",
+                        "description": "Read plates with an image processing ANPR/ALPR entity, such as OpenALPR's, where Frigate reads none. Each notification waits for it, up to 10 seconds, once for each review.",
+                        "data": {
+                            "alpr_entity": "ANPR/ALPR entity",
+                            "alpr_vehicles_only": "Only for vehicles"
+                        },
+                        "data_description": {
+                            "alpr_entity": "The image processing entity that reads this camera's plates, such as OpenALPR's.",
+                            "alpr_vehicles_only": "Only read plates where a car, van, truck, bus or motorcycle was seen."
                         }
                     }
                 }
@@ -308,7 +358,8 @@
                 "keep": "Keep the clip",
                 "seen": "Mark as seen",
                 "plus": "Submit to Frigate+",
-                "export": "Export the recording"
+                "export": "Export the recording",
+                "known_vehicle": "Add to known vehicles"
             }
         },
         "vehicle_priority": {
@@ -327,6 +378,12 @@
                 "auto": "Automatic",
                 "kmh": "km/h",
                 "mph": "mph"
+            }
+        },
+        "kind": {
+            "options": {
+                "known": "Known",
+                "dangerous": "Dangerous"
             }
         }
     },
@@ -386,6 +443,58 @@
             "abort": {
                 "reconfigure_successful": "The rule is changed."
             }
+        },
+        "plate_category": {
+            "entry_type": "Vehicle category",
+            "initiate_flow": {
+                "user": "Add vehicle category"
+            },
+            "step": {
+                "user": {
+                    "title": "Vehicle category",
+                    "description": "A single vehicle, every family car, or a delivery company's vans, by their plates. A plate read is corrected, then matched exactly, by expression, or within one character.",
+                    "data": {
+                        "name": "Name",
+                        "kind": "Kind",
+                        "ignore": "Ignore",
+                        "description": "Description",
+                        "icon": "Icon",
+                        "lookup": "Look up",
+                        "plates": "Plates"
+                    },
+                    "data_description": {
+                        "ignore": "Drop its plates, with no notification or sighting, such as a tanker's logo misread as a plate.",
+                        "description": "Said in a notification, where a plate has no description of its own.",
+                        "lookup": "Look its plates up with the vehicle register. Plates in no category are always looked up.",
+                        "plates": "Each a plate, or a regular expression for a run of plates, with its own description and the reads that are really it."
+                    }
+                },
+                "reconfigure": {
+                    "title": "Change vehicle category",
+                    "description": "A single vehicle, every family car, or a delivery company's vans, by their plates. A plate read is corrected, then matched exactly, by expression, or within one character.",
+                    "data": {
+                        "name": "Name",
+                        "kind": "Kind",
+                        "ignore": "Ignore",
+                        "description": "Description",
+                        "icon": "Icon",
+                        "lookup": "Look up",
+                        "plates": "Plates"
+                    },
+                    "data_description": {
+                        "ignore": "Drop its plates, with no notification or sighting, such as a tanker's logo misread as a plate.",
+                        "description": "Said in a notification, where a plate has no description of its own.",
+                        "lookup": "Look its plates up with the vehicle register. Plates in no category are always looked up.",
+                        "plates": "Each a plate, or a regular expression for a run of plates, with its own description and the reads that are really it."
+                    }
+                }
+            },
+            "error": {
+                "invalid_pattern": "A plate or correction isn't a regular expression that can be used."
+            },
+            "abort": {
+                "reconfigure_successful": "The vehicle category is changed."
+            }
         }
     },
     "exceptions": {
@@ -410,6 +519,11 @@
         "fact_face_unknown": "Face not recognised",
         "fact_stationary": "Not moving",
         "fact_state": "{model}: {state}",
+        "fact_sightings": "Previous sightings: {count}",
+        "fact_unusual_time": "At an unusual time",
+        "fact_daily_visitor": "Daily visitor",
+        "fact_weekly_visitor": "Weekly visitor",
+        "fact_occasional_visitor": "Occasional visitor",
         "health_down_title": "Frigate is not responding",
         "health_down": "{server} has failed its health check since {since}, so camera notifications may have stopped.",
         "health_up_title": "Frigate is back",
@@ -476,6 +590,89 @@
         "proxy_off": "**Frigate's notification proxy is switched off for {server}.** Notifications will have no snapshot, and tapping one won't play the clip. Switch the notification proxy back on in the Frigate integration's options.",
         "proxy_expires": "Frigate's notification links for {server} stop working {seconds} seconds after each detection, so older notifications lose their snapshot and clip. Set the notification proxy's expiry to 0 in the Frigate integration's options to keep them.",
         "cameras_found": "Cameras found:",
-        "cameras_none": "No Frigate cameras found yet."
+        "cameras_none": "No Frigate cameras found yet.",
+        "action_known_vehicle": "Known vehicle",
+        "action_known_vehicle_add": "Add",
+        "action_known_vehicle_placeholder": "Description, such as the postman"
+    },
+    "issues": {
+        "lookup_refused": {
+            "title": "Vehicle lookup refused",
+            "description": "{provider} refused the API key, so plates aren't being looked up. Check the key in the Vehicle lookup section of Camera AutoNotify's Global Settings."
+        }
+    },
+    "services": {
+        "classify_plate": {
+            "name": "Classify a plate",
+            "description": "What's known of a plate: corrected, its vehicle category and classification, the lookup's details and its visit history.",
+            "fields": {
+                "plate": {
+                    "name": "Plate",
+                    "description": "The plate as read."
+                },
+                "camera": {
+                    "name": "Camera",
+                    "description": "The camera it was read by, for correcting a misread."
+                },
+                "record_sighting": {
+                    "name": "Record sighting",
+                    "description": "Also count it as a sighting in the plate's visit history."
+                }
+            }
+        },
+        "import_anpr2mqtt": {
+            "name": "Import from anpr2mqtt",
+            "description": "Import vehicle categories, corrections, ignores, lookup settings and visit history from anpr2mqtt's config and tracker.",
+            "fields": {
+                "config_path": {
+                    "name": "Config path",
+                    "description": "anpr2mqtt's config file, relative to Home Assistant's config directory."
+                },
+                "history_path": {
+                    "name": "History path",
+                    "description": "anpr2mqtt's tracker folder of plates, its data_dir/plate, relative to Home Assistant's config directory."
+                },
+                "dry_run": {
+                    "name": "Dry run",
+                    "description": "Only say what would be imported, changing nothing."
+                }
+            }
+        },
+        "add_plate": {
+            "name": "Add a plate",
+            "description": "Add a plate to a vehicle category, made as known if it isn't there.",
+            "fields": {
+                "category": {
+                    "name": "Category",
+                    "description": "The vehicle category, such as Known vehicles."
+                },
+                "plate": {
+                    "name": "Plate",
+                    "description": "The plate, or a regular expression for a run of plates."
+                },
+                "description": {
+                    "name": "Description",
+                    "description": "What the vehicle is said as in a notification."
+                },
+                "corrections": {
+                    "name": "Corrections",
+                    "description": "Reads that are really this plate."
+                }
+            }
+        },
+        "remove_plate": {
+            "name": "Remove a plate",
+            "description": "Take a plate out of every vehicle category, or the one given.",
+            "fields": {
+                "plate": {
+                    "name": "Plate",
+                    "description": "The plate, or a regular expression for a run of plates."
+                },
+                "category": {
+                    "name": "Category",
+                    "description": "Only this category, rather than every one."
+                }
+            }
+        }
     }
 }

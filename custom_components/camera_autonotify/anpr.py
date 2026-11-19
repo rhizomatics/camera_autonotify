@@ -20,7 +20,7 @@ from __future__ import annotations
 import logging
 import time
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Any, TypeGuard
 
 from homeassistant.const import ATTR_ENTITY_ID, STATE_UNAVAILABLE, STATE_UNKNOWN
@@ -32,7 +32,10 @@ from homeassistant.helpers.event import async_call_later, async_track_state_chan
 from homeassistant.util import dt as dt_util
 from homeassistant.util import slugify
 
+from .actions import Action, button, chosen
 from .const import (
+    ACTION_KNOWN,
+    CONF_ANPR_OWN_CLASSIFICATION,
     CONF_CUSTOM_TARGET,
     CONF_DELIVERIES,
     CONF_KIND_PRIORITIES,
@@ -42,6 +45,7 @@ from .const import (
     CONF_SOURCE_NAME,
     CONF_TARGET,
     CONF_TARGETS,
+    CONF_VEHICLE_SCENARIOS,
     DOMAIN,
     FRIGATE_DOMAIN,
     KIND_DANGEROUS,
@@ -73,6 +77,7 @@ from .texts import (
     said_day,
     text,
 )
+from .vehicles import vehicle_outcome, vehicles
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -360,7 +365,9 @@ class AnprNotifier:
             media["camera_entity_id"] = camera or image
         return media, actions
 
-    def supernotify_data(self, sighting: Sighting, priority: str) -> dict[str, Any]:
+    def supernotify_data(
+        self, sighting: Sighting, priority: str, scenarios: tuple[list[str], list[str]] | None = None
+    ) -> dict[str, Any]:
         camera = self.linked_camera(sighting)
         title = self.title(sighting, camera)
         data: dict[str, Any] = {
@@ -374,12 +381,15 @@ class AnprNotifier:
                 "group": f"anpr_{slugify(sighting.camera) or self.entry.entry_id}",
             },
         }
-        own, every = self.scenarios(sighting)
+        own, every = scenarios or self.scenarios(sighting)
         if own:
             data["apply_scenarios"] = own
         if every:
             data["constrain_scenarios"] = every
         media, actions = self.media(sighting, camera)
+        if scenarios is not None and sighting.kind == KIND_UNKNOWN and ACTION_KNOWN in chosen(self.hass, self.entry):
+            # classified here, so the plate can be added to the known vehicles here
+            actions.append(button(self.hass, Action(ACTION_KNOWN, self.entry.entry_id, sighting.plate)))
         if media:
             data["media"] = media
         if actions:
@@ -392,15 +402,54 @@ class AnprNotifier:
                 data[key] = value
         return data
 
+    async def async_classified(
+        self, sighting: Sighting
+    ) -> tuple[Sighting | None, str | None, tuple[list[str], list[str]] | None]:
+        """The sighting as anpr2mqtt classified it, as it comes, or else classified here, by the vehicle categories,
+        with the history and lookup here, anpr2mqtt being only the source of the plate and image, and the pre-defined
+        vehicle rules' priority and scenarios, or nothing for a vehicle ignored"""
+        settings = global_settings(self.hass)
+        options = dict(settings.options) if settings else {}
+        if options.get(CONF_ANPR_OWN_CLASSIFICATION, True):
+            return sighting, self.priority(sighting), None
+        camera = self.linked_camera(sighting)
+        sensor = sensor_entity(self.hass, self.entry)
+        vehicle = await vehicles(self.hass).async_classify(
+            sighting.plate,
+            sighting.camera or None,
+            record=True,
+            source="anpr2mqtt",
+            entity_id=camera or (image_entity(self.hass, sensor) if sensor else None),
+        )
+        found = vehicle_outcome(options, vehicle)
+        if found.silence:
+            return None, None, None
+        history = vehicle.history
+        classified = replace(
+            sighting,
+            plate=vehicle.plate,
+            kind=vehicle.kind,
+            description=vehicle.match.description,
+            priority=None,
+            previous=history.previous_sightings,
+            last_seen=history.last_seen,
+            new_visit=history.is_new_visit,
+            reg_info=vehicle.lookup.said() if vehicle.lookup else None,
+        )
+        every = sorted({s for names in (options.get(k) or [] for k in CONF_VEHICLE_SCENARIOS.values()) for s in names})
+        return classified, found.priority, (list(found.scenarios), every)
+
     async def async_notify(self, sighting: Sighting) -> None:
         await async_load_texts(self.hass)
-        if (priority := self.priority(sighting)) is None:
+        found, priority, scenarios = await self.async_classified(sighting)
+        if found is None or priority is None:
             _LOGGER.debug("CAMERA_AUTONOTIFY No delivery for %s, a %s vehicle", sighting.plate, sighting.kind)
             return
+        sighting = found
         context = Context()
         try:
             if supernotify_available(self.hass):
-                data = self.supernotify_data(sighting, priority)
+                data = self.supernotify_data(sighting, priority, scenarios)
                 await self.hass.services.async_call(SUPERNOTIFY_DOMAIN, "notify", data, blocking=True, context=context)
                 return
             camera = self.linked_camera(sighting)

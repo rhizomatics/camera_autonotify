@@ -17,6 +17,7 @@ from .discovery import async_discover, async_start_discovery
 from .frigate import frigate_config, topic_prefix
 from .health import HealthMonitor, async_start_health_check
 from .hub import ReviewWatcher, async_watch
+from .services import async_register_services
 from .summary import async_start_summaries
 from .texts import async_load_texts
 
@@ -36,6 +37,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     async_start_discovery(hass)
     # the buttons of notifications, for as long as Home Assistant runs
     async_listen(hass)
+    async_register_services(hass)
     return True
 
 

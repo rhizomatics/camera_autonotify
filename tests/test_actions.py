@@ -61,11 +61,11 @@ def test_not_ours(name: object):
 
 
 def test_offered_by_what_frigate_can_do():
-    assert offered([FRIGATE_CONFIG]) == ["keep", "seen", "plus", "export"]
+    assert offered([FRIGATE_CONFIG]) == ["keep", "seen", "plus", "export", "known_vehicle"]
     # for a camera that neither saves snapshots nor records
-    assert offered([FRIGATE_CONFIG], ["driveway"]) == ["keep", "seen"]
-    assert offered([{**FRIGATE_CONFIG, "plus": {"enabled": False}}]) == ["keep", "seen", "export"]
-    assert offered([None]) == ["keep", "seen"]
+    assert offered([FRIGATE_CONFIG], ["driveway"]) == ["keep", "seen", "known_vehicle"]
+    assert offered([{**FRIGATE_CONFIG, "plus": {"enabled": False}}]) == ["keep", "seen", "export", "known_vehicle"]
+    assert offered([None]) == ["keep", "seen", "known_vehicle"]
 
 
 async def test_available_as_global_settings(hass: HomeAssistant):

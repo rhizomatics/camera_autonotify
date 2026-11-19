@@ -267,7 +267,7 @@ async def test_actions_offered_for_the_camera(hass: HomeAssistant):
     add_frigate(hass, plus=True, snapshots=True)
     await set_up_discovery(hass)
     shown = fields_of(await open_settings(hass))
-    assert shown["notify.actions"].config["options"] == ["keep", "seen", "plus"]
+    assert shown["notify.actions"].config["options"] == ["keep", "seen", "plus", "known_vehicle"]
     assert "notify.actions_global" in shown
 
 
@@ -315,5 +315,5 @@ async def test_global_actions(hass: HomeAssistant):
     await set_up_discovery(hass)
     entry = next(e for e in hass.config_entries.async_entries(DOMAIN) if e.data.get("type") == "discovery")
     result = await hass.config_entries.options.async_init(entry.entry_id)
-    assert fields_of(dict(result))["actions"].config["options"] == ["keep", "seen", "plus", "export"]
-    assert suggested(dict(result))["actions"] == ["keep", "seen", "plus"]
+    assert fields_of(dict(result))["actions"].config["options"] == ["keep", "seen", "plus", "export", "known_vehicle"]
+    assert suggested(dict(result))["actions"] == ["keep", "seen", "plus", "known_vehicle"]

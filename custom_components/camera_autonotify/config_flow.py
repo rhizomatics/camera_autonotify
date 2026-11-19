@@ -22,6 +22,7 @@ from homeassistant.helpers.selector import (
     BooleanSelector,
     EntitySelector,
     EntitySelectorConfig,
+    IconSelector,
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
@@ -35,6 +36,7 @@ from homeassistant.helpers.selector import (
     TargetSelector,
     TextSelector,
     TextSelectorConfig,
+    TextSelectorType,
     TimeSelector,
 )
 
@@ -45,12 +47,17 @@ from .const import (
     CONF_ACTIONS,
     CONF_ACTIONS_GLOBAL,
     CONF_ALERT_ONCE,
+    CONF_ALPR_ENTITY,
+    CONF_ALPR_VEHICLES_ONLY,
+    CONF_ANPR_OWN_CLASSIFICATION,
     CONF_AUTO_DISCOVER,
     CONF_COOLDOWN,
     CONF_CUSTOM_TARGET,
     CONF_DELIVERIES,
     CONF_DESCRIPTIONS,
     CONF_DISCOVER_ZONES,
+    CONF_DVLA_API_KEY,
+    CONF_DVLA_API_KEY_CLEAR,
     CONF_FINAL_DELAY,
     CONF_FINAL_UPDATE,
     CONF_GENAI_IMAGE,
@@ -59,18 +66,28 @@ from .const import (
     CONF_HEALTH_CHECK,
     CONF_HEALTH_INTERVAL,
     CONF_HEALTH_RETRIES,
+    CONF_HISTORY_DAYS,
     CONF_IMAGE,
     CONF_INITIAL_DELAY,
     CONF_KIND_PRIORITIES,
     CONF_KIND_SCENARIOS,
+    CONF_KNOWN_CATEGORY,
     CONF_LABELS,
     CONF_LINKED_CAMERA,
     CONF_LINKED_CAMERA_AUTO,
+    CONF_LOOKUP_CACHE_HOURS,
     CONF_MATCH,
     CONF_MIN_THREAT_LEVEL,
+    CONF_MIN_VISIT_GAP,
     CONF_OBJECT,
     CONF_OBJECT_NAMES,
     CONF_PATTERN,
+    CONF_PLATE_DESCRIPTION,
+    CONF_PLATE_ICON,
+    CONF_PLATE_IGNORE,
+    CONF_PLATE_KIND,
+    CONF_PLATE_LOOKUP,
+    CONF_PLATES,
     CONF_POWER_ENTITY,
     CONF_POWER_GRACE,
     CONF_PRIORITY,
@@ -96,12 +113,18 @@ from .const import (
     CONF_TIMEOUT,
     CONF_UNREVIEWED_DESCRIPTIONS,
     CONF_UPDATE_SUB_LABEL,
+    CONF_VEHICLE_PRIORITIES,
+    CONF_VEHICLE_SCENARIOS,
     CONF_ZONE_MULTI,
     CONF_ZONE_ORDER,
     CONF_ZONES,
     DEFAULT_ACTIONS,
     DEFAULT_GENAI_IMAGE,
+    DEFAULT_HISTORY_DAYS,
     DEFAULT_IMAGE,
+    DEFAULT_KNOWN_CATEGORY,
+    DEFAULT_LOOKUP_CACHE_HOURS,
+    DEFAULT_MIN_VISIT_GAP,
     DEFAULT_POWER_GRACE,
     DEFAULT_SUMMARY_INTERVAL,
     DEFAULT_SUMMARY_RETRIES,
@@ -122,6 +145,7 @@ from .const import (
     SOURCE_ANPR2MQTT,
     SPEED_AUTO,
     SPEED_UNITS,
+    SUBENTRY_PLATES,
     SUBENTRY_RULE,
     SUMMARY_AUTO,
     SUMMARY_INTERVALS,
@@ -134,6 +158,7 @@ from .const import (
     VEHICLE_NO_DELIVERY,
     VEHICLE_PRIORITY_DEFAULTS,
     VEHICLE_PRIORITY_SOURCE,
+    VEHICLE_RULE_PRIORITIES,
 )
 from .discovery import find_anpr, find_cameras
 from .frigate import (
@@ -147,6 +172,7 @@ from .frigate import (
     zone_labels,
 )
 from .health import HealthSettings
+from .plates import KIND_DANGEROUS, KIND_KNOWN, is_pattern
 from .rules import compile_pattern
 from .supernotify_api import deliveries_by_transport, email_deliveries, scenario_names, supernotify_available
 from .texts import (
@@ -168,6 +194,8 @@ STEP_DISCOVERY = "discovery"
 STEP_SETTINGS = "settings"
 STEP_ANPR = "anpr"
 SECTION_VEHICLES = "vehicles"
+SECTION_VEHICLE_LOOKUP = "vehicle_lookup"
+SECTION_PLATES = "plates"
 SECTION_TIMING = "timing"
 SECTION_GENAI = "genai"
 SECTION_NOTIFY = "notify"
@@ -183,6 +211,8 @@ SECTIONS = (
     SECTION_SUMMARY,
     SECTION_SUMMARY_UNAVAILABLE,
     SECTION_VEHICLES,
+    SECTION_VEHICLE_LOOKUP,
+    SECTION_PLATES,
 )
 # an anpr2mqtt entry's settings as they come, not stored
 ANPR_DEFAULTS: dict[str, Any] = {
@@ -199,6 +229,7 @@ DEFAULTS: dict[str, Any] = (
         CONF_IMAGE: DEFAULT_IMAGE,
         CONF_GENAI_IMAGE: GENAI_IMAGE_GLOBAL,
         CONF_ACTIONS_GLOBAL: True,
+        CONF_ALPR_VEHICLES_ONLY: True,
     }
 )
 SUMMARY_OPTIONS = (
@@ -240,6 +271,7 @@ def discovery_schema(
     deliveries: list[str] | None = None,
     labels: list[str] | None = None,
     actions: list[str] | None = None,
+    scenarios: list[str] | None = None,
 ) -> vol.Schema:
     """What's found, and once set up, what every notification calls each object, the labels of every Frigate server
     being given, and the health check of each Frigate server and the daily summary, out of the way until wanted, the
@@ -266,7 +298,113 @@ def discovery_schema(
             fields_[vol.Required(SECTION_SUMMARY)] = section(vol.Schema(summary_schema(deliveries)), {"collapsed": True})
         else:
             fields_[vol.Optional(SECTION_SUMMARY_UNAVAILABLE)] = section(vol.Schema({}), {"collapsed": True})
+        fields_[vol.Optional(SECTION_VEHICLES)] = section(vol.Schema(vehicles_schema(scenarios)), {"collapsed": True})
+        fields_[vol.Optional(SECTION_VEHICLE_LOOKUP)] = section(vol.Schema(lookup_schema()), {"collapsed": True})
     return vol.Schema(fields_)
+
+
+def vehicles_schema(scenarios: list[str] | None) -> dict[vol.Marker, Any]:
+    """The pre-defined vehicle rules, their condition fixed, a priority and scenarios for each, whether anpr2mqtt's
+    sightings keep its own classification, and the visit history"""
+    fields_: dict[vol.Marker, Any] = {}
+    for kind, key in CONF_VEHICLE_PRIORITIES.items():
+        fields_[vol.Required(key, default=VEHICLE_RULE_PRIORITIES[kind])] = _priority()
+        if scenarios is not None:
+            fields_[vol.Optional(CONF_VEHICLE_SCENARIOS[kind])] = SelectSelector(
+                SelectSelectorConfig(options=scenarios, multiple=True, custom_value=True, mode=SelectSelectorMode.DROPDOWN)
+            )
+    fields_[vol.Required(CONF_KNOWN_CATEGORY, default=DEFAULT_KNOWN_CATEGORY)] = TextSelector()
+    fields_[vol.Required(CONF_ANPR_OWN_CLASSIFICATION, default=True)] = BooleanSelector()
+    fields_[vol.Required(CONF_MIN_VISIT_GAP, default=DEFAULT_MIN_VISIT_GAP)] = _seconds(86400)
+    fields_[vol.Required(CONF_HISTORY_DAYS, default=DEFAULT_HISTORY_DAYS)] = NumberSelector(
+        NumberSelectorConfig(min=1, max=3650, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement=UnitOfTime.DAYS)
+    )
+    return fields_
+
+
+def lookup_schema() -> dict[vol.Marker, Any]:
+    """Looking a plate up with a vehicle register, the DVLA's for UK plates"""
+    return {
+        vol.Optional(CONF_DVLA_API_KEY): TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD)),
+        vol.Required(CONF_DVLA_API_KEY_CLEAR, default=False): BooleanSelector(),
+        vol.Required(CONF_LOOKUP_CACHE_HOURS, default=DEFAULT_LOOKUP_CACHE_HOURS): NumberSelector(
+            NumberSelectorConfig(min=1, max=720, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement=UnitOfTime.HOURS)
+        ),
+    }
+
+
+def plate_category_schema() -> vol.Schema:
+    """A category of vehicles, by its plates, each a plate or a regular expression, with its own corrections"""
+    return vol.Schema({
+        vol.Required(CONF_NAME): TextSelector(),
+        vol.Required(CONF_PLATE_KIND, default=KIND_KNOWN): SelectSelector(
+            SelectSelectorConfig(
+                options=[KIND_KNOWN, KIND_DANGEROUS], mode=SelectSelectorMode.DROPDOWN, translation_key=CONF_PLATE_KIND
+            )
+        ),
+        vol.Required(CONF_PLATE_IGNORE, default=False): BooleanSelector(),
+        vol.Optional(CONF_PLATE_DESCRIPTION): TextSelector(),
+        vol.Optional(CONF_PLATE_ICON): IconSelector(),
+        vol.Required(CONF_PLATE_LOOKUP, default=False): BooleanSelector(),
+        vol.Optional(CONF_PLATES): ObjectSelector(
+            ObjectSelectorConfig(
+                fields={
+                    "plate": {"required": True, "selector": {"text": {}}},
+                    "description": {"required": False, "selector": {"text": {}}},
+                    "corrections": {"required": False, "selector": {"text": {"multiple": True}}},
+                },
+                multiple=True,
+                label_field="plate",
+                description_field="description",
+            )
+        ),
+    })
+
+
+def invalid_patterns(plates: object) -> bool:
+    """Whether any plate, or correction of one, is a regular expression that can't be used"""
+    for item in plates if isinstance(plates, list) else []:
+        texts = [item.get("plate"), *(item.get("corrections") or [])] if isinstance(item, dict) else [item]
+        for each in texts:
+            if each and is_pattern(str(each)):
+                try:
+                    re.compile(str(each))
+                except re.error:
+                    return True
+    return False
+
+
+class PlateCategorySubentryFlow(ConfigSubentryFlow):
+    """A category of vehicles, a single vehicle, every family car, or a delivery company's vans, by their plates"""
+
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
+        return await self._category("user", user_input)
+
+    async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
+        return await self._category("reconfigure", user_input)
+
+    async def _category(self, step_id: str, user_input: dict[str, Any] | None) -> SubentryFlowResult:
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            if invalid_patterns(user_input.get(CONF_PLATES)):
+                errors[CONF_PLATES] = "invalid_pattern"
+            else:
+                title = str(user_input[CONF_NAME]).strip()
+                data = {k: v for k, v in user_input.items() if k != CONF_NAME and v not in (None, [], "")}
+                if step_id == "user":
+                    return self.async_create_entry(title=title, data=data)
+                return self.async_update_and_abort(self._get_entry(), self._get_reconfigure_subentry(), title=title, data=data)
+            suggested = user_input
+        elif step_id == "reconfigure":
+            subentry = self._get_reconfigure_subentry()
+            suggested = {CONF_NAME: subentry.title, **subentry.data}
+        else:
+            suggested = {}
+        return self.async_show_form(
+            step_id=step_id,
+            data_schema=self.add_suggested_values_to_schema(plate_category_schema(), suggested),
+            errors=errors,
+        )
 
 
 def object_names_selector(labels: list[str]) -> Selector:
@@ -388,6 +526,7 @@ async def settings_schema(
     zones: list[str] | None,
     genai: dict[vol.Marker, Any] | None = None,
     actions: list[str] | None = None,
+    alpr: bool = False,
 ) -> vol.Schema:
     """The blueprint's filters, then its timing, what GenAI adds and who is told, out of the way until wanted. Zones
     only for a camera, since a zone's entry is the zone"""
@@ -425,6 +564,15 @@ async def settings_schema(
     fields_[vol.Required(SECTION_TIMING)] = section(vol.Schema(timing), {"collapsed": True})
     if genai:
         fields_[vol.Required(SECTION_GENAI)] = section(vol.Schema(genai), {"collapsed": True})
+    if alpr:
+        # an image processing ANPR/ALPR entity, such as OpenALPR's, for plates where Frigate reads none
+        plates = {
+            vol.Optional(CONF_ALPR_ENTITY): EntitySelector(
+                EntitySelectorConfig(filter=[{"domain": "image_processing", "device_class": "alpr"}])
+            ),
+            vol.Required(CONF_ALPR_VEHICLES_ONLY, default=DEFAULTS[CONF_ALPR_VEHICLES_ONLY]): BooleanSelector(),
+        }
+        fields_[vol.Optional(SECTION_PLATES)] = section(vol.Schema(plates), {"collapsed": True})
     fields_[vol.Required(SECTION_NOTIFY)] = section(vol.Schema(notify), {"collapsed": True})
     return vol.Schema(fields_)
 
@@ -511,7 +659,7 @@ class CameraAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
     def async_get_supported_subentry_types(cls, config_entry: ConfigEntry) -> dict[str, type[ConfigSubentryFlow]]:
         """Rules, for every notification, on the discovery entry, the one entry that isn't a camera's or zone's"""
         if config_entry.data.get(CONF_TYPE) == TYPE_DISCOVERY:
-            return {SUBENTRY_RULE: RuleSubentryFlow}
+            return {SUBENTRY_RULE: RuleSubentryFlow, SUBENTRY_PLATES: PlateCategorySubentryFlow}
         return {}
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
@@ -624,7 +772,9 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
                 if SECTION_SUMMARY in user_input
                 else {key: value for key, value in self.config_entry.options.items() if key in SUMMARY_OPTIONS}
             )
-            return self.async_create_entry(data=kept | flattened(user_input))
+            settings = kept | flattened(user_input)
+            self._keep_credentials(settings)
+            return self.async_create_entry(data=settings)
         return await self._show_discovery(dict(self.config_entry.options))
 
     async def _show_discovery(
@@ -639,6 +789,7 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
             deliveries=await supernotify_deliveries(self.hass),
             labels=all_labels(self.hass),
             actions=actions,
+            scenarios=await scenario_names(self.hass) if supernotify_available(self.hass) else None,
         )
         # only those still offered, so the form can be saved as shown
         shown[CONF_ACTIONS] = [kind for kind in shown.get(CONF_ACTIONS, DEFAULT_ACTIONS) if kind in actions]
@@ -649,6 +800,18 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
             data_schema=self.add_suggested_values_to_schema(schema, sectioned(schema, shown)),
             errors=errors,
         )
+
+    def _keep_credentials(self, settings: dict[str, Any]) -> None:
+        """The DVLA's key kept in the entry's data, as Home Assistant has credentials, never in its options, and never
+        shown again: one typed replaces it, none leaves it as it is, and *Forget the key* takes it away"""
+        key = settings.pop(CONF_DVLA_API_KEY, None)
+        forget = bool(settings.pop(CONF_DVLA_API_KEY_CLEAR, False))
+        if not forget and not key:
+            return
+        data = {k: v for k, v in self.config_entry.data.items() if k != CONF_DVLA_API_KEY}
+        if key and not forget:
+            data[CONF_DVLA_API_KEY] = str(key)
+        self.hass.config_entries.async_update_entry(self.config_entry, data=data)
 
     async def _summary_undeliverable(self, user_input: dict[str, Any]) -> bool:
         """Whether the summary is switched on with no deliveries chosen, and Supernotify has no e-mail delivery to
@@ -678,7 +841,10 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
         name = data[CONF_SOURCE_NAME]
         cameras = zone_cameras(config, name) if is_zone else [name]
         actions = offered([config], cameras)
-        schema = await settings_schema(self.hass, labels, zones, genai, actions)
+        alpr = not is_zone and any(
+            state.attributes.get("device_class") == "alpr" for state in self.hass.states.async_all("image_processing")
+        )
+        schema = await settings_schema(self.hass, labels, zones, genai, actions, alpr)
         await async_load_texts(self.hass)
         shown = dict(self.config_entry.options)
         if CONF_ACTIONS in shown:

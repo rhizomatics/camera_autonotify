@@ -163,6 +163,14 @@ class FactStore:
     def object(self, object_id: str) -> ObjectFacts | None:
         return self._objects.get(object_id)
 
+    def best_plate(self, detections: tuple[str, ...]) -> tuple[str, float] | None:
+        """The best scored plate read of a review's objects, and its score, whether Frigate knows it or not"""
+        read = [facts for object_id in detections if (facts := self._objects.get(object_id)) and facts.plate]
+        if not read:
+            return None
+        best = max(read, key=lambda facts: facts.plate_score)
+        return str(best.plate), best.plate_score
+
     def of_review(self, camera: str, detections: tuple[str, ...], face_threshold: float = 0.0) -> ReviewFacts:
         """The facts of a review's objects together, a face taken as recognised only at the threshold given, as
         Frigate's own `face_recognition.recognition_threshold`"""

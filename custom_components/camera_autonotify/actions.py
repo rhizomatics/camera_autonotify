@@ -19,13 +19,16 @@ from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, callback
 from .const import (
     ACTION_EXPORT,
     ACTION_KEEP,
+    ACTION_KNOWN,
     ACTION_PLUS,
     ACTION_SEEN,
     ACTIONS,
     CONF_ACTIONS,
     CONF_ACTIONS_GLOBAL,
+    CONF_KNOWN_CATEGORY,
     CONF_SOURCE_ENTRY_ID,
     DEFAULT_ACTIONS,
+    DEFAULT_KNOWN_CATEGORY,
     DOMAIN,
 )
 from .entries import global_settings
@@ -38,7 +41,18 @@ from .frigate import (
     frigate_url,
     plus_enabled,
 )
-from .texts import BUTTON_EXPORT, BUTTON_KEEP, BUTTON_PLUS, BUTTON_SEEN, text
+from .plates import KIND_UNKNOWN
+from .texts import (
+    BUTTON_EXPORT,
+    BUTTON_KEEP,
+    BUTTON_KNOWN,
+    BUTTON_KNOWN_ADD,
+    BUTTON_KNOWN_PLACEHOLDER,
+    BUTTON_PLUS,
+    BUTTON_SEEN,
+    text,
+)
+from .vehicles import Vehicle, vehicles
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -54,7 +68,13 @@ EVENT_ACTION = "mobile_app_notification_action"
 # seconds of recording either side of a review, as exported
 EXPORT_PADDING = 10
 # the title of each button, by action, from the translations
-TITLES = {ACTION_KEEP: BUTTON_KEEP, ACTION_SEEN: BUTTON_SEEN, ACTION_PLUS: BUTTON_PLUS, ACTION_EXPORT: BUTTON_EXPORT}
+TITLES = {
+    ACTION_KEEP: BUTTON_KEEP,
+    ACTION_SEEN: BUTTON_SEEN,
+    ACTION_PLUS: BUTTON_PLUS,
+    ACTION_EXPORT: BUTTON_EXPORT,
+    ACTION_KNOWN: BUTTON_KNOWN,
+}
 
 
 @dataclass(frozen=True)
@@ -89,7 +109,7 @@ def offered(configs: list[dict[str, Any] | None], cameras: list[str] | None = No
 
     plus = any(plus_enabled(config) and any(camera_snapshots(config, c) for c in each(config)) for config in configs)
     export = any(camera_records(config, c) for config in configs for c in each(config))
-    can = {ACTION_KEEP: True, ACTION_SEEN: True, ACTION_PLUS: plus, ACTION_EXPORT: export}
+    can = {ACTION_KEEP: True, ACTION_SEEN: True, ACTION_PLUS: plus, ACTION_EXPORT: export, ACTION_KNOWN: True}
     return [kind for kind in ACTIONS if can[kind]]
 
 
@@ -105,7 +125,7 @@ def chosen(hass: HomeAssistant, entry: ConfigEntry) -> list[str]:
 
 
 @callback
-def available(hass: HomeAssistant, entry: ConfigEntry, decision: Decision) -> list[Action]:
+def available(hass: HomeAssistant, entry: ConfigEntry, decision: Decision, vehicle: Vehicle | None = None) -> list[Action]:
     """The actions chosen that Frigate can do for a notification: Frigate+ only where it's set up and the camera saves
     snapshots, exporting only where the camera records, and seen and export only for a review, not an object
     described by itself"""
@@ -126,6 +146,8 @@ def available(hass: HomeAssistant, entry: ConfigEntry, decision: Decision) -> li
             and _has_snapshot(hass, entry, detection) is not False
         ):
             actions.append(Action(kind, entry.entry_id, detection))
+        elif kind == ACTION_KNOWN and vehicle is not None and vehicle.kind == KIND_UNKNOWN:
+            actions.append(Action(kind, entry.entry_id, vehicle.plate))
         elif kind == ACTION_EXPORT and not review.standalone and camera_records(config, review.camera):
             actions.append(Action(kind, entry.entry_id, review.id))
     return actions
@@ -140,9 +162,23 @@ def _has_snapshot(hass: HomeAssistant, entry: ConfigEntry, detection: str) -> bo
 
 
 @callback
-def buttons(hass: HomeAssistant, entry: ConfigEntry, decision: Decision) -> list[dict[str, Any]]:
+def buttons(
+    hass: HomeAssistant, entry: ConfigEntry, decision: Decision, vehicle: Vehicle | None = None
+) -> list[dict[str, Any]]:
     """The buttons of a notification, as Supernotify passes them on to a phone"""
-    return [{"action": action.name, "title": text(hass, TITLES[action.kind])} for action in available(hass, entry, decision)]
+    return [button(hass, action) for action in available(hass, entry, decision, vehicle)]
+
+
+def button(hass: HomeAssistant, action: Action) -> dict[str, Any]:
+    """A button, the Known vehicle one taking a description typed on the phone, as the companion app's text input"""
+    found: dict[str, Any] = {"action": action.name, "title": text(hass, TITLES[action.kind])}
+    if action.kind == ACTION_KNOWN:
+        found |= {
+            "behavior": "textInput",
+            "textInputButtonTitle": text(hass, BUTTON_KNOWN_ADD),
+            "textInputPlaceholder": text(hass, BUTTON_KNOWN_PLACEHOLDER),
+        }
+    return found
 
 
 async def _async_review(client: FrigateApiClient, review_id: str) -> dict[str, Any] | None:
@@ -155,12 +191,19 @@ async def _async_review(client: FrigateApiClient, review_id: str) -> dict[str, A
     return next((r for r in reviews or [] if isinstance(r, dict) and r.get("id") == review_id), None)
 
 
-async def async_act(hass: HomeAssistant, action: Action) -> bool:
-    """Do what a button was tapped for, returning whether Frigate did it"""
+async def async_act(hass: HomeAssistant, action: Action, reply: str | None = None) -> bool:
+    """Do what a button was tapped for, returning whether it was done"""
     entry = hass.config_entries.async_get_entry(action.entry_id)
     if entry is None or entry.domain != DOMAIN:
         _LOGGER.warning("CAMERA_AUTONOTIFY No camera or zone for action %s", action.name)
         return False
+    if action.kind == ACTION_KNOWN:
+        # needing no Frigate, only the vehicle categories
+        settings = global_settings(hass)
+        category = (settings.options.get(CONF_KNOWN_CATEGORY) if settings else None) or DEFAULT_KNOWN_CATEGORY
+        added = vehicles(hass).add_plate(category, action.target, (reply or "").strip() or None)
+        _LOGGER.info("CAMERA_AUTONOTIFY %s %s to %s", "Added" if added else "Already had", action.target, category)
+        return added
     source = entry.data[CONF_SOURCE_ENTRY_ID]
     client = frigate_client(hass, source)
     if client is None:
@@ -200,6 +243,9 @@ def async_listen(hass: HomeAssistant) -> CALLBACK_TYPE:
     @callback
     def tapped(event: Event) -> None:
         if (action := Action.parse(event.data.get("action"))) is not None:
-            hass.async_create_background_task(async_act(hass, action), f"{DOMAIN} action {action.kind}")
+            reply = event.data.get("reply_text")
+            hass.async_create_background_task(
+                async_act(hass, action, str(reply) if reply else None), f"{DOMAIN} action {action.kind}"
+            )
 
     return hass.bus.async_listen(EVENT_ACTION, tapped)

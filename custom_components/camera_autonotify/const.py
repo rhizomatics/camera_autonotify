@@ -101,9 +101,11 @@ ACTION_KEEP: Final[str] = "keep"
 ACTION_SEEN: Final[str] = "seen"
 ACTION_PLUS: Final[str] = "plus"
 ACTION_EXPORT: Final[str] = "export"
-ACTIONS: Final[tuple[str, ...]] = (ACTION_KEEP, ACTION_SEEN, ACTION_PLUS, ACTION_EXPORT)
+# a plate in no vehicle category added to the known vehicles, with a description typed on the phone
+ACTION_KNOWN: Final[str] = "known_vehicle"
+ACTIONS: Final[tuple[str, ...]] = (ACTION_KEEP, ACTION_SEEN, ACTION_PLUS, ACTION_EXPORT, ACTION_KNOWN)
 # exporting a recording only when chosen, being heavier than the others, and a button fewer where a phone has few
-DEFAULT_ACTIONS: Final[tuple[str, ...]] = (ACTION_KEEP, ACTION_SEEN, ACTION_PLUS)
+DEFAULT_ACTIONS: Final[tuple[str, ...]] = (ACTION_KEEP, ACTION_SEEN, ACTION_PLUS, ACTION_KNOWN)
 SEVERITIES: Final[tuple[str, ...]] = ("alert", "detection")
 # what Frigate's generative AI adds, the review summaries and object descriptions, named as the tracker's settings
 CONF_SUMMARIES: Final[str] = "summaries"
@@ -160,6 +162,52 @@ DEFAULT_SUMMARY_INTERVAL: Final[int] = 24
 
 # a rule, a subentry of the discovery entry, that changes how any notification whose message it matches is sent
 SUBENTRY_RULE: Final[str] = "rule"
+# a category of vehicles, by its plates, a subentry of the global settings as rules are
+SUBENTRY_PLATES: Final[str] = "plate_category"
+CONF_PLATE_KIND: Final[str] = "kind"
+CONF_PLATE_IGNORE: Final[str] = "ignore"
+CONF_PLATE_DESCRIPTION: Final[str] = "description"
+CONF_PLATE_ICON: Final[str] = "icon"
+CONF_PLATE_LOOKUP: Final[str] = "lookup"
+CONF_PLATES: Final[str] = "plates"
+# the pre-defined vehicle rules, their condition fixed by a plate's category, a priority and scenarios for each, set
+# in the global settings
+# a vehicle seen with no plate read is unreadable, and that's a rule of its own
+VEHICLE_RULES: Final[tuple[str, ...]] = ("known", "dangerous", "unknown", "unreadable")
+CONF_VEHICLE_PRIORITIES: Final[dict[str, str]] = {kind: f"vehicle_priority_{kind}" for kind in VEHICLE_RULES}
+CONF_VEHICLE_SCENARIOS: Final[dict[str, str]] = {kind: f"vehicle_scenarios_{kind}" for kind in VEHICLE_RULES}
+VEHICLE_RULE_PRIORITIES: Final[dict[str, str]] = {
+    "known": "low",
+    "dangerous": "critical",
+    "unknown": "medium",
+    "unreadable": "high",
+}
+# what Frigate tracks that has a plate, a review of which with none read is of an unreadable vehicle
+VEHICLE_OBJECTS: Final[frozenset[str]] = frozenset({"car", "motorcycle", "bus", "truck", "van"})
+# forgetting the DVLA's key, which is kept in the entry's data, never shown again once set
+CONF_DVLA_API_KEY_CLEAR: Final[str] = "dvla_api_key_clear"
+# the category the Known vehicle button adds a plate to, made if it isn't there
+CONF_KNOWN_CATEGORY: Final[str] = "known_category"
+DEFAULT_KNOWN_CATEGORY: Final[str] = "Known vehicles"
+# a plate read by an image processing ANPR/ALPR entity, such as OpenALPR's, for a camera, where Frigate reads none,
+# only for a vehicle to begin with, a plate taken only at OpenALPR's own default confidence, as a percentage
+CONF_ALPR_ENTITY: Final[str] = "alpr_entity"
+CONF_ALPR_VEHICLES_ONLY: Final[str] = "alpr_vehicles_only"
+ALPR_MIN_CONFIDENCE: Final[float] = 80
+ALPR_TIMEOUT: Final[float] = 10
+# fired for each sighting of a plate, as OpenALPR's `image_processing.found_plate` with more
+EVENT_VEHICLE: Final[str] = "camera_autonotify_vehicle"
+# whether anpr2mqtt's sightings keep its own classification, history and lookup, or are classified here
+CONF_ANPR_OWN_CLASSIFICATION: Final[str] = "anpr_own_classification"
+# the visit history: a sighting within this many seconds of the last isn't a new visit, and how long it's kept
+CONF_MIN_VISIT_GAP: Final[str] = "min_visit_gap"
+DEFAULT_MIN_VISIT_GAP: Final[int] = 300
+CONF_HISTORY_DAYS: Final[str] = "history_days"
+DEFAULT_HISTORY_DAYS: Final[int] = 365
+# looking a plate up with a vehicle register, the DVLA's to begin with
+CONF_DVLA_API_KEY: Final[str] = "dvla_api_key"
+CONF_LOOKUP_CACHE_HOURS: Final[str] = "lookup_cache_hours"
+DEFAULT_LOOKUP_CACHE_HOURS: Final[int] = 24
 CONF_MATCH: Final[str] = "match"
 CONF_PATTERN: Final[str] = "pattern"
 CONF_PRIORITY: Final[str] = "priority"

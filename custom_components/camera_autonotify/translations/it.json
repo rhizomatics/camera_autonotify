@@ -85,6 +85,44 @@
                     "summary_unavailable": {
                         "name": "Rapporto periodico GenAI di Frigate",
                         "description": "Un rapporto delle ore precedenti, scritto dalla GenAI di Frigate a partire dalle loro revisioni, una volta al giorno o più spesso. È troppo lungo per una notifica sul telefono o un assistente vocale, quindi serve Supernotify per inviarlo - installalo dal Marketplace, con una delivery e-mail o alternativa, per attivarlo qui."
+                    },
+                    "vehicles": {
+                        "name": "Veicoli",
+                        "description": "Cosa significa la categoria di veicolo di una targa, per ogni fonte di targhe: una priorità per ciascuna, e i suoi scenari Supernotify. Si applicano una volta che c'è una categoria di veicoli.",
+                        "data": {
+                            "vehicle_priority_known": "Priorità veicoli noti",
+                            "vehicle_priority_dangerous": "Priorità veicoli pericolosi",
+                            "vehicle_priority_unknown": "Priorità veicoli sconosciuti",
+                            "vehicle_scenarios_known": "Scenari veicoli noti",
+                            "vehicle_scenarios_dangerous": "Scenari veicoli pericolosi",
+                            "vehicle_scenarios_unknown": "Scenari veicoli sconosciuti",
+                            "anpr_own_classification": "Usa la classificazione di anpr2mqtt",
+                            "min_visit_gap": "Intervallo minimo tra visite",
+                            "history_days": "Conserva la cronologia per",
+                            "vehicle_priority_unreadable": "Priorità veicoli illeggibili",
+                            "vehicle_scenarios_unreadable": "Scenari veicoli illeggibili",
+                            "known_category": "Categoria veicoli noti"
+                        },
+                        "data_description": {
+                            "anpr_own_classification": "Mantieni la classificazione propria di anpr2mqtt, noto, pericoloso e ignorato, la cronologia e i dettagli DVLA per i suoi avvistamenti. Disattiva per classificarli qui, con le categorie di veicoli, come le targhe di Frigate, anpr2mqtt diventando solo la fonte della targa e dell'immagine.",
+                            "min_visit_gap": "Una targa rivista entro questo tempo è la stessa visita, e non è contata di nuovo.",
+                            "history_days": "Per quanto tempo sono conservati gli avvistamenti di ogni targa, senza mai lasciare Home Assistant.",
+                            "known_category": "Dove il pulsante Veicolo noto aggiunge una targa, creata se non c'è."
+                        }
+                    },
+                    "vehicle_lookup": {
+                        "name": "Ricerca veicolo",
+                        "description": "Cerca le targhe in un registro dei veicoli, per marca, colore, bollo e revisione. Quello della DVLA per le targhe del Regno Unito, tramite il suo Vehicle Enquiry Service.",
+                        "data": {
+                            "dvla_api_key": "Chiave API DVLA",
+                            "lookup_cache_hours": "Conserva le ricerche per",
+                            "dvla_api_key_clear": "Dimentica la chiave"
+                        },
+                        "data_description": {
+                            "dvla_api_key": "Rilasciata dalla DVLA per il suo Vehicle Enquiry Service, conservata come credenziale e mai più mostrata. Lascia vuoto per mantenere la chiave già impostata.",
+                            "lookup_cache_hours": "Per quanto tempo sono conservati i dettagli di una targa prima di chiedere di nuovo.",
+                            "dvla_api_key_clear": "Rimuovi la chiave DVLA, così le targhe non vengono cercate."
+                        }
                     }
                 }
             },
@@ -180,6 +218,18 @@
                             "deliveries": "Limita le notifiche a queste delivery Supernotify. Lascia vuoto per far scegliere a Supernotify.",
                             "actions_global": "Usa le Azioni scelte nelle Impostazioni globali. Disattiva per scegliere qui sotto quelle di questa telecamera o zona, o nessuna.",
                             "actions": "I pulsanti delle notifiche di questa telecamera o zona, quando non come le Impostazioni globali. Lascia vuoto per nessuno."
+                        }
+                    },
+                    "plates": {
+                        "name": "Targhe",
+                        "description": "Leggi le targhe con un'entità di elaborazione immagini ANPR/ALPR, come quella di OpenALPR, dove Frigate non ne legge. Ogni notifica la attende, fino a 10 secondi, una volta per revisione.",
+                        "data": {
+                            "alpr_entity": "Entità ANPR/ALPR",
+                            "alpr_vehicles_only": "Solo per veicoli"
+                        },
+                        "data_description": {
+                            "alpr_entity": "L'entità di elaborazione immagini che legge le targhe di questa telecamera, come quella di OpenALPR.",
+                            "alpr_vehicles_only": "Leggi le targhe solo dove è stata vista un'auto, un furgone, un camion, un autobus o una moto."
                         }
                     }
                 }
@@ -308,7 +358,8 @@
                 "keep": "Tieni la clip",
                 "seen": "Segna come vista",
                 "plus": "Invia a Frigate+",
-                "export": "Esporta la registrazione"
+                "export": "Esporta la registrazione",
+                "known_vehicle": "Aggiungi ai veicoli noti"
             }
         },
         "vehicle_priority": {
@@ -327,6 +378,12 @@
                 "auto": "Automatica",
                 "kmh": "km/h",
                 "mph": "mph"
+            }
+        },
+        "kind": {
+            "options": {
+                "known": "Noto",
+                "dangerous": "Pericoloso"
             }
         }
     },
@@ -386,6 +443,58 @@
             "abort": {
                 "reconfigure_successful": "La regola è stata modificata."
             }
+        },
+        "plate_category": {
+            "entry_type": "Categoria di veicoli",
+            "initiate_flow": {
+                "user": "Aggiungi categoria di veicoli"
+            },
+            "step": {
+                "user": {
+                    "title": "Categoria di veicoli",
+                    "description": "Un singolo veicolo, tutte le auto di famiglia, o i furgoni di un corriere, dalle loro targhe. Una targa letta è corretta, poi confrontata esattamente, per espressione, o a meno di un carattere.",
+                    "data": {
+                        "name": "Nome",
+                        "kind": "Tipo",
+                        "ignore": "Ignora",
+                        "description": "Descrizione",
+                        "icon": "Icona",
+                        "lookup": "Cerca",
+                        "plates": "Targhe"
+                    },
+                    "data_description": {
+                        "ignore": "Scarta le sue targhe, senza notifica né avvistamento, come il logo di un'autocisterna letto come targa.",
+                        "description": "Detta in una notifica, dove una targa non ha una descrizione propria.",
+                        "lookup": "Cerca le sue targhe nel registro dei veicoli. Le targhe senza categoria sono sempre cercate.",
+                        "plates": "Ognuna una targa, o un'espressione regolare per una serie di targhe, con la propria descrizione e le letture che sono in realtà essa."
+                    }
+                },
+                "reconfigure": {
+                    "title": "Modifica categoria di veicoli",
+                    "description": "Un singolo veicolo, tutte le auto di famiglia, o i furgoni di un corriere, dalle loro targhe. Una targa letta è corretta, poi confrontata esattamente, per espressione, o a meno di un carattere.",
+                    "data": {
+                        "name": "Nome",
+                        "kind": "Tipo",
+                        "ignore": "Ignora",
+                        "description": "Descrizione",
+                        "icon": "Icona",
+                        "lookup": "Cerca",
+                        "plates": "Targhe"
+                    },
+                    "data_description": {
+                        "ignore": "Scarta le sue targhe, senza notifica né avvistamento, come il logo di un'autocisterna letto come targa.",
+                        "description": "Detta in una notifica, dove una targa non ha una descrizione propria.",
+                        "lookup": "Cerca le sue targhe nel registro dei veicoli. Le targhe senza categoria sono sempre cercate.",
+                        "plates": "Ognuna una targa, o un'espressione regolare per una serie di targhe, con la propria descrizione e le letture che sono in realtà essa."
+                    }
+                }
+            },
+            "error": {
+                "invalid_pattern": "Una targa o una correzione non è un'espressione regolare utilizzabile."
+            },
+            "abort": {
+                "reconfigure_successful": "La categoria di veicoli è stata modificata."
+            }
         }
     },
     "exceptions": {
@@ -410,6 +519,11 @@
         "fact_face_unknown": "Volto non riconosciuto",
         "fact_stationary": "Fermo",
         "fact_state": "{model}: {state}",
+        "fact_sightings": "Avvistamenti precedenti: {count}",
+        "fact_unusual_time": "A un orario insolito",
+        "fact_daily_visitor": "Visitatore quotidiano",
+        "fact_weekly_visitor": "Visitatore settimanale",
+        "fact_occasional_visitor": "Visitatore occasionale",
         "health_down_title": "Frigate non risponde",
         "health_down": "{server} non supera il controllo dello stato dalle {since}, quindi le notifiche delle telecamere potrebbero essersi fermate.",
         "health_up_title": "Frigate è tornato",
@@ -476,6 +590,89 @@
         "proxy_off": "**Il proxy delle notifiche di Frigate è disattivato per {server}.** Le notifiche non avranno l'istantanea, e toccarle non riprodurrà la clip. Riattiva il proxy delle notifiche nelle opzioni dell'integrazione Frigate.",
         "proxy_expires": "I link delle notifiche di Frigate per {server} smettono di funzionare {seconds} secondi dopo ogni rilevamento, quindi le notifiche più vecchie perdono istantanea e clip. Imposta la scadenza del proxy delle notifiche a 0 nelle opzioni dell'integrazione Frigate per mantenerli.",
         "cameras_found": "Telecamere trovate:",
-        "cameras_none": "Nessuna telecamera Frigate ancora trovata."
+        "cameras_none": "Nessuna telecamera Frigate ancora trovata.",
+        "action_known_vehicle": "Veicolo noto",
+        "action_known_vehicle_add": "Aggiungi",
+        "action_known_vehicle_placeholder": "Descrizione, come il postino"
+    },
+    "issues": {
+        "lookup_refused": {
+            "title": "Ricerca veicolo rifiutata",
+            "description": "{provider} ha rifiutato la chiave API, quindi le targhe non vengono cercate. Controlla la chiave nella sezione Ricerca veicolo delle Impostazioni globali di Camera AutoNotify."
+        }
+    },
+    "services": {
+        "classify_plate": {
+            "name": "Classifica una targa",
+            "description": "Cosa si sa di una targa: corretta, la sua categoria di veicoli e classificazione, i dettagli della ricerca e la sua cronologia di visite.",
+            "fields": {
+                "plate": {
+                    "name": "Targa",
+                    "description": "La targa come letta."
+                },
+                "camera": {
+                    "name": "Telecamera",
+                    "description": "La telecamera che l'ha letta, per correggere una lettura errata."
+                },
+                "record_sighting": {
+                    "name": "Registra avvistamento",
+                    "description": "Contala anche come avvistamento nella cronologia di visite della targa."
+                }
+            }
+        },
+        "import_anpr2mqtt": {
+            "name": "Importa da anpr2mqtt",
+            "description": "Importa categorie di veicoli, correzioni, ignorati, impostazioni di ricerca e cronologia di visite dalla configurazione e dal tracker di anpr2mqtt.",
+            "fields": {
+                "config_path": {
+                    "name": "Percorso della configurazione",
+                    "description": "Il file di configurazione di anpr2mqtt, relativo alla cartella di configurazione di Home Assistant."
+                },
+                "history_path": {
+                    "name": "Percorso della cronologia",
+                    "description": "La cartella delle targhe del tracker di anpr2mqtt, il suo data_dir/plate, relativa alla cartella di configurazione di Home Assistant."
+                },
+                "dry_run": {
+                    "name": "Prova",
+                    "description": "Dici solo cosa verrebbe importato, senza cambiare nulla."
+                }
+            }
+        },
+        "add_plate": {
+            "name": "Aggiungi una targa",
+            "description": "Aggiungi una targa a una categoria di veicoli, creata come nota se non c'è.",
+            "fields": {
+                "category": {
+                    "name": "Categoria",
+                    "description": "La categoria di veicoli, come Veicoli noti."
+                },
+                "plate": {
+                    "name": "Targa",
+                    "description": "La targa, o un'espressione regolare per una serie di targhe."
+                },
+                "description": {
+                    "name": "Descrizione",
+                    "description": "Come il veicolo è detto in una notifica."
+                },
+                "corrections": {
+                    "name": "Correzioni",
+                    "description": "Letture che sono in realtà questa targa."
+                }
+            }
+        },
+        "remove_plate": {
+            "name": "Rimuovi una targa",
+            "description": "Togli una targa da ogni categoria di veicoli, o da quella indicata.",
+            "fields": {
+                "plate": {
+                    "name": "Targa",
+                    "description": "La targa, o un'espressione regolare per una serie di targhe."
+                },
+                "category": {
+                    "name": "Categoria",
+                    "description": "Solo questa categoria, invece di tutte."
+                }
+            }
+        }
     }
 }

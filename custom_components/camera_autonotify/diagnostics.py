@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.diagnostics import async_redact_data
 
-from .const import CONF_CUSTOM_TARGET, CONF_TARGET, CONF_TARGETS
+from .const import CONF_CUSTOM_TARGET, CONF_DVLA_API_KEY, CONF_TARGET, CONF_TARGETS
 from .health import HealthMonitor
 from .hub import ReviewWatcher
 
@@ -16,13 +16,13 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
 # who is told is nobody else's business
-REDACT = {CONF_TARGET, CONF_CUSTOM_TARGET, CONF_TARGETS}
+REDACT = {CONF_TARGET, CONF_CUSTOM_TARGET, CONF_TARGETS, CONF_DVLA_API_KEY}
 
 
 async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: ConfigEntry) -> dict[str, Any]:
     runtime = getattr(entry, "runtime_data", None)
     diagnostics: dict[str, Any] = {
-        "data": dict(entry.data),
+        "data": async_redact_data(dict(entry.data), REDACT),
         "options": async_redact_data(dict(entry.options), REDACT),
     }
     if isinstance(runtime, HealthMonitor):

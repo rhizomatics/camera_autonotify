@@ -85,6 +85,44 @@
                     "summary_unavailable": {
                         "name": "Rapport périodique GenAI de Frigate",
                         "description": "Un rapport des heures précédentes, rédigé par la GenAI de Frigate à partir de leurs revues, une fois par jour ou plus souvent. Trop long pour une notification de téléphone ou un assistant vocal, il a besoin de Supernotify pour être envoyé - installez-le depuis Marketplace, avec une livraison par e-mail ou autre, pour l'activer ici."
+                    },
+                    "vehicles": {
+                        "name": "Véhicules",
+                        "description": "Ce que signifie la catégorie de véhicule d'une plaque, pour toute source de plaques : une priorité pour chacune, et ses scénarios Supernotify. Elles s'appliquent dès qu'il existe une catégorie de véhicules.",
+                        "data": {
+                            "vehicle_priority_known": "Priorité des véhicules connus",
+                            "vehicle_priority_dangerous": "Priorité des véhicules dangereux",
+                            "vehicle_priority_unknown": "Priorité des véhicules inconnus",
+                            "vehicle_scenarios_known": "Scénarios des véhicules connus",
+                            "vehicle_scenarios_dangerous": "Scénarios des véhicules dangereux",
+                            "vehicle_scenarios_unknown": "Scénarios des véhicules inconnus",
+                            "anpr_own_classification": "Utiliser la classification d'anpr2mqtt",
+                            "min_visit_gap": "Écart minimum entre visites",
+                            "history_days": "Garder l'historique pendant",
+                            "vehicle_priority_unreadable": "Priorité des véhicules illisibles",
+                            "vehicle_scenarios_unreadable": "Scénarios des véhicules illisibles",
+                            "known_category": "Catégorie des véhicules connus"
+                        },
+                        "data_description": {
+                            "anpr_own_classification": "Garder la classification propre d'anpr2mqtt, connu, dangereux et ignoré, son historique et les détails DVLA pour ses passages. Désactiver pour les classer ici, avec les catégories de véhicules, comme les plaques de Frigate, anpr2mqtt n'étant alors que la source de la plaque et de l'image.",
+                            "min_visit_gap": "Une plaque revue dans ce délai est la même visite, et n'est pas comptée à nouveau.",
+                            "history_days": "Combien de temps les passages de chaque plaque sont gardés, sans jamais quitter Home Assistant.",
+                            "known_category": "Où le bouton Véhicule connu ajoute une plaque, créée si elle n'existe pas."
+                        }
+                    },
+                    "vehicle_lookup": {
+                        "name": "Recherche de véhicule",
+                        "description": "Rechercher les plaques dans un registre des véhicules, pour la marque, la couleur, la taxe et le contrôle. Celui de la DVLA pour les plaques britanniques, par son Vehicle Enquiry Service.",
+                        "data": {
+                            "dvla_api_key": "Clé API DVLA",
+                            "lookup_cache_hours": "Garder les recherches pendant",
+                            "dvla_api_key_clear": "Oublier la clé"
+                        },
+                        "data_description": {
+                            "dvla_api_key": "Délivrée par la DVLA pour son Vehicle Enquiry Service, gardée comme identifiant et jamais réaffichée. Laisser vide pour garder la clé déjà définie.",
+                            "lookup_cache_hours": "Combien de temps les détails d'une plaque sont gardés avant de redemander.",
+                            "dvla_api_key_clear": "Retirer la clé de la DVLA, pour que les plaques ne soient pas recherchées."
+                        }
                     }
                 }
             },
@@ -180,6 +218,18 @@
                             "deliveries": "Limiter les notifications à ces livraisons Supernotify. Laisser vide pour laisser Supernotify choisir.",
                             "actions_global": "Utiliser les Actions choisies dans les Paramètres globaux. Désactiver pour choisir ci-dessous celles de cette caméra ou zone, ou aucune.",
                             "actions": "Les boutons des notifications de cette caméra ou zone, quand ce n'est pas comme les Paramètres globaux. Laisser vide pour aucun."
+                        }
+                    },
+                    "plates": {
+                        "name": "Plaques d'immatriculation",
+                        "description": "Lire les plaques avec une entité de traitement d'image ANPR/ALPR, comme celle d'OpenALPR, quand Frigate n'en lit aucune. Chaque notification l'attend, jusqu'à 10 secondes, une fois par revue.",
+                        "data": {
+                            "alpr_entity": "Entité ANPR/ALPR",
+                            "alpr_vehicles_only": "Seulement pour les véhicules"
+                        },
+                        "data_description": {
+                            "alpr_entity": "L'entité de traitement d'image qui lit les plaques de cette caméra, comme celle d'OpenALPR.",
+                            "alpr_vehicles_only": "Lire les plaques seulement quand une voiture, une camionnette, un camion, un bus ou une moto a été vu."
                         }
                     }
                 }
@@ -308,7 +358,8 @@
                 "keep": "Garder le clip",
                 "seen": "Marquer comme vue",
                 "plus": "Envoyer à Frigate+",
-                "export": "Exporter l'enregistrement"
+                "export": "Exporter l'enregistrement",
+                "known_vehicle": "Ajouter aux véhicules connus"
             }
         },
         "vehicle_priority": {
@@ -327,6 +378,12 @@
                 "auto": "Automatique",
                 "kmh": "km/h",
                 "mph": "mph"
+            }
+        },
+        "kind": {
+            "options": {
+                "known": "Connu",
+                "dangerous": "Dangereux"
             }
         }
     },
@@ -386,6 +443,58 @@
             "abort": {
                 "reconfigure_successful": "La règle est modifiée."
             }
+        },
+        "plate_category": {
+            "entry_type": "Catégorie de véhicules",
+            "initiate_flow": {
+                "user": "Ajouter une catégorie de véhicules"
+            },
+            "step": {
+                "user": {
+                    "title": "Catégorie de véhicules",
+                    "description": "Un seul véhicule, toutes les voitures de la famille, ou les fourgons d'une société de livraison, par leurs plaques. Une plaque lue est corrigée, puis comparée exactement, par expression, ou à un caractère près.",
+                    "data": {
+                        "name": "Nom",
+                        "kind": "Type",
+                        "ignore": "Ignorer",
+                        "description": "Description",
+                        "icon": "Icône",
+                        "lookup": "Rechercher",
+                        "plates": "Plaques"
+                    },
+                    "data_description": {
+                        "ignore": "Écarter ses plaques, sans notification ni passage, comme le logo d'un camion-citerne lu comme une plaque.",
+                        "description": "Dit dans une notification, quand une plaque n'a pas de description propre.",
+                        "lookup": "Rechercher ses plaques dans le registre des véhicules. Les plaques sans catégorie sont toujours recherchées.",
+                        "plates": "Chacune une plaque, ou une expression régulière pour une série de plaques, avec sa propre description et les lectures qui sont en fait elle."
+                    }
+                },
+                "reconfigure": {
+                    "title": "Modifier la catégorie de véhicules",
+                    "description": "Un seul véhicule, toutes les voitures de la famille, ou les fourgons d'une société de livraison, par leurs plaques. Une plaque lue est corrigée, puis comparée exactement, par expression, ou à un caractère près.",
+                    "data": {
+                        "name": "Nom",
+                        "kind": "Type",
+                        "ignore": "Ignorer",
+                        "description": "Description",
+                        "icon": "Icône",
+                        "lookup": "Rechercher",
+                        "plates": "Plaques"
+                    },
+                    "data_description": {
+                        "ignore": "Écarter ses plaques, sans notification ni passage, comme le logo d'un camion-citerne lu comme une plaque.",
+                        "description": "Dit dans une notification, quand une plaque n'a pas de description propre.",
+                        "lookup": "Rechercher ses plaques dans le registre des véhicules. Les plaques sans catégorie sont toujours recherchées.",
+                        "plates": "Chacune une plaque, ou une expression régulière pour une série de plaques, avec sa propre description et les lectures qui sont en fait elle."
+                    }
+                }
+            },
+            "error": {
+                "invalid_pattern": "Une plaque ou une correction n'est pas une expression régulière utilisable."
+            },
+            "abort": {
+                "reconfigure_successful": "La catégorie de véhicules est modifiée."
+            }
         }
     },
     "exceptions": {
@@ -410,6 +519,11 @@
         "fact_face_unknown": "Visage non reconnu",
         "fact_stationary": "Immobile",
         "fact_state": "{model} : {state}",
+        "fact_sightings": "Passages précédents : {count}",
+        "fact_unusual_time": "À une heure inhabituelle",
+        "fact_daily_visitor": "Visiteur quotidien",
+        "fact_weekly_visitor": "Visiteur hebdomadaire",
+        "fact_occasional_visitor": "Visiteur occasionnel",
         "health_down_title": "Frigate ne répond pas",
         "health_down": "{server} échoue à sa vérification depuis {since}, les notifications des caméras ont donc pu s'arrêter.",
         "health_up_title": "Frigate est de retour",
@@ -476,6 +590,89 @@
         "proxy_off": "**Le proxy de notification de Frigate est désactivé pour {server}.** Les notifications n'auront pas d'instantané, et les toucher ne lira pas le clip. Réactivez le proxy de notification dans les options de l'intégration Frigate.",
         "proxy_expires": "Les liens de notification de Frigate pour {server} cessent de fonctionner {seconds} secondes après chaque détection, les anciennes notifications perdent donc leur instantané et leur clip. Réglez l'expiration du proxy de notification sur 0 dans les options de l'intégration Frigate pour les garder.",
         "cameras_found": "Caméras trouvées :",
-        "cameras_none": "Aucune caméra Frigate trouvée pour l'instant."
+        "cameras_none": "Aucune caméra Frigate trouvée pour l'instant.",
+        "action_known_vehicle": "Véhicule connu",
+        "action_known_vehicle_add": "Ajouter",
+        "action_known_vehicle_placeholder": "Description, comme le facteur"
+    },
+    "issues": {
+        "lookup_refused": {
+            "title": "Recherche de véhicule refusée",
+            "description": "{provider} a refusé la clé API, donc les plaques ne sont pas recherchées. Vérifiez la clé dans la section Recherche de véhicule des Paramètres globaux de Camera AutoNotify."
+        }
+    },
+    "services": {
+        "classify_plate": {
+            "name": "Classer une plaque",
+            "description": "Ce qu'on sait d'une plaque : corrigée, sa catégorie de véhicules et sa classification, les détails de la recherche et son historique de visites.",
+            "fields": {
+                "plate": {
+                    "name": "Plaque",
+                    "description": "La plaque telle que lue."
+                },
+                "camera": {
+                    "name": "Caméra",
+                    "description": "La caméra qui l'a lue, pour corriger une mauvaise lecture."
+                },
+                "record_sighting": {
+                    "name": "Enregistrer le passage",
+                    "description": "La compter aussi comme un passage dans l'historique de visites de la plaque."
+                }
+            }
+        },
+        "import_anpr2mqtt": {
+            "name": "Importer depuis anpr2mqtt",
+            "description": "Importer les catégories de véhicules, corrections, ignorés, réglages de recherche et l'historique de visites depuis la configuration et le tracker d'anpr2mqtt.",
+            "fields": {
+                "config_path": {
+                    "name": "Chemin de configuration",
+                    "description": "Le fichier de configuration d'anpr2mqtt, relatif au répertoire de configuration de Home Assistant."
+                },
+                "history_path": {
+                    "name": "Chemin de l'historique",
+                    "description": "Le dossier des plaques du tracker d'anpr2mqtt, son data_dir/plate, relatif au répertoire de configuration de Home Assistant."
+                },
+                "dry_run": {
+                    "name": "Essai à blanc",
+                    "description": "Dire seulement ce qui serait importé, sans rien changer."
+                }
+            }
+        },
+        "add_plate": {
+            "name": "Ajouter une plaque",
+            "description": "Ajouter une plaque à une catégorie de véhicules, créée comme connue si elle n'existe pas.",
+            "fields": {
+                "category": {
+                    "name": "Catégorie",
+                    "description": "La catégorie de véhicules, comme Véhicules connus."
+                },
+                "plate": {
+                    "name": "Plaque",
+                    "description": "La plaque, ou une expression régulière pour une série de plaques."
+                },
+                "description": {
+                    "name": "Description",
+                    "description": "Comment le véhicule est dit dans une notification."
+                },
+                "corrections": {
+                    "name": "Corrections",
+                    "description": "Les lectures qui sont en fait cette plaque."
+                }
+            }
+        },
+        "remove_plate": {
+            "name": "Retirer une plaque",
+            "description": "Retirer une plaque de toutes les catégories de véhicules, ou de celle donnée.",
+            "fields": {
+                "plate": {
+                    "name": "Plaque",
+                    "description": "La plaque, ou une expression régulière pour une série de plaques."
+                },
+                "category": {
+                    "name": "Catégorie",
+                    "description": "Seulement cette catégorie, plutôt que toutes."
+                }
+            }
+        }
     }
 }

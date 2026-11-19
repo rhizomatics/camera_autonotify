@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
+import time
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any
 
@@ -13,6 +15,10 @@ from homeassistant.helpers import entity_registry as er
 
 from .actions import buttons
 from .const import (
+    ALPR_MIN_CONFIDENCE,
+    ALPR_TIMEOUT,
+    CONF_ALPR_ENTITY,
+    CONF_ALPR_VEHICLES_ONLY,
     CONF_CUSTOM_TARGET,
     CONF_DELIVERIES,
     CONF_GENAI_IMAGE,
@@ -33,6 +39,7 @@ from .const import (
     SUPERNOTIFY_DOMAIN,
     THREAT_PRIORITY_DEFAULTS,
     TYPE_ZONE,
+    VEHICLE_OBJECTS,
 )
 from .entries import global_settings
 from .frigate import (
@@ -54,8 +61,11 @@ from .supernotify_api import fallback_urls, supernotify_available
 from .texts import (
     ACTION_VIEW_SNAPSHOT,
     FACT_FACE_UNKNOWN,
+    FACT_SIGHTINGS,
     FACT_STATE,
     FACT_STATIONARY,
+    FACT_UNUSUAL_TIME,
+    FACT_VISITORS,
     HEADLINE,
     HEADLINE_ENDED,
     OBJECTS_JOINED,
@@ -64,6 +74,7 @@ from .texts import (
     text,
 )
 from .tracker import Reason
+from .vehicles import Vehicle, vehicle_outcome, vehicles
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -207,6 +218,8 @@ class Notifier:
         self.name: str = entry.title
         self.is_zone: bool = entry.data.get(CONF_TYPE) == TYPE_ZONE
         self.source_entry_id: str = entry.data[CONF_SOURCE_ENTRY_ID]
+        # each review's plate read by ANPR/ALPR image processing, or none, so it's scanned once
+        self._alpr: dict[str, tuple[str, float] | None] = {}
 
     def headline(self, decision: Decision) -> str:
         """What was seen and where, `Person detected at Barn Door`, the zone's own name for a zone, or else the
@@ -234,16 +247,53 @@ class Notifier:
             return message
         return decision.description or ""
 
-    def ruled(self, decision: Decision) -> tuple[str, Outcome]:
+    def ruled(self, decision: Decision, vehicle: Vehicle | None = None) -> tuple[str, Outcome]:
         """The title, and the outcome of the rules for the message, or for the headline when that's all there is,
         so a rule can still match what was seen"""
         rules = notification_rules(self.hass)
         if message := self.message(decision):
-            return self.title(decision), apply_rules(rules, message)
-        outcome = apply_rules(rules, self.headline(decision))
-        return outcome.message, replace(outcome, message=self.facts(decision))
+            title, outcome = self.title(decision), apply_rules(rules, message)
+        else:
+            outcome = apply_rules(rules, self.headline(decision))
+            title, outcome = outcome.message, replace(outcome, message=self.facts(decision, vehicle))
+        return title, self.with_vehicle(outcome, vehicle, decision)
 
-    def facts(self, decision: Decision) -> str:
+    def with_vehicle(self, outcome: Outcome, vehicle: Vehicle | None, decision: Decision | None = None) -> Outcome:
+        """The pre-defined vehicle rules combined with the rest, as any rule is: silence wins, then the most urgent
+        priority, and the scenarios of both, once there's a vehicle category for them to mean something by. A
+        vehicle seen with no plate read is unreadable"""
+        unreadable = vehicle is None and decision is not None and bool(VEHICLE_OBJECTS & set(decision.review.objects))
+        if (vehicle is None and not unreadable) or not vehicles(self.hass).register().categories:
+            return outcome
+        found = vehicle_outcome(vehicles(self.hass).options, vehicle)
+        priority = found.priority if rank(found.priority) > rank(outcome.priority) else outcome.priority
+        scenarios = (*outcome.scenarios, *(s for s in found.scenarios if s not in outcome.scenarios))
+        return replace(outcome, priority=priority, silence=outcome.silence or found.silence, scenarios=scenarios)
+
+    async def async_vehicle(self, decision: Decision) -> Vehicle | None:
+        """The vehicle whose plate Frigate read in the review, classified, looked up and its history, counting it as
+        a sighting once for the review"""
+        store = fact_store(self.hass, self.source_entry_id)
+        review = decision.review
+        best = store.best_plate(review.detections) if store is not None else None
+        source = "frigate"
+        if best is None:
+            best, source = await self.async_alpr(decision), "openalpr"
+        if best is None:
+            return None
+        plate, score = best
+        found = vehicles(self.hass)
+        record = found.first_time_for(f"{review.id}:{plate}", time.time())
+        return await found.async_classify(
+            plate,
+            review.camera,
+            record=record,
+            source=source,
+            entity_id=camera_entity_id(self.hass, self.source_entry_id, review.camera),
+            confidence=score,
+        )
+
+    def facts(self, decision: Decision, vehicle: Vehicle | None = None) -> str:
         """What Frigate knows of the review's objects beyond the review, as a line under the headline: the highest
         speed, plates read that Frigate doesn't know, attributes such as a delivery company, a face seen but not
         recognised, whether it has stopped, and the camera's state classifications"""
@@ -259,7 +309,9 @@ class Notifier:
             settings = global_settings(self.hass)
             unit = preferred_speed_unit(self.hass, settings.options.get(CONF_SPEED_UNIT) if settings else None)
             said.append(said_speed(found.speed, speed_unit(config), unit))
-        said.extend(found.plates)
+        if vehicle is not None:
+            said.extend(self.said_vehicle(vehicle))
+        said.extend(plate for plate in found.plates if vehicle is None or plate != vehicle.match.read)
         # not one already said in the headline, such as a van that's also a DPD logo
         said.extend(names.get(label) or _friendly(label) for label in found.attributes if label not in review.objects)
         if found.face_unknown:
@@ -268,6 +320,52 @@ class Notifier:
             said.append(text(self.hass, FACT_STATIONARY))
         said.extend(text(self.hass, FACT_STATE, model=_friendly(m), state=s.replace("_", " ")) for m, s in found.states)
         return FACTS_SEPARATOR.join(said)
+
+    async def async_alpr(self, decision: Decision) -> tuple[str, float] | None:
+        """The plate an image processing ANPR/ALPR entity, such as OpenALPR's, reads in the camera's image, where
+        Frigate read none, only for a vehicle unless chosen otherwise, and once for each review, its scan delaying the
+        notification by however long it takes, at most ALPR_TIMEOUT"""
+        entity_id = self.entry.options.get(CONF_ALPR_ENTITY)
+        review = decision.review
+        if not entity_id:
+            return None
+        if self.entry.options.get(CONF_ALPR_VEHICLES_ONLY, True) and not VEHICLE_OBJECTS & set(review.objects):
+            return None
+        if review.id in self._alpr:
+            return self._alpr[review.id]
+        found: tuple[str, float] | None = None
+        try:
+            async with asyncio.timeout(ALPR_TIMEOUT):
+                await self.hass.services.async_call("image_processing", "scan", {ATTR_ENTITY_ID: entity_id}, blocking=True)
+        except (TimeoutError, HomeAssistantError) as error:
+            _LOGGER.warning("CAMERA_AUTONOTIFY %s couldn't read a plate: %s", entity_id, error or "timed out")
+        else:
+            state = self.hass.states.get(entity_id)
+            plates = state.attributes.get("plates") if state is not None else None
+            if isinstance(plates, dict) and plates:
+                plate, confidence = max(plates.items(), key=lambda item: float(item[1]))
+                if float(confidence) >= ALPR_MIN_CONFIDENCE:
+                    # as a fraction, as Frigate's own scores are
+                    found = (str(plate), float(confidence) / 100)
+        # the last few reviews only
+        self._alpr = {**dict(list(self._alpr.items())[-20:]), review.id: found}
+        return found
+
+    def said_vehicle(self, vehicle: Vehicle) -> list[str]:
+        """The vehicle as its category describes it, with its plate, what its register knows, and its sightings"""
+        description = vehicle.match.description
+        said = [f"{description} ({vehicle.plate})" if description else vehicle.plate]
+        if vehicle.lookup is not None and (looked_up := vehicle.lookup.said()):
+            said.append(looked_up)
+        history = vehicle.history
+        if history.previous_sightings:
+            said.append(text(self.hass, FACT_SIGHTINGS, count=history.previous_sightings))
+        if history.visitor in FACT_VISITORS:
+            # previously seen being said by the sightings before already
+            said.append(text(self.hass, FACT_VISITORS[history.visitor]))
+        if history.within_time_range is False:
+            said.append(text(self.hass, FACT_UNUSUAL_TIME))
+        return said
 
     def priority(self, decision: Decision, outcome: Outcome) -> str:
         """By the review's severity, or a summary's threat level, raised by a rule, and only sounding again for an
@@ -325,12 +423,16 @@ class Notifier:
         return title
 
     def supernotify_data(
-        self, decision: Decision, ruled: tuple[str, Outcome] | None = None, fallback: bool = False
+        self,
+        decision: Decision,
+        ruled: tuple[str, Outcome] | None = None,
+        fallback: bool = False,
+        vehicle: Vehicle | None = None,
     ) -> dict[str, Any]:
         """The `supernotify.notify` call: the snapshot, tapped for the clip as HLS, and never `clip_url`, which iOS
         fails to show, even the image"""
         review = decision.review
-        title, outcome = ruled or self.ruled(decision)
+        title, outcome = ruled or self.ruled(decision, vehicle)
         data: dict[str, Any] = {
             "title": title,
             "message": outcome.message,
@@ -372,7 +474,7 @@ class Notifier:
                     "uri": snapshot_url(notifications, decision.detection_id),
                 },
             ]
-        if more := buttons(self.hass, self.entry, decision):
+        if more := buttons(self.hass, self.entry, decision, vehicle):
             data.setdefault("actions", []).extend(more)
         if media:
             data["media"] = media
@@ -388,15 +490,16 @@ class Notifier:
 
     async def async_notify(self, decision: Decision, context: Context) -> None:
         await async_load_texts(self.hass)
-        title, outcome = self.ruled(decision)
+        vehicle = await self.async_vehicle(decision)
+        title, outcome = self.ruled(decision, vehicle)
         if outcome.silence:
-            _LOGGER.debug("CAMERA_AUTONOTIFY Silenced for %s by %s", self.name, ", ".join(outcome.matched))
+            _LOGGER.debug("CAMERA_AUTONOTIFY Silenced for %s by %s", self.name, ", ".join(outcome.matched) or "vehicle")
             return
         if not supernotify_available(self.hass):
             await self._send_message(decision, title, outcome.message, context)
             return
         try:
-            data = self.supernotify_data(decision, (title, outcome), fallback=fallback_urls(self.hass))
+            data = self.supernotify_data(decision, (title, outcome), fallback=fallback_urls(self.hass), vehicle=vehicle)
             await self.hass.services.async_call(SUPERNOTIFY_DOMAIN, "notify", data, blocking=True, context=context)
         except HomeAssistantError:
             _LOGGER.exception("CAMERA_AUTONOTIFY Supernotify notification failed for %s", self.name)

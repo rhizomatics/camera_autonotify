@@ -85,6 +85,44 @@
                     "summary_unavailable": {
                         "name": "Relatório periódico de GenAI do Frigate",
                         "description": "Um relatório das horas anteriores, escrito pela GenAI do Frigate a partir das revisões, uma vez por dia ou mais vezes. É demasiado longo para uma notificação do telemóvel ou um assistente de voz, por isso precisa do Supernotify para o enviar: instale-o a partir do Marketplace, com uma entrega de e-mail ou outra, para o ligar aqui."
+                    },
+                    "vehicles": {
+                        "name": "Veículos",
+                        "description": "O que significa a categoria de veículo de uma matrícula, para qualquer fonte de matrículas: uma prioridade para cada uma, e os seus cenários do Supernotify. Aplicam-se assim que haja uma categoria de veículos.",
+                        "data": {
+                            "vehicle_priority_known": "Prioridade de veículos conhecidos",
+                            "vehicle_priority_dangerous": "Prioridade de veículos perigosos",
+                            "vehicle_priority_unknown": "Prioridade de veículos desconhecidos",
+                            "vehicle_scenarios_known": "Cenários de veículos conhecidos",
+                            "vehicle_scenarios_dangerous": "Cenários de veículos perigosos",
+                            "vehicle_scenarios_unknown": "Cenários de veículos desconhecidos",
+                            "anpr_own_classification": "Usar a classificação do anpr2mqtt",
+                            "min_visit_gap": "Intervalo mínimo entre visitas",
+                            "history_days": "Guardar histórico durante",
+                            "vehicle_priority_unreadable": "Prioridade de veículos ilegíveis",
+                            "vehicle_scenarios_unreadable": "Cenários de veículos ilegíveis",
+                            "known_category": "Categoria de veículos conhecidos"
+                        },
+                        "data_description": {
+                            "anpr_own_classification": "Manter a classificação própria do anpr2mqtt, conhecido, perigoso e ignorado, o histórico e os detalhes da DVLA para os seus avistamentos. Desligue para os classificar aqui, com as categorias de veículos, como as matrículas do Frigate, sendo o anpr2mqtt apenas a fonte da matrícula e da imagem.",
+                            "min_visit_gap": "Uma matrícula vista de novo dentro deste tempo é a mesma visita, e não é contada outra vez.",
+                            "history_days": "Durante quanto tempo os avistamentos de cada matrícula são guardados, sem nunca sair do Home Assistant.",
+                            "known_category": "Onde o botão Veículo conhecido adiciona uma matrícula, criada se não existir."
+                        }
+                    },
+                    "vehicle_lookup": {
+                        "name": "Consulta de veículo",
+                        "description": "Consultar as matrículas num registo de veículos, para a marca, cor, imposto e inspeção. O da DVLA para matrículas do Reino Unido, pelo seu Vehicle Enquiry Service.",
+                        "data": {
+                            "dvla_api_key": "Chave API da DVLA",
+                            "lookup_cache_hours": "Guardar consultas durante",
+                            "dvla_api_key_clear": "Esquecer a chave"
+                        },
+                        "data_description": {
+                            "dvla_api_key": "Emitida pela DVLA para o seu Vehicle Enquiry Service, guardada como credencial e nunca mais mostrada. Deixe vazio para manter a chave já definida.",
+                            "lookup_cache_hours": "Durante quanto tempo os detalhes de uma matrícula são guardados antes de perguntar de novo.",
+                            "dvla_api_key_clear": "Retirar a chave da DVLA, para que as matrículas não sejam consultadas."
+                        }
                     }
                 }
             },
@@ -180,6 +218,18 @@
                             "deliveries": "Limitar as notificações a estas entregas do Supernotify. Deixe vazio para o Supernotify escolher.",
                             "actions_global": "Usar as Ações escolhidas nas Definições globais. Desligue para escolher abaixo as desta câmara ou zona, ou nenhuma.",
                             "actions": "Os botões das notificações desta câmara ou zona, quando não são como nas Definições globais. Deixe vazio para nenhum."
+                        }
+                    },
+                    "plates": {
+                        "name": "Matrículas",
+                        "description": "Ler matrículas com uma entidade de processamento de imagem ANPR/ALPR, como a do OpenALPR, quando o Frigate não lê nenhuma. Cada notificação espera por ela, até 10 segundos, uma vez por revisão.",
+                        "data": {
+                            "alpr_entity": "Entidade ANPR/ALPR",
+                            "alpr_vehicles_only": "Apenas para veículos"
+                        },
+                        "data_description": {
+                            "alpr_entity": "A entidade de processamento de imagem que lê as matrículas desta câmara, como a do OpenALPR.",
+                            "alpr_vehicles_only": "Ler matrículas apenas quando foi visto um carro, carrinha, camião, autocarro ou mota."
                         }
                     }
                 }
@@ -308,7 +358,8 @@
                 "keep": "Guardar o clip",
                 "seen": "Marcar como vista",
                 "plus": "Enviar para o Frigate+",
-                "export": "Exportar a gravação"
+                "export": "Exportar a gravação",
+                "known_vehicle": "Adicionar aos veículos conhecidos"
             }
         },
         "vehicle_priority": {
@@ -327,6 +378,12 @@
                 "auto": "Automática",
                 "kmh": "km/h",
                 "mph": "mph"
+            }
+        },
+        "kind": {
+            "options": {
+                "known": "Conhecido",
+                "dangerous": "Perigoso"
             }
         }
     },
@@ -386,6 +443,58 @@
             "abort": {
                 "reconfigure_successful": "A regra foi alterada."
             }
+        },
+        "plate_category": {
+            "entry_type": "Categoria de veículos",
+            "initiate_flow": {
+                "user": "Adicionar categoria de veículos"
+            },
+            "step": {
+                "user": {
+                    "title": "Categoria de veículos",
+                    "description": "Um só veículo, todos os carros da família, ou as carrinhas de uma empresa de entregas, pelas suas matrículas. Uma matrícula lida é corrigida e depois comparada exatamente, por expressão, ou com um carácter de diferença.",
+                    "data": {
+                        "name": "Nome",
+                        "kind": "Tipo",
+                        "ignore": "Ignorar",
+                        "description": "Descrição",
+                        "icon": "Ícone",
+                        "lookup": "Consultar",
+                        "plates": "Matrículas"
+                    },
+                    "data_description": {
+                        "ignore": "Descartar as suas matrículas, sem notificação nem avistamento, como o logótipo de um camião-cisterna lido como matrícula.",
+                        "description": "O que é dito numa notificação, quando uma matrícula não tem descrição própria.",
+                        "lookup": "Consultar as suas matrículas no registo de veículos. As matrículas sem categoria são sempre consultadas.",
+                        "plates": "Cada uma uma matrícula, ou uma expressão regular para uma série de matrículas, com a sua própria descrição e as leituras que na verdade são ela."
+                    }
+                },
+                "reconfigure": {
+                    "title": "Alterar categoria de veículos",
+                    "description": "Um só veículo, todos os carros da família, ou as carrinhas de uma empresa de entregas, pelas suas matrículas. Uma matrícula lida é corrigida e depois comparada exatamente, por expressão, ou com um carácter de diferença.",
+                    "data": {
+                        "name": "Nome",
+                        "kind": "Tipo",
+                        "ignore": "Ignorar",
+                        "description": "Descrição",
+                        "icon": "Ícone",
+                        "lookup": "Consultar",
+                        "plates": "Matrículas"
+                    },
+                    "data_description": {
+                        "ignore": "Descartar as suas matrículas, sem notificação nem avistamento, como o logótipo de um camião-cisterna lido como matrícula.",
+                        "description": "O que é dito numa notificação, quando uma matrícula não tem descrição própria.",
+                        "lookup": "Consultar as suas matrículas no registo de veículos. As matrículas sem categoria são sempre consultadas.",
+                        "plates": "Cada uma uma matrícula, ou uma expressão regular para uma série de matrículas, com a sua própria descrição e as leituras que na verdade são ela."
+                    }
+                }
+            },
+            "error": {
+                "invalid_pattern": "Uma matrícula ou correção não é uma expressão regular que possa ser usada."
+            },
+            "abort": {
+                "reconfigure_successful": "A categoria de veículos foi alterada."
+            }
         }
     },
     "exceptions": {
@@ -410,6 +519,11 @@
         "fact_face_unknown": "Rosto não reconhecido",
         "fact_stationary": "Parado",
         "fact_state": "{model}: {state}",
+        "fact_sightings": "Avistamentos anteriores: {count}",
+        "fact_unusual_time": "A uma hora invulgar",
+        "fact_daily_visitor": "Visitante diário",
+        "fact_weekly_visitor": "Visitante semanal",
+        "fact_occasional_visitor": "Visitante ocasional",
         "health_down_title": "O Frigate não está a responder",
         "health_down": "{server} falha a verificação de estado desde {since}, por isso as notificações das câmaras podem ter parado.",
         "health_up_title": "O Frigate voltou",
@@ -476,6 +590,89 @@
         "proxy_off": "**O proxy de notificações do Frigate está desligado para {server}.** As notificações não terão captura, e tocar numa não reproduzirá o clip. Volte a ligar o proxy de notificações nas opções da integração do Frigate.",
         "proxy_expires": "As ligações de notificação do Frigate para {server} deixam de funcionar {seconds} segundos após cada deteção, por isso as notificações mais antigas perdem a captura e o clip. Defina a expiração do proxy de notificações como 0 nas opções da integração do Frigate para as manter.",
         "cameras_found": "Câmaras encontradas:",
-        "cameras_none": "Ainda não foram encontradas câmaras do Frigate."
+        "cameras_none": "Ainda não foram encontradas câmaras do Frigate.",
+        "action_known_vehicle": "Veículo conhecido",
+        "action_known_vehicle_add": "Adicionar",
+        "action_known_vehicle_placeholder": "Descrição, como o carteiro"
+    },
+    "issues": {
+        "lookup_refused": {
+            "title": "Consulta de veículo recusada",
+            "description": "{provider} recusou a chave API, por isso as matrículas não estão a ser consultadas. Verifique a chave na secção Consulta de veículo das Definições globais do Camera AutoNotify."
+        }
+    },
+    "services": {
+        "classify_plate": {
+            "name": "Classificar uma matrícula",
+            "description": "O que se sabe de uma matrícula: corrigida, a sua categoria de veículos e classificação, os detalhes da consulta e o seu histórico de visitas.",
+            "fields": {
+                "plate": {
+                    "name": "Matrícula",
+                    "description": "A matrícula tal como lida."
+                },
+                "camera": {
+                    "name": "Câmara",
+                    "description": "A câmara que a leu, para corrigir uma leitura errada."
+                },
+                "record_sighting": {
+                    "name": "Registar avistamento",
+                    "description": "Contá-la também como um avistamento no histórico de visitas da matrícula."
+                }
+            }
+        },
+        "import_anpr2mqtt": {
+            "name": "Importar do anpr2mqtt",
+            "description": "Importar categorias de veículos, correções, ignorados, definições de consulta e histórico de visitas da configuração e do tracker do anpr2mqtt.",
+            "fields": {
+                "config_path": {
+                    "name": "Caminho da configuração",
+                    "description": "O ficheiro de configuração do anpr2mqtt, relativo à pasta de configuração do Home Assistant."
+                },
+                "history_path": {
+                    "name": "Caminho do histórico",
+                    "description": "A pasta de matrículas do tracker do anpr2mqtt, o seu data_dir/plate, relativa à pasta de configuração do Home Assistant."
+                },
+                "dry_run": {
+                    "name": "Simulação",
+                    "description": "Apenas dizer o que seria importado, sem alterar nada."
+                }
+            }
+        },
+        "add_plate": {
+            "name": "Adicionar uma matrícula",
+            "description": "Adicionar uma matrícula a uma categoria de veículos, criada como conhecida se não existir.",
+            "fields": {
+                "category": {
+                    "name": "Categoria",
+                    "description": "A categoria de veículos, como Veículos conhecidos."
+                },
+                "plate": {
+                    "name": "Matrícula",
+                    "description": "A matrícula, ou uma expressão regular para uma série de matrículas."
+                },
+                "description": {
+                    "name": "Descrição",
+                    "description": "Como o veículo é dito numa notificação."
+                },
+                "corrections": {
+                    "name": "Correções",
+                    "description": "Leituras que na verdade são esta matrícula."
+                }
+            }
+        },
+        "remove_plate": {
+            "name": "Remover uma matrícula",
+            "description": "Retirar uma matrícula de todas as categorias de veículos, ou da indicada.",
+            "fields": {
+                "plate": {
+                    "name": "Matrícula",
+                    "description": "A matrícula, ou uma expressão regular para uma série de matrículas."
+                },
+                "category": {
+                    "name": "Categoria",
+                    "description": "Apenas esta categoria, em vez de todas."
+                }
+            }
+        }
     }
 }
