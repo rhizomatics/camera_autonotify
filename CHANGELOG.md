@@ -8,8 +8,8 @@ title: What's New
 
 # 1.0.0
 ## ✨ Enhancements
-### Vehicles, Early Access
-[RFC0003](./developer/design/rfcs/rfc0003_anpr2mqtt.md)'s next phase, so classifying, tracking and looking up plates happens here, for any source of plates, and anpr2mqtt is optional, or only a source of plates and images:
+### Vehicle Classification and Enrichment
+Features from `anpr2mqtt` are now brought directly into this plugin, so classifying, tracking and looking up plates happens here, for any source of plates, and `anpr2mqtt` is no longer need for Frigate LPR enrichment (e.g. DVLA):
 - Vehicle categories, known or dangerous, by plates or regular expressions, with each plate's corrections, and *Ignore*
 - Pre-defined vehicle rules, once there's a category: a priority and scenarios for known (`low`), unknown (`medium`), unreadable (`high`) and dangerous (`critical`) vehicles. A misread plate matching a dangerous one can raise a false `critical`
 - Each plate's visit history: previous sightings, count by hour, new visits, the times of day it's usually seen, and whether it's a *Daily visitor* (5 days of 7, each of the last two weeks), *Weekly visitor* (each of the last two weeks) or *Occasional visitor* (every month back to its first sighting), or otherwise previously seen
@@ -21,6 +21,7 @@ title: What's New
 - OpenALPR, or any image processing ANPR/ALPR entity, as a camera's source of plates where Frigate reads none, delaying its notifications by the time it takes, up to 10 seconds
 - A `camera_autonotify_vehicle` event for each sighting, with OpenALPR's `plate`, `entity_id` and `confidence`
 - The DVLA's API key kept as a credential, in the entry's data, never shown again or in diagnostics
+- Implements next phase of [RFC0003](./developer/design/rfcs/rfc0003_anpr2mqtt.md)
 ## 🐞 Fixes
 - Spoken announcements, such as Alexa's, say only the headline, or with GenAI's summary or description after it, rather than reading out the facts under it, the speed and plate among them, like bullet points ([#26](https://github.com/rhizomatics/camera_autonotify/issues/26))
 - A delivery company's logo from a Frigate+ model is said as its brand, such as *DPD* or *Royal Mail*, rather than *Dpd*, unless *Object names* names it otherwise, and isn't said again under the headline when it's already the object in it
