@@ -93,7 +93,7 @@ as they are.
 |------|-----|---------|
 | Simple | The common cases: a word in the message, or what was seen and recognised | A few fields, each optional, all of those filled in needing to match |
 | Advanced | Anything else | Home Assistant conditions, in its condition editor |
-| Pre-defined | Known cases like vehicle classification | Known, unknown, dangerous |
+| Pre-defined | Known cases, such as vehicle classification | A fixed condition, such as category membership, with priority and scenarios editable |
 
 #### Simple rules
 
@@ -111,7 +111,7 @@ A rule of only a word, `boring`, or only an object and *nothing recognised*, tak
 rule is turned into a condition when it's loaded, the same as an advanced rule is made of, so it behaves exactly the
 same, and can be turned into an advanced rule in its form, showing the condition it was, as a start for more.
 
-A rule can fire if text is found in a message or for messages that don't include that rule.
+A rule can fire if text is found in a message or for messages that don't include that text.
 
 #### Advanced rules
 
@@ -262,17 +262,17 @@ rule's tags, without needing to know about birds or faces.
 
 ### Vehicles
 
-Known, dangerous, unknown and ignored vehicles, as anpr2mqtt classifies them today, are four simple rules, for
-Frigate's plates and anpr2mqtt's alike, replacing anpr2mqtt's classification for those using Home Assistant, per [RFC 0003](rfc0003_anpr2mqtt.md)'s decision 15:
+Known, dangerous and unknown vehicles are pre-defined rules, for Frigate's plates and anpr2mqtt's alike, replacing
+anpr2mqtt's classification for those using Home Assistant, per [RFC 0003](rfc0003_anpr2mqtt.md)'s decision 15. Each
+has a fixed condition, and a default priority and no scenarios, both editable:
 
-| Rule | Object | Recognised as | Then |
-|------|--------|---------------|------|
-| Dangerous vehicle | `car`, `motorcycle` and the rest | one of: *Stolen van*, ... | `critical`, tag `dangerous_vehicle` |
-| Ignored vehicle | the same | one of: *Neighbour's car*, ... | silence |
-| Known vehicle | the same | any name but: *Stolen van*, *Neighbour's car*, ... | `medium`, tag `known_vehicle` |
-| Unknown vehicle | the same | a plate read, but not recognised | `high`, tag `unknown_vehicle` |
+| Rule | Fixed condition | Default priority |
+|------|-----------------|------------------|
+| Dangerous vehicle | plate in a dangerous category | `high` |
+| Known vehicle | plate in any other category | `low` |
+| Unknown vehicle | plate read, in no category | `medium` |
 
-The match is made after a plate has been corrected (see [RFC0003](./rfc0003_anpr2mqtt.md#correcting-a-misread)). The list of plates isn't inside the rule, its in a set of known and suspicious categories, with unknown vehicles being any that don't match these categories. Pre-defined rules assign low priority for known, medium for unknown and high for suspicious, and the outcome of the rules can be edited by user from ConfigFlow UI. The outcome distinguishes known, unknown, suspicious and unreadable, plus derived categories identified (known or suspicious) and readable (all but unreadable).
+The match is made after a plate has been corrected (see [RFC0003](./rfc0003_anpr2mqtt.md#correcting-a-misread)). The list of plates isn't inside the rule, it's in the categories, with unknown vehicles being any that don't match them, and a category's *Ignore* dropping its plates before any rule. The outcome distinguishes known, unknown, dangerous and unreadable, plus derived categories identified (known or dangerous) and readable (all but unreadable).
 
 Additional attributes may be available from Frigate's GenAI or an LPR lookup like UK DVLA. Additionally, a readable plate can be identified as previously seen, frequently seen, seen at usual time or seen at unusual time, using the plate's visit history, also available as `event.vehicle.history`: the previous sightings, the count by hour, whether it's a new visit, the earliest and latest times of day it's been seen, and whether this sighting is within them. So an advanced rule can raise a known vehicle seen at an unusual time:
 

@@ -308,7 +308,10 @@ what anpr2mqtt does, not a copy of it, so where Home Assistant has a way of its 
 
 - **Actions**: `camera_autonotify.add_plate` and `camera_autonotify.remove_plate`, with a category, a plate and a
   description, so plates can be added from automations, scripts and voice, not only the settings and the
-  *Known vehicle* button
+  *Known vehicle* button. And `camera_autonotify.classify_plate`, given a plate and optionally a camera, returning
+  as a response what a sighting would have: the plate as corrected, its category and classification, the lookup's
+  details and its visit history, so any other plate source or automation can use them. Its `record_sighting`, `false`
+  to begin with, also counts it in the visit history
 - **An event for each sighting**, `camera_autonotify_vehicle`, with the plate, its category, the DVLA's or another
   provider's details and its visit history, for automations, such as opening the gate for a family car, rather than
   each reading a sensor's attributes
@@ -329,21 +332,13 @@ A category of vehicles, a subentry of *Global Settings*, as rules are, modelled 
 | Entity id | Its sensor, the last plate seen of it and when, as anpr2mqtt's target sensors, to use in automations and dashboards |
 | Look up | Whether the DVLA is asked about its plates, off for known vehicles to begin with, as anpr2mqtt's `lookup` |
 | Plates | One or more, each a plate, or a regular expression for a run of plates, such as a fleet's, with an optional description of its own |
+| Corrections | For each plate, the reads that are really it, strings or regular expressions, as anpr2mqtt's member `correction` |
+| Ignore | Its plates are dropped, with no notification or sighting, such as a tanker's logo misread as a plate |
 
 So a category can be a single vehicle, every family car, or a delivery company's vans. A plate is matched once
 corrected, ignoring case and spaces, exactly, by expression, or within one character, as Frigate's own
 `match_distance` does, so a misread of a known plate still finds it. Frigate's `lpr.known_plates` sub labels still
 come through reviews as they do; categories are what rules and the *Known vehicle* button work with.
-
-### Corrections and ignores
-
-As anpr2mqtt's `correction` and `ignore`, in a *Plates* section of *Global Settings*, applied to every plate read,
-before it's matched, looked up or counted:
-
-- **Corrections**: a plate, and the reads that are really it, each a string or a regular expression, such as a camera
-  that always reads an `O` as a `0` on one car
-- **Ignores**: reads that aren't vehicles at all, such as a road sign or a van's livery, each a string or a regular
-  expression, dropped without a notification or a sighting
 
 ### Visit history
 
@@ -370,16 +365,40 @@ A *Known vehicle* button on a notification of a plate that's in no category, one
 chosen in *Global Settings*, *Known vehicles* to begin with, so a household fills its categories as cars arrive,
 rather than typing plates in. A plate added this way is matched from its next sighting.
 
+## Migrating from anpr2mqtt
+
+For those moving vehicles, lookup and history from anpr2mqtt, by an *Import from anpr2mqtt* step in *Global
+Settings*, given anpr2mqtt's config file and, optionally, its tracker's `data_dir/plate` folder, both copied into Home
+Assistant's config directory, or uploaded:
+
+| anpr2mqtt | Camera AutoNotify |
+|-----------|-------------------|
+| `targets.plate.groups`, with `name`, `icon`, `entity_id` and `members` | A category each, the `dangerous` group with the dangerous rule |
+| A member's `id`, `description`, `icon`, `entity_id` and `correction` | A plate of the category, with its corrections |
+| `targets.plate.correction`, the older style | Corrections on the plate corrected to, in whichever category has it |
+| `targets.plate.ignore` | A category with *Ignore* on, of those patterns |
+| `dvla.api_key`, `dvla.cache_ttl` | The DVLA's *Vehicle lookup* settings |
+| `tracker.min_visit_gap_seconds` | The same setting here |
+| `data_dir/plate/{plate}.json`, each a list of sighting times | Each plate's visit history, merged with any sightings already here |
+
+The import shows what it will create before it does, and can be run again, adding only what's new. A correction to a
+plate in no category, and a group's own `priority`, are listed as not imported, since categories carry neither.
+
+Then a time of running both: anpr2mqtt carries on reading the ANPR camera's images, and its sightings are notified
+here, classified by the categories, while its own `known`, `dangerous` and `ignore` are no longer relied on. Once
+the classifications agree, anpr2mqtt's `frigate` listener is switched off, its plates now coming from Frigate here,
+and its targets can be left as they are or removed. Optionally, anpr2mqtt could gain an `anprtools export` command
+giving its config's vehicles and the history in one file, for those who'd rather not copy the folder.
+
 ## Phases
 
 1. **Tidy the settings forms** (decision 10), and release the **upstream changes**, made but not yet released, before anything here relies on them.
 2. **anpr2mqtt cameras by themselves**: discovery, the entry with its linked camera, when to notify, content, images, vehicles, the notification box, health and documentation, with the recommended Supernotify scenarios. Done when the example automation can be deleted on the live install.
-3. **DVLA enrichment of Frigate's plates**, per decision 14, so Frigate's plates need no anpr2mqtt, with anpr2mqtt's docs recommending it for Home Assistant. See [DVLA enrichment of Frigate's plates](#dvla-enrichment-of-frigates-plates).
-4. **Vehicles in Camera AutoNotify**: categories, corrections and ignores, the visit history, and the *Known vehicle* button, per decision 16. See [Vehicles in Camera AutoNotify](#vehicles-in-camera-autonotify).
+3. **Vehicles in Camera AutoNotify**, next: categories, with their corrections and ignore, the visit history, the [DVLA lookup](#dvla-enrichment-of-frigates-plates), RFC 0005's [pre-defined vehicle rules](rfc0005_rules.md#vehicles), and [migrating from anpr2mqtt](#migrating-from-anpr2mqtt), per decisions 14 and 16.
+4. **The *Known vehicle* button**, and RFC 0005's simple and advanced rules over vehicles.
 5. **Joined to Frigate reviews**: a filesystem sighting matched to a Frigate review by time, and a Frigate sighting from anpr2mqtt, for those still using its listener, updating its review's notification, and the semantic levels, so a sighting at a lower level than what's already been sent isn't sent. The level and the review's key go in `extra_data`, for Supernotify or anything else to use.
-6. **Vehicle rules**: known, dangerous, unknown and ignored vehicles as [RFC 0005](rfc0005_rules.md#vehicles) rules over the categories, for Frigate's plates and anpr2mqtt's alike, with the vehicle settings of phase 2 kept, not migrated, for anpr2mqtt's own classification.
 
-The recorder's three sightings above become test fixtures, as the real Frigate reviews already are, and the 14:25 visit, a review, a sub label and both sightings, is the test of phase 3: one notification, updated, not four.
+The recorder's three sightings above become test fixtures, as the real Frigate reviews already are, and the 14:25 visit, a review, a sub label and both sightings, is the test of phase 5: one notification, updated, not four.
 
 ## As built
 
