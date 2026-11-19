@@ -12,7 +12,7 @@ entities anpr2mqtt creates by MQTT discovery, and notify with everything the exa
 the automation.
 
 `anpr2mqtt` has two sources of images: a camera writing to a directory, by FTP or otherwise, or a Frigate licence
-plate recognition. From either, it can do more OCR, and in the UK, look the plate up with the DVLA and correct it.
+plate recognition (ANPR/ALPR). From either, it can do more OCR, and in the UK, look the plate up with the DVLA and correct it.
 
 If the source is Frigate, it should be treated like other Frigate events, so that in future, here, in Supernotify or
 elsewhere, events can be joined up, both to recognise what happened at a higher level and to detect duplicates.
@@ -20,7 +20,7 @@ elsewhere, events can be joined up, both to recognise what happened at a higher 
 ### Semantic Levels and Dupe Detection
 
 One idea some automations use for duplicate detection is semantic levels, such as a basic camera event, then an ANPR
-detection, then ANPR with GenAI or with DVLA details. If a second notification is semantically richer than the
+detection, then ANPR/ALPR with GenAI or with DVLA details. If a second notification is semantically richer than the
 first, it still gets through, while one at the same or a lower level may be suppressed as a duplicate.
 
 ## Review of the first draft (2026-11-11)
@@ -33,7 +33,7 @@ its entities and devices, and the last populated states of `sensor.anpr_driveway
 On 2026-11-09 at 14:25:03, `PX19TVD` arrived at the driveway, and was reported four times:
 
 1. a Frigate review, notified by Camera AutoNotify as *Car detected at Driveway*
-2. Frigate's own licence plate recognition, which knows the car as `jey_outlander`, updating the review with a sub
+2. Frigate's own licence plate recognition (ANPR/ALPR), which knows the car as `jey_outlander`, updating the review with a sub
    label
 3. anpr2mqtt, `source: filesystem`, from the Hikvision camera's FTP upload, at `14:25:03.000`
 4. anpr2mqtt, `source: frigate`, from the same Frigate event, at `14:25:03.652`, 0.65 seconds later
@@ -103,7 +103,7 @@ From the review of the findings above.
 14. **Frigate's plates don't go through anpr2mqtt.** Frigate to MQTT, to anpr2mqtt, back to MQTT and on to Home
     Assistant is a round trip for no gain, now that Camera AutoNotify reads Frigate's plates itself
     ([RFC 0004](rfc0004_richer_frigate.md)). The DVLA lookup anpr2mqtt does for them is done here instead, so a plate
-    Frigate reads is enriched directly. anpr2mqtt stays for ANPR cameras sending images by FTP or to a NAS, and for
+    Frigate reads is enriched directly. anpr2mqtt stays for ANPR/ALPR cameras sending images by FTP or to a NAS, and for
     its other kinds of detection
 15. **anpr2mqtt keeps its Frigate listener and its vehicle classification**, for those not using Home Assistant, or
     not using Camera AutoNotify. Its docs recommend Camera AutoNotify's own instead with Home Assistant: the DVLA
@@ -298,7 +298,7 @@ Per decision 17, a lookup is a provider, with the DVLA only the first:
   an anpr2mqtt sighting
 - anpr2mqtt's Frigate listener isn't needed with Home Assistant, and its docs say so, though it keeps working for
   those who use it, and its sightings are still notified, as phase 2 does
-- [Joining to Frigate reviews](#phases), phase 3, is then only for an ANPR camera's own sightings, matched to a
+- [Joining to Frigate reviews](#phases), phase 3, is then only for an ANPR/ALPR camera's own sightings, matched to a
   Frigate review by time, since Frigate's own plates no longer arrive by anpr2mqtt
 
 ## Vehicles in Camera AutoNotify
@@ -384,7 +384,7 @@ Assistant's config directory, or uploaded:
 The import shows what it will create before it does, and can be run again, adding only what's new. A correction to a
 plate in no category, and a group's own `priority`, are listed as not imported, since categories carry neither.
 
-Then a time of running both: anpr2mqtt carries on reading the ANPR camera's images, and its sightings are notified
+Then a time of running both: anpr2mqtt carries on reading the ANPR/ALPR camera's images, and its sightings are notified
 here, classified by the categories, while its own `known`, `dangerous` and `ignore` are no longer relied on. Once
 the classifications agree, anpr2mqtt's `frigate` listener is switched off, its plates now coming from Frigate here,
 and its targets can be left as they are or removed. Optionally, anpr2mqtt could gain an `anprtools export` command

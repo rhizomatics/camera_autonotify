@@ -249,7 +249,7 @@ works whoever recognised the car:
 |--------|-------|
 | Frigate, through Camera AutoNotify ([RFC 0004](rfc0004_richer_frigate.md)) | The review's sub labels, the `face`, `lpr` and `classification` messages, including what wasn't recognised, with their scores, and the names Frigate knows, from `async_get_faces` and each classification model's classes, to choose from |
 | anpr2mqtt ([RFC 0003](rfc0003_anpr2mqtt.md)) | A plate, and a name for a known target, which Frigate may know nothing of, as found on the live install |
-| UniFi Protect, later | Its own face and plate recognition |
+| UniFi Protect, later | Its own face and plate recognition (ANPR/ALPR) |
 
 Confidence is Frigate's own: a face counts as recognised only at Frigate's `recognition_threshold`, as RFC 0004
 already does, so a doubtful name isn't treated as certain, and needs no setting here. An advanced rule can still read
@@ -274,7 +274,7 @@ has a fixed condition, and a default priority and no scenarios, both editable:
 
 The match is made after a plate has been corrected (see [RFC0003](./rfc0003_anpr2mqtt.md#correcting-a-misread)). The list of plates isn't inside the rule, it's in the categories, with unknown vehicles being any that don't match them, and a category's *Ignore* dropping its plates before any rule. The outcome distinguishes known, unknown, dangerous and unreadable, plus derived categories identified (known or dangerous) and readable (all but unreadable).
 
-Additional attributes may be available from Frigate's GenAI or an LPR lookup like UK DVLA. Additionally, a readable plate can be identified as previously seen, frequently seen, seen at usual time or seen at unusual time, using the plate's visit history, also available as `event.vehicle.history`: the previous sightings, the count by hour, whether it's a new visit, the earliest and latest times of day it's been seen, and whether this sighting is within them. So an advanced rule can raise a known vehicle seen at an unusual time:
+Additional attributes may be available from Frigate's GenAI or an ANPR/ALPR plate lookup like UK DVLA. Additionally, a readable plate can be identified as previously seen, frequently seen, seen at usual time or seen at unusual time, using the plate's visit history, also available as `event.vehicle.history`: the previous sightings, the count by hour, whether it's a new visit, the earliest and latest times of day it's been seen, and whether this sighting is within them. So an advanced rule can raise a known vehicle seen at an unusual time:
 
 ```yaml
 condition: template

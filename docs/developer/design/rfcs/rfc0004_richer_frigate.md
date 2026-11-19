@@ -17,7 +17,7 @@ scope, since reviews already carry what's recognised as sub labels, and an updat
 
 ## First outline
 
-- **Triggers**: face detection, licence plate recognition, bird recognition
+- **Triggers**: face detection, licence plate recognition (ANPR/ALPR), bird recognition
 - **Enrichment**: object and state classification, PTZ info, speed and other attributes of the tracked object
 - **Coping**: camera autotracking
 - **Actions**: PTZ, submit to Frigate+

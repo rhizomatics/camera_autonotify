@@ -9,7 +9,7 @@ Logic and config belongs in Auto Notify where its unique to the domain.
 
 This is slightly more nuanced with cameras, since media handling also a core functionality of Supernotify, and will remain so. This includes camera specifics such as PTZ, since a PIR may trigger an automation which wants Supernotify to move and zoom the camera prior to snapping an image.
 
-Any logic that is specific to Frigate, ANPR2MQTT, Unifi Protect etc should not be in Supernotify. Similarly for logic specific to security cameras, such as zones, LPR, face detection etc.
+Any logic that is specific to Frigate, ANPR2MQTT, Unifi Protect etc should not be in Supernotify. Similarly for logic specific to security cameras, such as zones, ANPR/ALPR, face detection etc.
 
 ## Pass the Facts On
 

@@ -324,7 +324,7 @@ only user, it stays here.
 
 ## Out of scope (per RFC)
 
-GenAI summaries and `tracked_object_update`, ANPR, Telegram inline keyboards, Android TV overlays, Live Activities,
+GenAI summaries and `tracked_object_update`, ANPR/ALPR, Telegram inline keyboards, Android TV overlays, Live Activities,
 TTS, custom actions, and user-editable message text.
 
 ## Rough sequencing

@@ -97,8 +97,8 @@ Where Frigate makes GenAI review summaries, a report of the day before is also s
 
 [anpr2mqtt](https://anpr2mqtt.rhizomatics.org.uk) does three things:
 
-1. **Plates from ANPR cameras**: it listens for the images an ANPR camera uploads by FTP, or to a NAS, and reads the plate from each
-2. **Frigate's plates, enhanced**: it adds to Frigate's own licence plate recognition, in the UK with the vehicle's details from the DVLA, correcting the plate where it can
+1. **Plates from ANPR/ALPR cameras**: it listens for the images an ANPR/ALPR camera uploads by FTP, or to a NAS, and reads the plate from each
+2. **Frigate's plates, enhanced**: it adds to Frigate's own licence plate recognition (ANPR/ALPR), in the UK with the vehicle's details from the DVLA, correcting the plate where it can
 3. **Any other detection** a camera can make that results in an image sent by FTP or to a NAS, such as a face, or a line crossed
 
 Camera AutoNotify notifies the number plates of the first two, with no automation, in place of the example automation in anpr2mqtt's docs. Other kinds of detection are left alone for now:
@@ -114,9 +114,9 @@ Not yet: a plate isn't joined to the Frigate review of the same car, so the same
 
 #### Avoiding Duplicate Notifications
 
-Until then, the same car arriving can be notified twice: by the Frigate camera's review, *Car detected at Driveway*, updated with the plate where Frigate knows it, and by anpr2mqtt's sighting, *Jey's Outlander at Driveway*, with the DVLA's details. anpr2mqtt itself, and Frigate's plate recognition, carry on as they are, since it's only the notification that's to be switched off.
+Until then, the same car arriving can be notified twice: by the Frigate camera's review, *Car detected at Driveway*, updated with the plate where Frigate knows it, and by anpr2mqtt's sighting, *Jey's Outlander at Driveway*, with the DVLA's details. anpr2mqtt itself, and Frigate's plate recognition (ANPR/ALPR), carry on as they are, since it's only the notification that's to be switched off.
 
-anpr2mqtt reading the same plate from both Frigate and an ANPR camera's images is already notified once, as the same plate in the same visit. So it's the Frigate camera's notification of the car to switch off, in the Frigate camera's settings here, by either:
+anpr2mqtt reading the same plate from both Frigate and an ANPR/ALPR camera's images is already notified once, as the same plate in the same visit. So it's the Frigate camera's notification of the car to switch off, in the Frigate camera's settings here, by either:
 
 - leaving `car` out of *Objects*, choosing the others you still want notified, so the camera notifies people and the rest but not cars, which anpr2mqtt notifies instead
 - or switching off *Notify recognised faces and plates*, in *Timing*, to keep the camera's car notification, but not its update when Frigate recognises the plate. This stops the update for a recognised face too
