@@ -287,9 +287,9 @@ Per decision 17, a lookup is a provider, with the DVLA only the first:
 - **Choosing**: one or more providers, each with its own settings, in the *Vehicle lookup* section of *Global
   Settings*, which replaces *DVLA*. A plate goes to the provider for its country, or to the one chosen where the
   plate's format can't tell
+- **OpenALPR** - compatibility with OpenALPR
 - **Others**: a provider for another country is added beside the DVLA's, without changing the rest. Some countries'
-  registers are open data, needing no key, such as the Netherlands' RDW, which makes them a good second to prove the
-  interface, though each is to be checked for its terms and limits first
+  registers are open data, needing no key, such as the Netherlands' RDW, which makes them a good second to prove the interface, though each is to be checked for its terms and limits first.
 - **Caching, failures and correcting a misread** are the same for every provider, done once around them, not in each
 
 ### What it means for anpr2mqtt
@@ -403,8 +403,7 @@ Phase 2, released in 0.11.0 as early access, to get feedback from use before the
 
 ## Roadmap
 
-- **Other primary integrations**, per decision 3: UniFi Protect, Blue Iris or Viseron as sources of reviews in their own right, as Frigate is, so sightings can be joined to their events too. A large feature, for its own RFC, but
-  nothing here or in anpr2mqtt stands in its way.
+- **Other primary integrations**, per decision 3: UniFi Protect, Blue Iris or Viseron as sources of reviews in their own right, as Frigate is, so sightings can be joined to their events too. A large feature, for its own RFC, but nothing here or in anpr2mqtt stands in its way.
 - **Event types**, per decision 11: anpr2mqtt's line crossing, face and other targets, and Frigate's own, such as face recognition and audio, handled the same way.
 - **Stitching**, per decision 12: joining many events from different sources into the one real world event.
 - **Duplicate detection at a higher level**, per decision 13: by what happened, such as the same vehicle on two cameras, rather than by the text of the message, which is all Supernotify can compare.
