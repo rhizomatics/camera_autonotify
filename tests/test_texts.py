@@ -22,7 +22,7 @@ from custom_components.camera_autonotify.const import (
     TYPE_DISCOVERY,
 )
 from custom_components.camera_autonotify.frigate import all_labels, image_url
-from custom_components.camera_autonotify.notifier import object_names
+from custom_components.camera_autonotify.notifier import BRAND_NAMES, object_names
 from custom_components.camera_autonotify.texts import async_load_texts, text
 from custom_components.camera_autonotify.tracker import Review
 from tests.ha_testing import MockConfigEntry
@@ -89,8 +89,13 @@ def add_global_settings(hass: HomeAssistant, options: dict[str, Any]) -> None:
     MockConfigEntry(domain=DOMAIN, data={CONF_TYPE: TYPE_DISCOVERY}, options=options).add_to_hass(hass)
 
 
+def own_names(names: dict[str, str]) -> dict[str, str]:
+    """Those given in the global settings, not the brands named to begin with"""
+    return {obj: name for obj, name in names.items() if BRAND_NAMES.get(obj) != name}
+
+
 async def test_object_names(hass: HomeAssistant):
-    assert object_names(hass) == {}
+    assert object_names(hass) == BRAND_NAMES
     add_global_settings(
         hass,
         {
@@ -102,7 +107,7 @@ async def test_object_names(hass: HomeAssistant):
             ]
         },
     )
-    assert object_names(hass) == {"car": "Vehicle"}
+    assert own_names(object_names(hass)) == {"car": "Vehicle"}
 
 
 async def test_object_names_in_headline(hass: HomeAssistant):
@@ -165,7 +170,7 @@ async def test_object_names_in_global_settings(hass: HomeAssistant):
         result["flow_id"], {CONF_AUTO_DISCOVER: True, CONF_DISCOVER_ZONES: False, CONF_OBJECT_NAMES: names, "health": {}}
     )
     await hass.async_block_till_done()
-    assert object_names(hass) == {"car": "Vehicle"}
+    assert own_names(object_names(hass)) == {"car": "Vehicle"}
 
 
 async def test_all_labels(hass: HomeAssistant):

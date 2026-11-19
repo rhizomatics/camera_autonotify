@@ -11,7 +11,6 @@ See [RFCs](rfcs/index.md)
 - Centralise the notification settings, with per camera override
 - Use frigate event id as tag
 - Plain email format for info
-- \u00b7 to plain ascii -
 - Richer periodic GenAI report, in steps:
     - *Plain or HTML* choice for e-mail. Frigate's report is Markdown, by its prompt's fixed layout (`# Security Summary`, `## Overview`, `## Timeline` of `**HH:MM** | Camera | ✓/⚠️/🔴` entries, `## Summary`), so HTML is that converted, sent as Supernotify's `message_html`, and plain is it with the Markdown stripped, rather than the raw `#` and `**` sent today. Don't parse the layout itself, since Frigate's prompt can change in any release
     - The reviews of concern beside the report, the same ones Frigate chose (overlapping the hours, ended, with GenAI metadata, threat level or other concerns, see `summary.found`), each with camera, time, threat level, and its `review_thumbnail.webp` and `review_preview.gif` through the notification proxy, which needs no login. Frigate returns no review ids with its report, so matching an entry of the timeline to its review would be by camera and time, Frigate title-casing camera names and using its container's time zone

@@ -6,6 +6,13 @@ title: What's New
 
 > Camera Autonotify was first released in October 2026 with support only for Frigate notifications. Its intended to be a `1.0.0` release by the end of 2026, with [ANPR2MQTT](https://anpr2mqtt.rhizomatics.org.uk) as the second integration. Ideas, improvements and other feedback very welcome - use the [Github Issues](https://github.com/rhizomatics/camera_autonotify/issues) to add them.
 
+# 0.12.0
+## 🐞 Fixes
+- Spoken announcements, such as Alexa's, say only the headline, or with GenAI's summary or description after it, rather than reading out the facts under it, the speed and plate among them, like bullet points ([#26](https://github.com/rhizomatics/camera_autonotify/issues/26))
+- A delivery company's logo from a Frigate+ model is said as its brand, such as *DPD* or *Royal Mail*, rather than *Dpd*, unless *Object names* names it otherwise, and isn't said again under the headline when it's already the object in it
+- The facts under the headline are separated by a plain `-` rather than `·`
+- anpr2mqtt's spoken message only adds the plate where the title is the vehicle's description, so an unknown vehicle's plate isn't said twice
+
 # 0.11.1
 ## ✨ Enhancements
 - Speeds are said in km/h or mph by *Speed unit* in *Global Settings*, automatically mph where roads are signed in it, by Home Assistant's country, such as the UK and US, or where its units aren't metric, rather than in whatever unit Frigate happens to use.

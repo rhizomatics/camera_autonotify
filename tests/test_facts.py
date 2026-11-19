@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Any
 
 import pytest
@@ -10,6 +11,7 @@ from homeassistant.core import HomeAssistant
 from custom_components.camera_autonotify.facts import FactStore, ReviewFacts
 from custom_components.camera_autonotify.frigate import fact_stores
 from custom_components.camera_autonotify.texts import async_load_texts
+from custom_components.camera_autonotify.tracker import Reason
 
 from .conftest import FakeMQTT, add_frigate
 from .test_discovery import set_up_discovery
@@ -109,7 +111,7 @@ async def test_facts_from_mqtt_said_under_headline(hass: HomeAssistant, fake_mqt
     title, outcome = notifier(hass).ruled(decision())
     # rules still match the headline, the facts going under it
     assert title == "Person detected at Barn Door"
-    assert outcome.message == "48 km/h · AB12CDE · Royal Mail · Face not recognised · Not moving · Gate: open"
+    assert outcome.message == "48 km/h - AB12CDE - Royal Mail - Face not recognised - Not moving - Gate: open"
 
 
 @pytest.mark.parametrize(
@@ -185,3 +187,33 @@ async def test_odd_messages_ignored(hass: HomeAssistant, fake_mqtt: FakeMQTT):
     fake_mqtt.publish("frigate/courtyard/classification", "open")
     fake_mqtt.publish("frigate/reviews", message("new", review("courtyard")))
     assert fact_stores(hass)["frigate"].object(DETECTION) is None
+
+
+async def test_delivery_van_announced(hass: HomeAssistant, fake_mqtt: FakeMQTT):
+    """Issue #26: a DPD van, its logo both the object and an attribute, said as the brand, once, and spoken as the
+    headline alone, not the facts read out like bullet points"""
+    add_frigate(hass)
+    await set_up_discovery(hass)
+    await async_load_texts(hass)
+    fake_mqtt.publish(
+        "frigate/events",
+        event(
+            current_estimated_speed=33.8, recognized_license_plate=["MF98VNA", 0.95], attributes={"dpd": 0.8}, stationary=True
+        ),
+    )
+    found = decision()
+    van = type(found)(replace(found.review, objects=("dpd",)), found.reason, 0, False)
+    data = notifier(hass).supernotify_data(van)
+    assert data["title"] == "DPD detected at Barn Door"
+    assert data["message"] == "34 km/h - MF98VNA - Not moving"
+    assert data["spoken_message"] == "DPD detected at Barn Door"
+
+
+async def test_genai_spoken_with_its_summary(hass: HomeAssistant):
+    """What GenAI writes is for reading out, so it's said after the headline"""
+    add_frigate(hass)
+    await async_load_texts(hass)
+    found = decision()
+    described = type(found)(found.review, Reason.DESCRIPTION, 1, False, description="A courier leaves a parcel")
+    data = notifier(hass).supernotify_data(described)
+    assert data["spoken_message"] == "Person detected at Barn Door. A courier leaves a parcel"

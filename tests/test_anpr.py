@@ -245,7 +245,8 @@ async def test_supernotify_call(hass: HomeAssistant):
     )
     data = AnprNotifier(hass, entry).supernotify_data(Sighting.from_state(state()), "high")
     assert data["title"] == "PX19TVD at Driveway"
-    assert data["spoken_message"] == "PX19TVD at Driveway. PX19TVD"
+    # the plate not said twice, being the title already
+    assert data["spoken_message"] == "PX19TVD at Driveway"
     assert data["apply_scenarios"] == ["unknown_vehicle"]
     assert data["constrain_scenarios"] == ["known_vehicle", "unknown_vehicle"]
     assert data["media"] == {

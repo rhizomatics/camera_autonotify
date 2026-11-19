@@ -7,7 +7,9 @@ description: Details of how notifications are sourced and sent on.
 
 Nothing is polled. Frigate publishes each review over MQTT as it starts, changes and ends, and a notification goes out as soon as one matches the settings, held back only by the *Timing* settings.
 
-The title says what was seen and where, such as "Person detected at Barn Door", by the zones the review entered for a camera, or the camera's name when none, and the zone's name for a zone. Under it goes what Frigate knows of the review's objects beyond the review, as far as it knows yet, such as "48 km/h · AB12CDE · Royal Mail", until Frigate's GenAI describes or summarises the review, which then says more instead. See [What Frigate Knows](#what-frigate-knows).
+The title says what was seen and where, such as "Person detected at Barn Door", by the zones the review entered for a camera, or the camera's name when none, and the zone's name for a zone. Under it goes what Frigate knows of the review's objects beyond the review, as far as it knows yet, such as "48 km/h - AB12CDE - Royal Mail", until Frigate's GenAI describes or summarises the review, which then says more instead. See [What Frigate Knows](#what-frigate-knows).
+
+What a voice assistant or speaker says, by Supernotify's spoken message, is the headline alone, or with GenAI's summary or description after it, being written to be read, never the facts, which are for reading, not hearing.
 
 | When                                     | With Supernotify                                                   | Without                |
 | ---------------------------------------- | ------------------------------------------------------------------ | ---------------------- |

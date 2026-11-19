@@ -85,6 +85,7 @@ async def test_new_alert(hass: HomeAssistant, external_url: None):
     assert calls[0].data == {
         "title": "Person detected at Barn Door",
         "message": "",
+        "spoken_message": "Person detected at Barn Door",
         "priority": "high",
         "extra_data": {"mobile_push_notification_tag": f"frigate_{REVIEW_ID}", "group": "frigate_courtyard"},
         "media": {
