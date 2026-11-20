@@ -189,7 +189,7 @@ CONF_DVLA_API_KEY_CLEAR: Final[str] = "dvla_api_key_clear"
 # the category the Known vehicle button adds a plate to, made if it isn't there
 CONF_KNOWN_CATEGORY: Final[str] = "known_category"
 DEFAULT_KNOWN_CATEGORY: Final[str] = "Known vehicles"
-# a plate read by an image processing ANPR/ALPR entity, such as OpenALPR's, for a camera, where Frigate reads none,
+# a plate read by an image processing ANPR/ALPR entity, such as OpenALPR's, for a camera, instead of Frigate,
 # only for a vehicle to begin with, a plate taken only at OpenALPR's own default confidence, as a percentage
 CONF_ALPR_ENTITY: Final[str] = "alpr_entity"
 CONF_ALPR_VEHICLES_ONLY: Final[str] = "alpr_vehicles_only"

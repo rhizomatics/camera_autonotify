@@ -255,7 +255,7 @@
                     },
                     "plates": {
                         "name": "Matrículas",
-                        "description": "Leer matrículas con una entidad de procesamiento de imagen ANPR/ALPR, como la de OpenALPR, cuando Frigate no lee ninguna. Cada notificación la espera, hasta 10 segundos, una vez por revisión. Configure su fuente como la cámara Última instantánea notificada de esta cámara, para que lea la instantánea notificada, no la imagen en directo.",
+                        "description": "Leer matrículas con una entidad de procesamiento de imágenes ANPR/ALPR, como la de OpenALPR, en lugar de Frigate, para una cámara donde el reconocimiento de matrículas de Frigate está desactivado o es deficiente. La matrícula de Frigate solo se usa si la entidad no lee ninguna. Cada notificación de un vehículo la espera, hasta 10 segundos, una vez por revisión. Configure su fuente como la cámara Última instantánea de notificación de esta cámara, para que lea la instantánea notificada y no la vista en directo.",
                         "data": {
                             "alpr_entity": "Entidad ANPR/ALPR",
                             "alpr_vehicles_only": "Solo para vehículos"

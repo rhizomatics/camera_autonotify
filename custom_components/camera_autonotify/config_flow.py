@@ -672,7 +672,7 @@ async def settings_schema(
     if genai:
         fields_[vol.Required(SECTION_GENAI)] = section(vol.Schema(genai), {"collapsed": True})
     if alpr:
-        # an image processing ANPR/ALPR entity, such as OpenALPR's, for plates where Frigate reads none
+        # an image processing ANPR/ALPR entity, such as OpenALPR's, reading plates instead of Frigate
         plates = {
             vol.Optional(CONF_ALPR_ENTITY): EntitySelector(
                 EntitySelectorConfig(filter=[{"domain": "image_processing", "device_class": "alpr"}])

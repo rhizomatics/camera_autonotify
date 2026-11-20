@@ -255,7 +255,7 @@
                     },
                     "plates": {
                         "name": "Placas",
-                        "description": "Ler placas com uma entidade de processamento de imagem ANPR/ALPR, como a do OpenALPR, quando o Frigate não lê nenhuma. Cada notificação espera por ela, até 10 segundos, uma vez por revisão. Defina a fonte dela como a câmera Última captura notificada desta câmera, para que leia a captura notificada, não a imagem ao vivo.",
+                        "description": "Ler placas com uma entidade de processamento de imagem ANPR/ALPR, como a do OpenALPR, em vez do Frigate, para uma câmera em que o reconhecimento de placas do Frigate está desligado ou é fraco. A placa do Frigate só é usada quando a entidade não lê nenhuma. Cada notificação de um veículo espera por ela, até 10 segundos, uma vez por revisão. Defina a fonte dela como a câmera Último instantâneo de notificação desta câmera, para que leia o instantâneo notificado e não a visualização ao vivo.",
                         "data": {
                             "alpr_entity": "Entidade ANPR/ALPR",
                             "alpr_vehicles_only": "Apenas para veículos"

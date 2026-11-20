@@ -255,7 +255,7 @@
                     },
                     "plates": {
                         "name": "Plaques d'immatriculation",
-                        "description": "Lire les plaques avec une entité de traitement d'image ANPR/ALPR, comme celle d'OpenALPR, quand Frigate n'en lit aucune. Chaque notification l'attend, jusqu'à 10 secondes, une fois par revue. Définissez sa source sur la caméra Dernier instantané notifié de cette caméra, pour qu'elle lise l'instantané notifié, et non l'image en direct.",
+                        "description": "Lire les plaques avec une entité de traitement d'image ANPR/ALPR, comme celle d'OpenALPR, au lieu de Frigate, pour une caméra dont la reconnaissance de plaques de Frigate est désactivée ou médiocre. La plaque de Frigate n'est utilisée que si l'entité n'en lit aucune. Chaque notification d'un véhicule l'attend, jusqu'à 10 secondes, une fois par revue. Définissez sa source sur la caméra Dernier instantané de notification de cette caméra, pour qu'elle lise l'instantané notifié et non la vue en direct.",
                         "data": {
                             "alpr_entity": "Entité ANPR/ALPR",
                             "alpr_vehicles_only": "Seulement pour les véhicules"

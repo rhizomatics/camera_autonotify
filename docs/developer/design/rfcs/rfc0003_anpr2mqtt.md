@@ -285,7 +285,7 @@ Per decision 17, a lookup is a provider, with the DVLA only the first:
 - **Choosing**: one or more providers, each with its own settings, in the *Vehicle lookup* section of *Global
   Settings*, which replaces *DVLA*. A plate goes to the provider for its country, or to the one chosen where the
   plate's format can't tell
-- **HA Image Processing**: OpenALPR, and any image processing entity of the `alpr` device class, is a source of plates rather than a lookup, chosen per camera, where Frigate reads none, built in 1.0.0. A scan reads only the entity's source camera, so a *Last notification snapshot* camera, an option of any camera, serves the notified detection's snapshot for it
+- **HA Image Processing**: OpenALPR, and any image processing entity of the `alpr` device class, is a source of plates rather than a lookup, chosen per camera, read in preference to Frigate, whose plate is used only where it reads none, built in 1.0.0. A scan reads only the entity's source camera, so a *Last notification snapshot* camera, an option of any camera, serves the notified detection's snapshot for it
 - **Others**: a provider for another country is added beside the DVLA's, without changing the rest. Some countries'
   registers are open data, needing no key, such as the Netherlands' RDW, which makes them a good second to prove the interface, though each is to be checked for its terms and limits first.
 - **Caching, failures and correcting a misread** are the same for every provider, done once around them, not in each

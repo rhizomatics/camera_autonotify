@@ -671,7 +671,7 @@ def openalpr(hass: HomeAssistant, plates: dict[str, float], fail: bool = False) 
     return scans
 
 
-async def test_alpr_where_frigate_reads_none(hass: HomeAssistant, register: FakeRegister):
+async def test_alpr_read(hass: HomeAssistant, register: FakeRegister):
     add_frigate(hass)
     global_settings(hass, {"Family cars": FAMILY})
     scans = openalpr(hass, {"PX19TVD": 92.5, "PX19TV0": 60.0})
@@ -714,14 +714,20 @@ async def test_alpr_failing(hass: HomeAssistant, caplog: pytest.LogCaptureFixtur
     assert "couldn't read a plate: OpenALPR not answering" in caplog.text
 
 
-async def test_frigate_plate_before_alpr(hass: HomeAssistant):
+async def test_alpr_before_frigate_plate(hass: HomeAssistant):
+    """Chosen where Frigate's own reading is poor, so read first, Frigate's plate only where it reads none"""
     add_frigate(hass)
     scans = openalpr(hass, {"AB12CDE": 99.0})
     read_plate(hass)
     car = replace(decision(), review=replace(decision().review, objects=("car",)))
     vehicle = await notifier(hass, options={"alpr_entity": ALPR}).async_vehicle(car)
+    assert vehicle is not None and vehicle.plate == "AB12CDE"
+    assert len(scans) == 1
+    # nothing read by it, so Frigate's
+    openalpr(hass, {})
+    other = replace(car, review=replace(car.review, id="another_review"))
+    vehicle = await notifier(hass, options={"alpr_entity": ALPR}).async_vehicle(other)
     assert vehicle is not None and vehicle.plate == "PX19TVD"
-    assert scans == []
 
 
 async def test_alpr_setting_offered_with_alpr(hass: HomeAssistant):

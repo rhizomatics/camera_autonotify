@@ -255,7 +255,7 @@
                     },
                     "plates": {
                         "name": "Targhe",
-                        "description": "Leggi le targhe con un'entità di elaborazione immagini ANPR/ALPR, come quella di OpenALPR, dove Frigate non ne legge. Ogni notifica la attende, fino a 10 secondi, una volta per revisione. Imposta come sua sorgente la telecamera Ultima istantanea notificata di questa telecamera, così legge l'istantanea notificata, non l'immagine dal vivo.",
+                        "description": "Leggi le targhe con un'entità di elaborazione immagini ANPR/ALPR, come quella di OpenALPR, invece di Frigate, per una telecamera in cui il riconoscimento targhe di Frigate è disattivato o scarso. La targa di Frigate viene usata solo se l'entità non ne legge nessuna. Ogni notifica di un veicolo la attende, fino a 10 secondi, una volta per revisione. Imposta la sua sorgente sulla telecamera Ultima istantanea di notifica di questa telecamera, così legge l'istantanea notificata e non la vista dal vivo.",
                         "data": {
                             "alpr_entity": "Entità ANPR/ALPR",
                             "alpr_vehicles_only": "Solo per veicoli"

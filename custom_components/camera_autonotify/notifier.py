@@ -273,14 +273,15 @@ class Notifier:
         return replace(outcome, priority=priority, silence=outcome.silence or found.silence, scenarios=scenarios)
 
     async def async_vehicle(self, decision: Decision) -> Vehicle | None:
-        """The vehicle whose plate Frigate read in the review, classified, looked up and its history, counting it as
-        a sighting once for the review"""
+        """The vehicle whose plate was read in the review, classified, looked up and its history, counting it as a
+        sighting once for the review: read by the camera's ANPR/ALPR entity where one is chosen, it being chosen where
+        Frigate's own reading is missing or poor, and by Frigate where there's none or it reads nothing"""
         store = fact_store(self.hass, self.source_entry_id)
         review = decision.review
-        best = store.best_plate(review.detections) if store is not None else None
-        source = "frigate"
+        best, source = await self.async_alpr(decision), "openalpr"
         if best is None:
-            best, source = await self.async_alpr(decision), "openalpr"
+            best = store.best_plate(review.detections) if store is not None else None
+            source = "frigate"
         if best is None:
             return None
         plate, score = best
@@ -324,8 +325,8 @@ class Notifier:
         return FACTS_SEPARATOR.join(said)
 
     async def async_alpr(self, decision: Decision) -> tuple[str, float] | None:
-        """The plate an image processing ANPR/ALPR entity, such as OpenALPR's, reads in the camera's image, where
-        Frigate read none, only for a vehicle unless chosen otherwise, and once for each review, its scan delaying the
+        """The plate an image processing ANPR/ALPR entity, such as OpenALPR's, reads in the camera's image, only for
+        a vehicle unless chosen otherwise, and once for each review, its scan delaying the
         notification by however long it takes, at most ALPR_TIMEOUT"""
         entity_id = self.entry.options.get(CONF_ALPR_ENTITY)
         review = decision.review
