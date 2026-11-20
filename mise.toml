@@ -7,3 +7,7 @@ prek = "latest"
 ruff = { version = "latest", minimum_release_age = "2d" }
 ty = { version = "latest", minimum_release_age = "2d" }
 uv = { version = "latest", minimum_release_age = "2d" }
+
+[bootstrap.packages]
+# libturbojpeg for PyTurboJPEG; `mise bootstrap packages apply`
+"brew:jpeg-turbo" = { version = "latest", os = "macos" }
