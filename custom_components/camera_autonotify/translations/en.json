@@ -722,13 +722,17 @@
                 }
             }
         },
-        "list_sightings": {
-            "name": "List sightings",
-            "description": "Each plate seen, with when, how many times, and how regularly.",
+        "reset_sightings": {
+            "name": "Reset sightings",
+            "description": "Forget a plate's visit history, or every plate's.",
             "fields": {
                 "plate": {
                     "name": "Plate",
-                    "description": "Only this plate, rather than every one."
+                    "description": "The plate whose sightings to forget."
+                },
+                "all": {
+                    "name": "All plates",
+                    "description": "Forget every plate's sightings, instead of one plate's."
                 }
             }
         }

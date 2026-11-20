@@ -722,13 +722,17 @@
                 }
             }
         },
-        "list_sightings": {
-            "name": "Lister les passages",
-            "description": "Chaque plaque vue, avec quand, combien de fois et à quelle régularité.",
+        "reset_sightings": {
+            "name": "Réinitialiser les passages",
+            "description": "Oublier l'historique des visites d'une plaque, ou celui de toutes.",
             "fields": {
                 "plate": {
                     "name": "Plaque",
-                    "description": "Seulement cette plaque, plutôt que toutes."
+                    "description": "La plaque dont les passages sont oubliés."
+                },
+                "all": {
+                    "name": "Toutes les plaques",
+                    "description": "Oublier les passages de toutes les plaques, au lieu de ceux d'une seule."
                 }
             }
         }

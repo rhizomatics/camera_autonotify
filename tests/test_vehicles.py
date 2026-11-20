@@ -19,6 +19,7 @@ from homeassistant.setup import async_setup_component
 from homeassistant.util import dt as dt_util
 
 from custom_components.camera_autonotify.anpr import AnprNotifier, Sighting
+from custom_components.camera_autonotify.compat import vol
 from custom_components.camera_autonotify.const import DOMAIN, SUBENTRY_PLATES, TYPE_DISCOVERY
 from custom_components.camera_autonotify.facts import FactStore
 from custom_components.camera_autonotify.frigate import fact_stores
@@ -30,7 +31,7 @@ from custom_components.camera_autonotify.vehicles import (
     VehicleLookup,
     vehicles,
 )
-from tests.ha_testing import MockConfigEntry
+from tests.ha_testing import MockConfigEntry, async_fire_time_changed
 
 from .conftest import add_frigate, mock_supernotify
 from .test_notifier import DETECTION, decision, notifier
@@ -458,8 +459,9 @@ def as_session(fake: FakeSession) -> ClientSession:
 
 
 async def test_dvla_provider():
-    """The DVLA's Vehicle Enquiry Service, its details in the common schema"""
+    """The DVLA's Vehicle Enquiry Service, its details in the common schema, the plate left out of what it gave"""
     found = {
+        "registrationNumber": "PX19TVD",
         "make": "MITSUBISHI",
         "colour": "WHITE",
         "yearOfManufacture": 2019,
@@ -469,7 +471,8 @@ async def test_dvla_provider():
     }
     session = FakeSession(FakeResponse(200, found))
     looked_up = await DvlaProvider(as_session(session), "key").async_lookup("PX19TVD")
-    assert looked_up == VehicleLookup("dvla", "MITSUBISHI", "WHITE", 2019, "PETROL", "Taxed", "Valid", found)
+    raw = {key: value for key, value in found.items() if key != "registrationNumber"}
+    assert looked_up == VehicleLookup("dvla", "MITSUBISHI", "WHITE", 2019, "PETROL", "Taxed", "Valid", raw)
     assert session.posted[0]["headers"]["x-api-key"] == "key"
     assert session.posted[0]["json"] == {"registrationNumber": "PX19TVD"}
     assert await DvlaProvider(as_session(FakeSession(FakeResponse(404))), "key").async_lookup("X") is None
@@ -589,15 +592,79 @@ async def test_list_categories_and_sightings_actions(hass: HomeAssistant):
     assert family["plates"][0]["plate"] == "TJ912UKL"
     assert await respond(hass, "list_vehicle_categories", {"category": "Nothing"}) == {"categories": []}
 
-    assert await respond(hass, "list_sightings", {}) == {"plates": []}
     await vehicles(hass).async_classify("PX19TVD", record=True)
     await vehicles(hass).async_classify("J912UKL", record=True)
-    sightings = await respond(hass, "list_sightings", {})
-    assert [p["plate"] for p in sightings["plates"]] == ["PX19TVD", "TJ912UKL"]
-    one = await respond(hass, "list_sightings", {"plate": "px19 tvd"})
-    assert len(one["plates"]) == 1
-    assert one["plates"][0]["count"] == 1
-    assert one["plates"][0]["last_seen"] == one["plates"][0]["sightings"][0]
+    assert await respond(hass, "reset_sightings", {"plate": "px19 tvd"}) == {"sightings": 1}
+    assert not vehicles(hass).sightings("PX19TVD")
+    assert vehicles(hass).sightings("TJ912UKL")
+    # every plate only when asked for outright, and not with a plate too
+    for wrong in ({}, {"plate": "TJ912UKL", "all": True}):
+        with pytest.raises(vol.Invalid):
+            await respond(hass, "reset_sightings", wrong)
+    assert await respond(hass, "reset_sightings", {"all": True}) == {"sightings": 1}
+    assert not vehicles(hass).sightings("TJ912UKL")
+
+
+SALT = "00" * 32
+
+
+def stored(key: str, data: dict[str, Any]) -> dict[str, Any]:
+    return {"version": 1, "key": f"camera_autonotify.{key}", "data": data}
+
+
+def salted(plate: str) -> str:
+    import hashlib
+    import hmac
+
+    return hmac.new(bytes.fromhex(SALT), plate.encode(), hashlib.sha256).hexdigest()
+
+
+async def test_history_kept_by_salted_hash(
+    hass: HomeAssistant, hass_storage: dict[str, Any], frozen: FrozenDateTimeFactory, register: FakeRegister
+):
+    """Never by the plate, history or lookups, the betas' history, kept by plate, rewritten by hash and merged, and
+    their lookups, by plate, dropped"""
+    hashed = salted("PX19TVD")
+    hass_storage["camera_autonotify.plate_salt"] = stored("plate_salt", {"salt": SALT})
+    hass_storage["camera_autonotify.plate_history"] = stored(
+        "plate_history", {"PX19TVD": ["2026-11-01T08:00:00+00:00"], hashed: ["2026-11-02T08:00:00+00:00"]}
+    )
+    hass_storage["camera_autonotify.plate_lookup"] = stored(
+        "plate_lookup", {"dvla:AB12CDE": {"at": NOW.isoformat(), "found": None}}
+    )
+    global_settings(hass)
+    assert vehicles(hass).sightings("PX19TVD") == []
+    vehicle = await vehicles(hass).async_classify("PX19TVD", record=True)
+    assert vehicle.history is not None and vehicle.history.previous_sightings == 2
+    assert vehicle.lookup == PICKUP_TRUCK
+    await vehicles(hass).async_classify("AB12CDE", record=True)
+    # looked up again, the beta's cached lookup being dropped
+    assert register.asked == ["PX19TVD", "AB12CDE"]
+    # once saved, after the store's delay
+    frozen.tick(11)
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    history = hass_storage["camera_autonotify.plate_history"]["data"]
+    assert set(history) == {hashed, salted("AB12CDE")}
+    lookups = hass_storage["camera_autonotify.plate_lookup"]["data"]
+    assert set(lookups) == {f"dvla:{hashed}", f"dvla:{salted('AB12CDE')}"}
+    for data in (history, lookups):
+        assert "PX19TVD" not in str(data) and "AB12CDE" not in str(data)
+
+
+async def test_salt_made_once(hass: HomeAssistant, hass_storage: dict[str, Any]):
+    """Its own to each installation, made and saved the first time, then kept"""
+    global_settings(hass)
+    await vehicles(hass).async_classify("PX19TVD")
+    salt = hass_storage["camera_autonotify.plate_salt"]["data"]["salt"]
+    assert len(bytes.fromhex(salt)) == 32
+    assert vehicles(hass).plate_key("PX19TVD") != salted("PX19TVD")
+    from custom_components.camera_autonotify.vehicles import Vehicles
+
+    again = Vehicles(hass)
+    await again.async_classify("PX19TVD")
+    assert again.plate_key("PX19TVD") == vehicles(hass).plate_key("PX19TVD")
+    assert hass_storage["camera_autonotify.plate_salt"]["data"]["salt"] == salt
 
 
 async def test_key_kept_as_a_credential(hass: HomeAssistant):

@@ -309,8 +309,8 @@ what anpr2mqtt does, not a copy of it, so where Home Assistant has a way of its 
   *Known vehicle* button. And `camera_autonotify.classify_plate`, given a plate and optionally a camera, returning
   as a response what a sighting would have: the plate as corrected, its category and classification, the lookup's
   details and its visit history, so any other plate source or automation can use them. Its `record_sighting`, `false`
-  to begin with, also counts it in the visit history. `list_vehicle_categories` and `list_sightings` return the
-  categories with their plates, and each plate's sightings
+  to begin with, also counts it in the visit history. `list_vehicle_categories` returns the categories with
+  their plates, and `reset_sightings` forgets a plate's sightings, or every plate's
 - **An event for each sighting**, `camera_autonotify_vehicle`, with the plate, its category, the DVLA's or another
   provider's details and its visit history, for automations, such as opening the gate for a family car, rather than
   each reading a sensor's attributes

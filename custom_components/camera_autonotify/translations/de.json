@@ -722,13 +722,17 @@
                 }
             }
         },
-        "list_sightings": {
-            "name": "Sichtungen auflisten",
-            "description": "Jedes gesehene Kennzeichen, mit wann, wie oft und wie regelmäßig.",
+        "reset_sightings": {
+            "name": "Sichtungen zurücksetzen",
+            "description": "Den Besuchsverlauf eines Kennzeichens vergessen, oder den aller Kennzeichen.",
             "fields": {
                 "plate": {
                     "name": "Kennzeichen",
-                    "description": "Nur dieses Kennzeichen, statt jedes."
+                    "description": "Das Kennzeichen, dessen Sichtungen vergessen werden."
+                },
+                "all": {
+                    "name": "Alle Kennzeichen",
+                    "description": "Die Sichtungen aller Kennzeichen vergessen, statt die eines einzelnen."
                 }
             }
         }

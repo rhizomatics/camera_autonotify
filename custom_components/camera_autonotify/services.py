@@ -1,5 +1,5 @@
 """Home Assistant actions: classifying a plate, for any other source of plates or an automation, adding or removing
-a plate, and listing the vehicle categories and the plates' sightings"""
+a plate, listing the vehicle categories, and forgetting plates' sightings"""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ SERVICE_CLASSIFY = "classify_plate"
 SERVICE_ADD = "add_plate"
 SERVICE_REMOVE = "remove_plate"
 SERVICE_CATEGORIES = "list_vehicle_categories"
-SERVICE_SIGHTINGS = "list_sightings"
+SERVICE_RESET_SIGHTINGS = "reset_sightings"
 
 CLASSIFY_SCHEMA = vol.Schema({
     vol.Required("plate"): cv.string,
@@ -36,7 +36,15 @@ ADD_SCHEMA = vol.Schema({
 })
 REMOVE_SCHEMA = vol.Schema({vol.Required("plate"): cv.string, vol.Optional("category"): cv.string})
 CATEGORIES_SCHEMA = vol.Schema({vol.Optional("category"): cv.string})
-SIGHTINGS_SCHEMA = vol.Schema({vol.Optional("plate"): cv.string})
+# a plate, or every plate only when asked for outright
+RESET_SIGHTINGS_SCHEMA = vol.All(
+    vol.Schema({vol.Optional("plate"): cv.string, vol.Optional("all", default=False): cv.boolean}),
+    vol.Any(
+        vol.Schema({vol.Required("plate"): cv.string, vol.Required("all"): False}),
+        vol.Schema({vol.Required("all"): True}),
+        msg="Give a plate, or all, not both",
+    ),
+)
 
 
 @callback
@@ -62,11 +70,14 @@ def async_register_services(hass: HomeAssistant) -> None:
     def list_categories(call: ServiceCall) -> ServiceResponse:
         return cast("ServiceResponse", {"categories": vehicles(hass).categories(call.data.get("category"))})
 
-    async def list_sightings(call: ServiceCall) -> ServiceResponse:
-        return cast("ServiceResponse", {"plates": await vehicles(hass).async_sightings(call.data.get("plate"))})
+    async def reset_sightings(call: ServiceCall) -> ServiceResponse:
+        removed = await vehicles(hass).async_reset_sightings(None if call.data["all"] else call.data["plate"])
+        return {"sightings": removed}
 
     hass.services.async_register(DOMAIN, SERVICE_CATEGORIES, list_categories, CATEGORIES_SCHEMA, SupportsResponse.ONLY)
-    hass.services.async_register(DOMAIN, SERVICE_SIGHTINGS, list_sightings, SIGHTINGS_SCHEMA, SupportsResponse.ONLY)
+    hass.services.async_register(
+        DOMAIN, SERVICE_RESET_SIGHTINGS, reset_sightings, RESET_SIGHTINGS_SCHEMA, SupportsResponse.OPTIONAL
+    )
     hass.services.async_register(DOMAIN, SERVICE_CLASSIFY, classify, CLASSIFY_SCHEMA, SupportsResponse.ONLY)
     hass.services.async_register(DOMAIN, SERVICE_ADD, add_plate, ADD_SCHEMA, SupportsResponse.OPTIONAL)
     hass.services.async_register(DOMAIN, SERVICE_REMOVE, remove_plate, REMOVE_SCHEMA, SupportsResponse.OPTIONAL)

@@ -60,10 +60,15 @@ list_vehicle_categories:
       selector:
         text:
 
-list_sightings:
+reset_sightings:
   fields:
     plate:
       required: false
       example: PX19TVD
       selector:
         text:
+    all:
+      required: false
+      default: false
+      selector:
+        boolean:

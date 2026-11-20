@@ -722,13 +722,17 @@
                 }
             }
         },
-        "list_sightings": {
-            "name": "Elenca gli avvistamenti",
-            "description": "Ogni targa vista, con quando, quante volte e con quale regolarità.",
+        "reset_sightings": {
+            "name": "Azzera avvistamenti",
+            "description": "Dimentica la cronologia visite di una targa, o di tutte.",
             "fields": {
                 "plate": {
                     "name": "Targa",
-                    "description": "Solo questa targa, invece di tutte."
+                    "description": "La targa di cui dimenticare gli avvistamenti."
+                },
+                "all": {
+                    "name": "Tutte le targhe",
+                    "description": "Dimentica gli avvistamenti di tutte le targhe, invece che di una sola."
                 }
             }
         }

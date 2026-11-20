@@ -722,13 +722,17 @@
                 }
             }
         },
-        "list_sightings": {
-            "name": "Listar avistamentos",
-            "description": "Cada matrícula vista, com quando, quantas vezes e com que regularidade.",
+        "reset_sightings": {
+            "name": "Repor avistamentos",
+            "description": "Esquecer o histórico de visitas de uma matrícula, ou de todas.",
             "fields": {
                 "plate": {
                     "name": "Matrícula",
-                    "description": "Apenas esta matrícula, em vez de todas."
+                    "description": "A matrícula cujos avistamentos serão esquecidos."
+                },
+                "all": {
+                    "name": "Todas as matrículas",
+                    "description": "Esquecer os avistamentos de todas as matrículas, em vez dos de uma."
                 }
             }
         }

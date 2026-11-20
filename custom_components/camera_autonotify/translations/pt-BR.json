@@ -722,13 +722,17 @@
                 }
             }
         },
-        "list_sightings": {
-            "name": "Listar avistamentos",
-            "description": "Cada placa vista, com quando, quantas vezes e com que regularidade.",
+        "reset_sightings": {
+            "name": "Redefinir avistamentos",
+            "description": "Esquecer o histórico de visitas de uma placa, ou de todas.",
             "fields": {
                 "plate": {
                     "name": "Placa",
-                    "description": "Apenas esta placa, em vez de todas."
+                    "description": "A placa cujos avistamentos serão esquecidos."
+                },
+                "all": {
+                    "name": "Todas as placas",
+                    "description": "Esquecer os avistamentos de todas as placas, em vez dos de uma."
                 }
             }
         }
