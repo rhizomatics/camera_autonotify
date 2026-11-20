@@ -255,7 +255,7 @@
                     },
                     "plates": {
                         "name": "Number plates",
-                        "description": "Read plates with an image processing ANPR/ALPR entity, such as OpenALPR's, instead of Frigate, for a camera where Frigate's plate recognition is off or poor. Frigate's plate is used only where it reads none. Each notification of a vehicle waits for it, up to 10 seconds, once for each review. Set its source to this camera's Last notification snapshot camera, so it reads the snapshot notified, not the live view.",
+                        "description": "Read plates with an image processing ANPR/ALPR entity, such as OpenALPR's, instead of Frigate, for a camera where Frigate's plate recognition is off or poor. Frigate's plate is used only where it reads none. Each notification of a vehicle waits for it, up to 10 seconds, once for each review. Set its source to this camera's Last notification snapshot camera, so it reads the snapshot notified, not the live view. OpenALPR Cloud is set up in Home Assistant's YAML, under image_processing:, and its entity then chosen here.",
                         "data": {
                             "alpr_entity": "ANPR/ALPR entity",
                             "alpr_vehicles_only": "Only for vehicles"

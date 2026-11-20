@@ -730,14 +730,13 @@ async def test_alpr_before_frigate_plate(hass: HomeAssistant):
     assert vehicle is not None and vehicle.plate == "PX19TVD"
 
 
-async def test_alpr_setting_offered_with_alpr(hass: HomeAssistant):
+async def test_alpr_setting_offered_for_every_camera(hass: HomeAssistant):
+    """Even before there's an ANPR/ALPR entity, so it can be found, there being no telling which cameras see vehicles"""
     from .test_discovery import set_up_discovery
     from .test_settings import fields_of, open_settings
 
     add_frigate(hass)
     await set_up_discovery(hass, discover_zones=True)
-    assert "plates.alpr_entity" not in fields_of(await open_settings(hass))
-    openalpr(hass, {})
     assert {"plates.alpr_entity", "plates.alpr_vehicles_only"} <= set(fields_of(await open_settings(hass)))
     # not for a zone, which has no camera of its own
     assert "plates.alpr_entity" not in fields_of(await open_settings(hass, "Pend"))

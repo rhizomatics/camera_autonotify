@@ -630,7 +630,6 @@ async def settings_schema(
     zones: list[str] | None,
     genai: dict[vol.Marker, Any] | None = None,
     actions: list[str] | None = None,
-    alpr: bool = False,
 ) -> vol.Schema:
     """The blueprint's filters, then its timing, what GenAI adds and who is told, out of the way until wanted. Zones
     only for a camera, since a zone's entry is the zone"""
@@ -671,8 +670,8 @@ async def settings_schema(
     fields_[vol.Required(SECTION_TIMING)] = section(vol.Schema(timing), {"collapsed": True})
     if genai:
         fields_[vol.Required(SECTION_GENAI)] = section(vol.Schema(genai), {"collapsed": True})
-    if alpr:
-        # an image processing ANPR/ALPR entity, such as OpenALPR's, reading plates instead of Frigate
+    if zones is not None:
+        # for any camera, there being no telling which see vehicles, an image processing ANPR/ALPR entity, such as OpenALPR's, reading plates instead of Frigate
         plates = {
             vol.Optional(CONF_ALPR_ENTITY): EntitySelector(
                 EntitySelectorConfig(filter=[{"domain": "image_processing", "device_class": "alpr"}])
@@ -1031,10 +1030,7 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
         name = data[CONF_SOURCE_NAME]
         cameras = zone_cameras(config, name) if is_zone else [name]
         actions = offered([config], cameras)
-        alpr = not is_zone and any(
-            state.attributes.get("device_class") == "alpr" for state in self.hass.states.async_all("image_processing")
-        )
-        schema = await settings_schema(self.hass, labels, zones, genai, actions, alpr)
+        schema = await settings_schema(self.hass, labels, zones, genai, actions)
         await async_load_texts(self.hass)
         shown = dict(self.config_entry.options)
         if not is_zone:

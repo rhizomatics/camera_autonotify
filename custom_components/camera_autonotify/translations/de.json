@@ -255,7 +255,7 @@
                     },
                     "plates": {
                         "name": "Kennzeichen",
-                        "description": "Kennzeichen mit einer ANPR/ALPR-Bildverarbeitungsentität wie der von OpenALPR statt mit Frigate lesen, für eine Kamera, bei der Frigates Kennzeichenerkennung aus oder schwach ist. Frigates Kennzeichen wird nur verwendet, wenn sie keines liest. Jede Benachrichtigung zu einem Fahrzeug wartet darauf, bis zu 10 Sekunden, einmal pro Überprüfung. Setzen Sie ihre Quelle auf die Kamera Letzter Benachrichtigungs-Schnappschuss dieser Kamera, damit sie den benachrichtigten Schnappschuss liest, nicht das Live-Bild.",
+                        "description": "Kennzeichen mit einer ANPR/ALPR-Bildverarbeitungsentität wie der von OpenALPR statt mit Frigate lesen, für eine Kamera, bei der Frigates Kennzeichenerkennung aus oder schwach ist. Frigates Kennzeichen wird nur verwendet, wenn sie keines liest. Jede Benachrichtigung zu einem Fahrzeug wartet darauf, bis zu 10 Sekunden, einmal pro Überprüfung. Setzen Sie ihre Quelle auf die Kamera Letzter Benachrichtigungs-Schnappschuss dieser Kamera, damit sie den benachrichtigten Schnappschuss liest, nicht das Live-Bild. OpenALPR Cloud wird in Home Assistants YAML unter image_processing: eingerichtet und seine Entität dann hier gewählt.",
                         "data": {
                             "alpr_entity": "ANPR/ALPR-Entität",
                             "alpr_vehicles_only": "Nur für Fahrzeuge"

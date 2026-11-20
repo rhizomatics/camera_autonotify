@@ -255,7 +255,7 @@
                     },
                     "plates": {
                         "name": "Targhe",
-                        "description": "Leggi le targhe con un'entità di elaborazione immagini ANPR/ALPR, come quella di OpenALPR, invece di Frigate, per una telecamera in cui il riconoscimento targhe di Frigate è disattivato o scarso. La targa di Frigate viene usata solo se l'entità non ne legge nessuna. Ogni notifica di un veicolo la attende, fino a 10 secondi, una volta per revisione. Imposta la sua sorgente sulla telecamera Ultima istantanea di notifica di questa telecamera, così legge l'istantanea notificata e non la vista dal vivo.",
+                        "description": "Leggi le targhe con un'entità di elaborazione immagini ANPR/ALPR, come quella di OpenALPR, invece di Frigate, per una telecamera in cui il riconoscimento targhe di Frigate è disattivato o scarso. La targa di Frigate viene usata solo se l'entità non ne legge nessuna. Ogni notifica di un veicolo la attende, fino a 10 secondi, una volta per revisione. Imposta la sua sorgente sulla telecamera Ultima istantanea di notifica di questa telecamera, così legge l'istantanea notificata e non la vista dal vivo. OpenALPR Cloud si configura nello YAML di Home Assistant, sotto image_processing:, e la sua entità si sceglie poi qui.",
                         "data": {
                             "alpr_entity": "Entità ANPR/ALPR",
                             "alpr_vehicles_only": "Solo per veicoli"

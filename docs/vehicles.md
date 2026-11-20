@@ -32,7 +32,7 @@ Every licence plate read, by Frigate's plate recognition (ANPR/ALPR), OpenALPR o
 - **DVLA (UK)**: with an API key from the UK DVLA's Vehicle Enquiry Service, in *Vehicle lookup*, kept as a credential and never shown again. A plate a character off the last one confirmed on the same camera is taken as a misread of it
 - **Known vehicle**: a button on a notification of an unknown plate, with a description typed on the phone, adding it to the category set in *Category for the Known vehicle button*, *Known vehicles* to begin with
 - **OpenALPR, or another ANPR/ALPR image processing integration**: for a Frigate camera whose own plate recognition is off or poor, chosen in the camera's *Number plates* settings, it reads the plate in the notified image instead of Frigate. Frigate's plate is used only where it reads none
-  - OpenALPR Cloud is set up in Home Assistant's YAML, under `image_processing:`. The *Number plates* section appears once its entity exists
+  - OpenALPR Cloud is set up in Home Assistant's YAML, under `image_processing:`, and its entity then chosen in *Number plates*
   - Choosing it switches on the camera's *Last notification snapshot* camera: set that as OpenALPR's `source`, so it reads the snapshot notified rather than the camera as it currently is
   - **Each notification of a vehicle waits for it**, up to 10 seconds, once for the review
 - **Actions**:
