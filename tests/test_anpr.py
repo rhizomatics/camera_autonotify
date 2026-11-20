@@ -154,7 +154,7 @@ def test_retained_as_followed():
 
 def test_other_kinds_of_detection_left_alone():
     """A face or a line crossed, which anpr2mqtt can read from a camera's images too, not yet notified"""
-    assert tracker().sighting(state("PREVIOUS"), state("Jey", target_type="face"), NOW.timestamp()) is None
+    assert tracker().sighting(state("PREVIOUS"), state("Joe", target_type="face"), NOW.timestamp()) is None
     assert tracker().sighting(state("PREVIOUS"), state(target_type="plate"), NOW.timestamp()) is not None
 
 
@@ -191,9 +191,9 @@ async def test_title_and_message(hass: HomeAssistant):
     add_anpr(hass)
     notifier = AnprNotifier(hass, await anpr_entry(hass))
     known = Sighting.from_state(
-        state(description="Jey's Outlander", reg_info={"make": "MITSUBISHI", "colour": "WHITE", "taxStatus": "Taxed"})
+        state(description="Joe's Pickup", reg_info={"make": "MITSUBISHI", "colour": "WHITE", "taxStatus": "Taxed"})
     )
-    assert notifier.title(known, None) == "Jey's Outlander at Driveway"
+    assert notifier.title(known, None) == "Joe's Pickup at Driveway"
     assert notifier.message(known).splitlines() == [
         "Plate PX19TVD",
         "Previous sightings: 2, last on Monday 2 November 09:10",

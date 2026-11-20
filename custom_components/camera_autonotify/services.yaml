@@ -30,7 +30,7 @@ add_plate:
         text:
     description:
       required: false
-      example: Jey's Outlander
+      example: Joe's Pickup Truck
       selector:
         text:
     corrections:

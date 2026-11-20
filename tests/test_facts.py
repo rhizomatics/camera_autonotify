@@ -60,9 +60,9 @@ def test_face_not_recognised():
     store.on_update({"type": "face", "id": DETECTION, "name": "unknown", "score": 0.3}, 1.0)
     assert store.of_review("courtyard", (DETECTION,), 0.9).face_unknown
     # a name below Frigate's threshold isn't recognised either
-    store.on_update({"type": "face", "id": DETECTION, "name": "Jey", "score": 0.7}, 2.0)
+    store.on_update({"type": "face", "id": DETECTION, "name": "Joe", "score": 0.7}, 2.0)
     assert store.of_review("courtyard", (DETECTION,), 0.9).face_unknown
-    store.on_update({"type": "face", "id": DETECTION, "name": "Jey", "score": 0.95}, 3.0)
+    store.on_update({"type": "face", "id": DETECTION, "name": "Joe", "score": 0.95}, 3.0)
     assert not store.of_review("courtyard", (DETECTION,), 0.9).face_unknown
 
 

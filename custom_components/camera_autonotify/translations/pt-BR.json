@@ -25,7 +25,7 @@
             },
             "import_anpr2mqtt": {
                 "title": "Importar do anpr2mqtt",
-                "description": "Encontrado no arquivo:\n\n{found}\n\nImportar? As categorias já existentes mantêm suas placas e recebem só as novas."
+                "description": "Encontrado no arquivo:\n\n{found}\n\nImportar? Nada aqui é removido: novas categorias e placas são adicionadas, as categorias já existentes recebem apenas as placas que não têm, e as configurações encontradas substituem as definidas aqui."
             },
             "confirm_anpr": {
                 "title": "Notificações para {name}",
@@ -140,7 +140,7 @@
                             "dvla_api_key_clear": "Esquecer a chave"
                         },
                         "data_description": {
-                            "dvla_api_key": "Emitida pela DVLA para o seu Vehicle Enquiry Service, guardada como credencial e nunca mais mostrada. Deixe vazio para manter a chave já definida.",
+                            "dvla_api_key": "Emitida pela DVLA para o seu Vehicle Enquiry Service, guardada como credencial e nunca exibida. {dvla_key}",
                             "lookup_cache_hours": "Por quanto tempo os detalhes de uma placa são guardados antes de perguntar de novo.",
                             "dvla_api_key_clear": "Remover a chave da DVLA, para que as placas não sejam consultadas."
                         }
@@ -316,7 +316,7 @@
             },
             "import_anpr2mqtt": {
                 "title": "Importar do anpr2mqtt",
-                "description": "Encontrado no arquivo:\n\n{found}\n\nImportar? As categorias já existentes mantêm suas placas e recebem só as novas."
+                "description": "Encontrado no arquivo:\n\n{found}\n\nImportar? Nada aqui é removido: novas categorias e placas são adicionadas, as categorias já existentes recebem apenas as placas que não têm, e as configurações encontradas substituem as definidas aqui."
             }
         },
         "error": {
@@ -647,7 +647,9 @@
         "imported_categories": "Novas categorias: {count}",
         "imported_plates": "Placas adicionadas: {count}",
         "imported_sightings": "Avistamentos adicionados: {count}",
-        "imported_nothing": "Nada de novo: tudo no arquivo já estava aqui"
+        "imported_nothing": "Nada de novo: tudo no arquivo já estava aqui",
+        "dvla_key_set": "Há uma chave definida: deixe vazio para mantê-la, ou digite uma nova para substituí-la.",
+        "dvla_key_unset": "Nenhuma chave definida."
     },
     "issues": {
         "lookup_refused": {

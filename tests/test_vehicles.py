@@ -56,7 +56,7 @@ class FakeRegister:
         return self.known.get(plate)
 
 
-OUTLANDER = VehicleLookup("dvla", "MITSUBISHI", "WHITE", 2019, "PETROL", "Taxed", "Valid", {"make": "MITSUBISHI"})
+PICKUP_TRUCK = VehicleLookup("dvla", "MITSUBISHI", "WHITE", 2019, "PETROL", "Taxed", "Valid", {"make": "MITSUBISHI"})
 
 
 def global_settings(
@@ -83,7 +83,7 @@ def frozen(freezer: FrozenDateTimeFactory) -> FrozenDateTimeFactory:
 
 @pytest.fixture
 def register(hass: HomeAssistant) -> FakeRegister:
-    fake = FakeRegister({"PX19TVD": OUTLANDER})
+    fake = FakeRegister({"PX19TVD": PICKUP_TRUCK})
     vehicles(hass).provider = fake
     return fake
 
@@ -94,7 +94,7 @@ def register(hass: HomeAssistant) -> FakeRegister:
 async def test_unknown_looked_up_and_cached(hass: HomeAssistant, register: FakeRegister):
     global_settings(hass, {"Family cars": FAMILY})
     found = await vehicles(hass).async_classify("px19 tvd")
-    assert (found.plate, found.kind, found.lookup) == ("PX19TVD", "unknown", OUTLANDER)
+    assert (found.plate, found.kind, found.lookup) == ("PX19TVD", "unknown", PICKUP_TRUCK)
     await vehicles(hass).async_classify("PX19TVD")
     assert register.asked == ["PX19TVD"]
 
@@ -103,7 +103,7 @@ async def test_known_not_looked_up_unless_category_says(hass: HomeAssistant, reg
     global_settings(hass, {"Family cars": FAMILY, "Fleet": {"lookup": True, "plates": ["PX19TVD"]}})
     found = await vehicles(hass).async_classify("J912UKL")
     assert (found.plate, found.kind, found.match.description, found.lookup) == ("TJ912UKL", "known", "Joe's mini", None)
-    assert (await vehicles(hass).async_classify("PX19TVD")).lookup == OUTLANDER
+    assert (await vehicles(hass).async_classify("PX19TVD")).lookup == PICKUP_TRUCK
     assert register.asked == ["PX19TVD"]
 
 
@@ -120,7 +120,7 @@ async def test_misread_corrected_by_last_confirmed(hass: HomeAssistant, register
     global_settings(hass)
     await vehicles(hass).async_classify("PX19TVD", camera="driveway")
     found = await vehicles(hass).async_classify("PX19TV0", camera="driveway")
-    assert (found.match.read, found.plate, found.lookup) == ("PX19TV0", "PX19TVD", OUTLANDER)
+    assert (found.match.read, found.plate, found.lookup) == ("PX19TV0", "PX19TVD", PICKUP_TRUCK)
     # not on another camera
     assert (await vehicles(hass).async_classify("PX19TV0", camera="gate")).plate == "PX19TV0"
 
@@ -613,6 +613,11 @@ async def test_key_kept_as_a_credential(hass: HomeAssistant):
     await set_up_discovery(hass)
     entry = next(e for e in hass.config_entries.async_entries(DOMAIN) if e.data.get(CONF_TYPE) == TYPE_DISCOVERY)
 
+    async def key_said() -> str:
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        hass.config_entries.options.async_abort(result["flow_id"])
+        return str((result["description_placeholders"] or {})["dvla_key"])
+
     async def save(lookup: dict[str, Any]) -> None:
         result = await hass.config_entries.options.async_init(entry.entry_id)
         await hass.config_entries.options.async_configure(
@@ -621,8 +626,11 @@ async def test_key_kept_as_a_credential(hass: HomeAssistant):
         )
         await hass.async_block_till_done()
 
+    assert await key_said() == "No key is set."
     await save({"dvla_api_key": "secret"})
     assert entry.data["dvla_api_key"] == "secret"
+    # never shown, but said to be set
+    assert (await key_said()).startswith("A key is set")
     assert "dvla_api_key" not in entry.options
     assert (await async_get_config_entry_diagnostics(hass, entry))["data"]["dvla_api_key"] == REDACTED
     await save({})
@@ -673,7 +681,7 @@ async def test_alpr_where_frigate_reads_none(hass: HomeAssistant, register: Fake
     car = replace(decision(), review=replace(decision().review, objects=("car",)))
     vehicle = await found.async_vehicle(car)
     assert vehicle is not None
-    assert (vehicle.plate, vehicle.lookup) == ("PX19TVD", OUTLANDER)
+    assert (vehicle.plate, vehicle.lookup) == ("PX19TVD", PICKUP_TRUCK)
     # once for the review
     await found.async_vehicle(car)
     await hass.async_block_till_done()

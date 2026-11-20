@@ -5,7 +5,8 @@
 [![Github Deploy](https://github.com/rhizomatics/camera_autonotify/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/rhizomatics/camera_autonotify/actions/workflows/deploy.yml)
 
 Notifications for what your security cameras see in Home Assistant, sent through
-[Supernotify](https://supernotify.rhizomatics.org.uk), with no blueprint, automations or YAML. Supports Frigate's GenAI features, and can notify when cameras are down.
+[Supernotify](https://supernotify.rhizomatics.org.uk), with no blueprint, automations or YAML. Supports Frigate's GenAI features, has rich licence plate functionality, and can notify when cameras are down.
+
 
 It starts with [Frigate](https://frigate.video): every camera is found and set up by itself, and each Frigate review is sent as a notification with its snapshot, tapped to play the clip.
 
@@ -90,50 +91,6 @@ With Supernotify, each notification on a phone has buttons for what Frigate can 
 ### GenAI Periodic Reports
 
 Where Frigate makes GenAI review summaries, a report of the day before is also sent each day, written by Frigate's GenAI from that day's reviews. It can instead be sent every few hours, and only when GenAI saw something suspicious in those hours. It needs Supernotify, and goes by e-mail, or whichever Supernotify deliveries you choose instead, such as Telegram, being too long for a phone's notification or a voice assistant. It's set in the *Frigate GenAI Periodic Report* section of *Global Settings*. Each report is written by Frigate's GenAI provider, so is subject to its charges and limits. See [Periodic Reports](https://camera-autonotify.rhizomatics.org.uk/genai/#periodic-reports).
-
-### Vehicles (Early Access)
-
-Every plate read, by Frigate's plate recognition (ANPR/ALPR) or anpr2mqtt, is classified here, its visit history kept, and in the UK, looked up with the DVLA:
-
-- **Vehicle categories**, added under *Global Settings*: a single vehicle, every family car, or a delivery company's vans, known or dangerous, by their plates, each a plate or a regular expression, with its own description and the misreads that are really it. *Ignore* drops a category's plates altogether, such as a tanker's logo read as a plate
-- **Priority**: in the *Vehicles* section of *Global Settings*, once there's a category, each with its own Supernotify scenarios: `medium` for a known vehicle, `high` for an unknown plate or one that couldn't be read, and `critical` for a dangerous one. A misread plate can match a dangerous one, so `critical` can be a false alarm; corrections on the plate, or a lower priority, help where it happens
-- **Said under the headline**: the vehicle's description and plate, such as *Joe's mini (TJ912UKL)*, the DVLA's make, colour, year and tax, its previous sightings, whether it's a daily, weekly or occasional visitor, and whether it's at an unusual time of day
-- **DVLA**: with an API key from the DVLA's Vehicle Enquiry Service, in *Vehicle lookup*, kept as a credential and never shown again. A plate a character off the last one confirmed on the same camera is taken as a misread of it
-- **Known vehicle**: a button on a notification of an unknown plate, with a description typed on the phone, adding it to *Known vehicles*
-- **OpenALPR, or another ANPR/ALPR image processing integration**: chosen in a Frigate camera's *Number plates* settings, it reads the plate where Frigate reads none, only for a vehicle to begin with. Choosing it switches on the camera's *Last notification snapshot* camera, Frigate's snapshot of the detection being notified, which you set as OpenALPR's `source` in its YAML so it reads that snapshot rather than the live view. **Each notification of a review waits for it**, up to 10 seconds, once for the review
-- **Actions**: `camera_autonotify.classify_plate`, for any other plate source or automation, returning the plate's category, lookup and history, `add_plate` and `remove_plate`, and `list_vehicle_categories` and `list_sightings`, returning the categories with their plates, and each plate's sightings
-- **Import from anpr2mqtt**: upload a `.tar.gz` of anpr2mqtt's `config` and `data` folders, made with `tar czf anpr2mqtt.tgz config data/plate`, in *Global Settings* or as an anpr2mqtt source is set up, to bring over its targets, corrections, ignores, DVLA settings and visit history. What's found is shown before anything is imported
-- **Event**: `camera_autonotify_vehicle` for each sighting, with `plate`, `entity_id` and `confidence` as OpenALPR's `image_processing.found_plate` has them, and the category, classification, lookup and history
-
-### Number Plates from anpr2mqtt (Early Access)
-
-> **Early access**: number plates from anpr2mqtt are new in 0.11.0. It works, but has had little use yet. Full documentation will follow, as may fixes and improvements, so expect it to change. Feedback is very welcome, in the [issues](https://github.com/rhizomatics/camera_autonotify/issues).
-
-[anpr2mqtt](https://anpr2mqtt.rhizomatics.org.uk) does three things:
-
-1. **Plates from ANPR/ALPR cameras**: it listens for the images an ANPR/ALPR camera uploads by FTP, or to a NAS, and reads the plate from each
-2. **Frigate's plates, enhanced**: it adds to Frigate's own licence plate recognition (ANPR/ALPR), in the UK with the vehicle's details from the DVLA, correcting the plate where it can
-3. **Any other detection** a camera can make that results in an image sent by FTP or to a NAS, such as a face, or a line crossed
-
-Camera AutoNotify notifies the number plates of the first two, with no automation, in place of the example automation in anpr2mqtt's docs. Other kinds of detection are left alone for now:
-
-- **What you need**: anpr2mqtt 1.3.0 or later, with its Home Assistant devices on (`device_creation`, as it comes). Each anpr2mqtt camera is then found and offered as *Discovered*, even with *Set up cameras automatically* on, so its setup can import from anpr2mqtt. Frigate isn't needed
-- **What's sent**: the vehicle as anpr2mqtt describes it, or its plate, at the camera, such as *Jey's Outlander at Driveway*, with the plate, the sightings before, and the DVLA's details where anpr2mqtt has them. Only a new plate is notified, not the same one again in the same visit, nor a sighting republished as Home Assistant starts
-- **Images**: from Frigate's notification proxy for a plate Frigate read, and from anpr2mqtt's image entity otherwise, so they work away from home
-- **Linked camera**: the same camera in Frigate, or UniFi Protect, Viseron or Blue Iris, found by itself from anpr2mqtt's `linked_cameras`, its area or its name, or chosen in its settings, so the notification is named by it, and Supernotify's camera snooze covers both. Only those integrations' cameras are considered, so anpr2mqtt's own camera, and the same camera by ONVIF, are never taken for it, and it's usually found by itself. Where it isn't, pick the Frigate camera
-- **Vehicles**: as anpr2mqtt's targets and groups say, with a priority for each kind, dangerous, unknown, known or ignored, `critical`, `high`, anpr2mqtt's own and no notification to begin with, and Supernotify scenarios for each. Or, with *Use anpr2mqtt's own classification* off, in the *Vehicles* section of *Global Settings*, classified here as any plate is, see [Vehicles](#vehicles-early-access), anpr2mqtt then being only the source of plates and images. With Frigate's plates classified here too, anpr2mqtt's own Frigate listener isn't needed
-- **Health**: anpr2mqtt going unavailable is notified, and again when it's back, with the timing of the Frigate health checks
-
-Not yet: a plate isn't joined to the Frigate review of the same car, so the same arrival can be notified by both, though Supernotify's duplicate detection catches some. See [RFC 0003](https://camera-autonotify.rhizomatics.org.uk/developer/design/rfcs/rfc0003_anpr2mqtt/) for what's planned.
-
-#### Avoiding Duplicate Notifications
-
-Until then, the same car arriving can be notified twice: by the Frigate camera's review, *Car detected at Driveway*, updated with the plate where Frigate knows it, and by anpr2mqtt's sighting, *Jey's Outlander at Driveway*, with the DVLA's details. anpr2mqtt itself, and Frigate's plate recognition (ANPR/ALPR), carry on as they are, since it's only the notification that's to be switched off.
-
-anpr2mqtt reading the same plate from both Frigate and an ANPR/ALPR camera's images is already notified once, as the same plate in the same visit. So it's the Frigate camera's notification of the car to switch off, in the Frigate camera's settings here, by either:
-
-- leaving `car` out of *Objects*, choosing the others you still want notified, so the camera notifies people and the rest but not cars, which anpr2mqtt notifies instead
-- or switching off *Notify recognised faces and plates*, in *Timing*, to keep the camera's car notification, but not its update when Frigate recognises the plate. This stops the update for a recognised face too
 
 
 ## Moving From the Frigate Blueprint

@@ -25,7 +25,7 @@
             },
             "import_anpr2mqtt": {
                 "title": "Import from anpr2mqtt",
-                "description": "Found in the archive:\n\n{found}\n\nImport it? Categories already here keep their plates, and get only the new ones."
+                "description": "Found in the archive:\n\n{found}\n\nImport it? Nothing here is removed: new categories and plates are added, categories already here get only the plates they don't have, and the settings found replace those set here."
             },
             "confirm_anpr": {
                 "title": "Notifications for {name}",
@@ -140,7 +140,7 @@
                             "dvla_api_key_clear": "Forget the key"
                         },
                         "data_description": {
-                            "dvla_api_key": "Issued by the DVLA for its Vehicle Enquiry Service, kept as a credential and never shown again. Leave empty to keep the key already set.",
+                            "dvla_api_key": "Issued by the DVLA for its Vehicle Enquiry Service, kept as a credential and never shown. {dvla_key}",
                             "lookup_cache_hours": "How long a plate's details are kept before asking again.",
                             "dvla_api_key_clear": "Take the DVLA's key away, so plates aren't looked up."
                         }
@@ -316,7 +316,7 @@
             },
             "import_anpr2mqtt": {
                 "title": "Import from anpr2mqtt",
-                "description": "Found in the archive:\n\n{found}\n\nImport it? Categories already here keep their plates, and get only the new ones."
+                "description": "Found in the archive:\n\n{found}\n\nImport it? Nothing here is removed: new categories and plates are added, categories already here get only the plates they don't have, and the settings found replace those set here."
             }
         },
         "error": {
@@ -647,7 +647,9 @@
         "imported_categories": "New categories: {count}",
         "imported_plates": "Plates added: {count}",
         "imported_sightings": "Sightings added: {count}",
-        "imported_nothing": "Nothing new: everything in the archive was already here"
+        "imported_nothing": "Nothing new: everything in the archive was already here",
+        "dvla_key_set": "A key is set: leave this empty to keep it, or type a new one to replace it.",
+        "dvla_key_unset": "No key is set."
     },
     "issues": {
         "lookup_refused": {

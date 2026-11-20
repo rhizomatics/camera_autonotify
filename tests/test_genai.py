@@ -257,7 +257,7 @@ def test_zone_told_descriptions_of_its_reviews_only():
 
 def test_not_descriptions():
     tracker = courtyard(unreviewed_descriptions=True)
-    assert tracker.on_description({"type": "face", "id": "x", "camera": "courtyard", "name": "Jey"}, T0) is None
+    assert tracker.on_description({"type": "face", "id": "x", "camera": "courtyard", "name": "Joe"}, T0) is None
     assert tracker.on_description({"type": "description", "id": "x", "camera": "courtyard"}, T0) is None
     assert tracker.on_description("[]", T0) is None
     assert Description.from_payload({"type": "description", "id": "x", "camera": "c", "description": "  "}) is None

@@ -198,6 +198,8 @@ from .texts import (
     AUTOTRACKING,
     CAMERAS_FOUND,
     CAMERAS_NONE,
+    DVLA_KEY_SET,
+    DVLA_KEY_UNSET,
     IMPORT_CATEGORY,
     IMPORT_CATEGORY_EXISTING,
     IMPORT_HISTORY,
@@ -444,9 +446,9 @@ def plate_category_schema() -> vol.Schema:
                 options=[KIND_KNOWN, KIND_DANGEROUS], mode=SelectSelectorMode.DROPDOWN, translation_key=CONF_PLATE_KIND
             )
         ),
-        vol.Required(CONF_PLATE_IGNORE, default=False): BooleanSelector(),
         vol.Optional(CONF_PLATE_DESCRIPTION): TextSelector(),
         vol.Optional(CONF_PLATE_ICON): IconSelector(),
+        vol.Required(CONF_PLATE_IGNORE, default=False): BooleanSelector(),
         vol.Required(CONF_PLATE_LOOKUP, default=False): BooleanSelector(),
         vol.Optional(CONF_PLATES): ObjectSelector(
             ObjectSelectorConfig(
@@ -976,10 +978,14 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
         shown[CONF_ACTIONS] = [kind for kind in shown.get(CONF_ACTIONS, DEFAULT_ACTIONS) if kind in actions]
         if not shown_as_is and not shown.get(CONF_SUMMARY_DELIVERIES) and supernotify_available(self.hass):
             shown[CONF_SUMMARY_DELIVERIES] = await email_deliveries(self.hass)
+        await async_load_texts(self.hass)
+        key_set = bool(self.config_entry.data.get(CONF_DVLA_API_KEY))
         return self.async_show_form(
             step_id=STEP_DISCOVERY,
             data_schema=self.add_suggested_values_to_schema(schema, sectioned(schema, shown)),
             errors=errors,
+            # the key's never shown, so whether there's one is said instead
+            description_placeholders={"dvla_key": text(self.hass, DVLA_KEY_SET if key_set else DVLA_KEY_UNSET)},
         )
 
     def _keep_credentials(self, settings: dict[str, Any]) -> None:

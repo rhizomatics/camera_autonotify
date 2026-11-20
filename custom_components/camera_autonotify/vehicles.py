@@ -407,7 +407,7 @@ class Vehicles:
                 "kind": category.kind,
                 "ignore": category.ignore,
                 "lookup": category.lookup,
-                **{key: value for key in ("description", "icon", "entity_id") if (value := getattr(category, key))},
+                **{key: value for key in ("description", "icon") if (value := getattr(category, key))},
                 "plates": [
                     {
                         "plate": entry.plate,

@@ -25,7 +25,7 @@
             },
             "import_anpr2mqtt": {
                 "title": "Importar desde anpr2mqtt",
-                "description": "Encontrado en el archivo:\n\n{found}\n\n¿Importarlo? Las categorías ya existentes conservan sus matrículas y solo reciben las nuevas."
+                "description": "Encontrado en el archivo:\n\n{found}\n\n¿Importarlo? Aquí no se elimina nada: se añaden categorías y matrículas nuevas, las categorías que ya existen solo reciben las matrículas que no tienen, y los ajustes encontrados sustituyen a los de aquí."
             },
             "confirm_anpr": {
                 "title": "Notificaciones para {name}",
@@ -140,7 +140,7 @@
                             "dvla_api_key_clear": "Olvidar la clave"
                         },
                         "data_description": {
-                            "dvla_api_key": "Emitida por la DVLA para su Vehicle Enquiry Service, guardada como credencial y nunca mostrada de nuevo. Déjala vacía para mantener la clave ya configurada.",
+                            "dvla_api_key": "Emitida por la DVLA para su Vehicle Enquiry Service, guardada como credencial y nunca mostrada. {dvla_key}",
                             "lookup_cache_hours": "Cuánto tiempo se guardan los detalles de una matrícula antes de volver a preguntar.",
                             "dvla_api_key_clear": "Quitar la clave de la DVLA, para que no se consulten matrículas."
                         }
@@ -316,7 +316,7 @@
             },
             "import_anpr2mqtt": {
                 "title": "Importar desde anpr2mqtt",
-                "description": "Encontrado en el archivo:\n\n{found}\n\n¿Importarlo? Las categorías ya existentes conservan sus matrículas y solo reciben las nuevas."
+                "description": "Encontrado en el archivo:\n\n{found}\n\n¿Importarlo? Aquí no se elimina nada: se añaden categorías y matrículas nuevas, las categorías que ya existen solo reciben las matrículas que no tienen, y los ajustes encontrados sustituyen a los de aquí."
             }
         },
         "error": {
@@ -647,7 +647,9 @@
         "imported_categories": "Categorías nuevas: {count}",
         "imported_plates": "Matrículas añadidas: {count}",
         "imported_sightings": "Avistamientos añadidos: {count}",
-        "imported_nothing": "Nada nuevo: todo lo del archivo ya estaba aquí"
+        "imported_nothing": "Nada nuevo: todo lo del archivo ya estaba aquí",
+        "dvla_key_set": "Hay una clave: déjelo vacío para conservarla o escriba una nueva para sustituirla.",
+        "dvla_key_unset": "No hay ninguna clave."
     },
     "issues": {
         "lookup_refused": {

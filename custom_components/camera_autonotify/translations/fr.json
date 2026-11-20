@@ -25,7 +25,7 @@
             },
             "import_anpr2mqtt": {
                 "title": "Importer depuis anpr2mqtt",
-                "description": "Trouvé dans l'archive :\n\n{found}\n\nL'importer ? Les catégories déjà présentes gardent leurs plaques et ne reçoivent que les nouvelles."
+                "description": "Trouvé dans l'archive :\n\n{found}\n\nL'importer ? Rien n'est supprimé ici : les nouvelles catégories et plaques sont ajoutées, les catégories existantes ne reçoivent que les plaques qu'elles n'ont pas, et les réglages trouvés remplacent ceux définis ici."
             },
             "confirm_anpr": {
                 "title": "Notifications pour {name}",
@@ -140,7 +140,7 @@
                             "dvla_api_key_clear": "Oublier la clé"
                         },
                         "data_description": {
-                            "dvla_api_key": "Délivrée par la DVLA pour son Vehicle Enquiry Service, gardée comme identifiant et jamais réaffichée. Laisser vide pour garder la clé déjà définie.",
+                            "dvla_api_key": "Délivrée par la DVLA pour son Vehicle Enquiry Service, conservée comme identifiant et jamais affichée. {dvla_key}",
                             "lookup_cache_hours": "Combien de temps les détails d'une plaque sont gardés avant de redemander.",
                             "dvla_api_key_clear": "Retirer la clé de la DVLA, pour que les plaques ne soient pas recherchées."
                         }
@@ -316,7 +316,7 @@
             },
             "import_anpr2mqtt": {
                 "title": "Importer depuis anpr2mqtt",
-                "description": "Trouvé dans l'archive :\n\n{found}\n\nL'importer ? Les catégories déjà présentes gardent leurs plaques et ne reçoivent que les nouvelles."
+                "description": "Trouvé dans l'archive :\n\n{found}\n\nL'importer ? Rien n'est supprimé ici : les nouvelles catégories et plaques sont ajoutées, les catégories existantes ne reçoivent que les plaques qu'elles n'ont pas, et les réglages trouvés remplacent ceux définis ici."
             }
         },
         "error": {
@@ -647,7 +647,9 @@
         "imported_categories": "Nouvelles catégories : {count}",
         "imported_plates": "Plaques ajoutées : {count}",
         "imported_sightings": "Passages ajoutés : {count}",
-        "imported_nothing": "Rien de nouveau : tout le contenu de l'archive était déjà là"
+        "imported_nothing": "Rien de nouveau : tout le contenu de l'archive était déjà là",
+        "dvla_key_set": "Une clé est définie : laissez vide pour la garder, ou saisissez-en une nouvelle pour la remplacer.",
+        "dvla_key_unset": "Aucune clé n'est définie."
     },
     "issues": {
         "lookup_refused": {

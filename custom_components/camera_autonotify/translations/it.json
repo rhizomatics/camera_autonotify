@@ -25,7 +25,7 @@
             },
             "import_anpr2mqtt": {
                 "title": "Importa da anpr2mqtt",
-                "description": "Trovato nell'archivio:\n\n{found}\n\nImportarlo? Le categorie già presenti mantengono le loro targhe e ricevono solo quelle nuove."
+                "description": "Trovato nell'archivio:\n\n{found}\n\nImportarlo? Qui non viene rimosso nulla: vengono aggiunte nuove categorie e targhe, le categorie già presenti ricevono solo le targhe che non hanno, e le impostazioni trovate sostituiscono quelle impostate qui."
             },
             "confirm_anpr": {
                 "title": "Notifiche per {name}",
@@ -140,7 +140,7 @@
                             "dvla_api_key_clear": "Dimentica la chiave"
                         },
                         "data_description": {
-                            "dvla_api_key": "Rilasciata dalla DVLA per il suo Vehicle Enquiry Service, conservata come credenziale e mai più mostrata. Lascia vuoto per mantenere la chiave già impostata.",
+                            "dvla_api_key": "Rilasciata dalla DVLA per il suo Vehicle Enquiry Service, conservata come credenziale e mai mostrata. {dvla_key}",
                             "lookup_cache_hours": "Per quanto tempo sono conservati i dettagli di una targa prima di chiedere di nuovo.",
                             "dvla_api_key_clear": "Rimuovi la chiave DVLA, così le targhe non vengono cercate."
                         }
@@ -316,7 +316,7 @@
             },
             "import_anpr2mqtt": {
                 "title": "Importa da anpr2mqtt",
-                "description": "Trovato nell'archivio:\n\n{found}\n\nImportarlo? Le categorie già presenti mantengono le loro targhe e ricevono solo quelle nuove."
+                "description": "Trovato nell'archivio:\n\n{found}\n\nImportarlo? Qui non viene rimosso nulla: vengono aggiunte nuove categorie e targhe, le categorie già presenti ricevono solo le targhe che non hanno, e le impostazioni trovate sostituiscono quelle impostate qui."
             }
         },
         "error": {
@@ -647,7 +647,9 @@
         "imported_categories": "Nuove categorie: {count}",
         "imported_plates": "Targhe aggiunte: {count}",
         "imported_sightings": "Avvistamenti aggiunti: {count}",
-        "imported_nothing": "Niente di nuovo: tutto ciò che è nell'archivio era già presente"
+        "imported_nothing": "Niente di nuovo: tutto ciò che è nell'archivio era già presente",
+        "dvla_key_set": "Una chiave è impostata: lascia vuoto per mantenerla, o scrivine una nuova per sostituirla.",
+        "dvla_key_unset": "Nessuna chiave impostata."
     },
     "issues": {
         "lookup_refused": {

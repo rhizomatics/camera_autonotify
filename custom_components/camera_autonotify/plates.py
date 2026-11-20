@@ -91,7 +91,6 @@ class Category:
     ignore: bool = False
     description: str | None = None
     icon: str | None = None
-    entity_id: str | None = None
     lookup: bool = False
     plates: tuple[PlateEntry, ...] = ()
 
@@ -104,7 +103,6 @@ class Category:
             ignore=bool(data.get("ignore")),
             description=data.get("description") or None,
             icon=data.get("icon") or None,
-            entity_id=data.get("entity_id") or None,
             lookup=bool(data.get("lookup")),
             plates=tuple(entry for entry in entries if entry is not None),
         )

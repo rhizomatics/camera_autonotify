@@ -122,6 +122,9 @@ IMPORT_SETTING_LOOKUP_CACHE = "import_setting_lookup_cache_hours"
 IMPORT_SETTING_MIN_VISIT_GAP = "import_setting_min_visit_gap"
 IMPORT_NOT_IMPORTED = "import_not_imported"
 IMPORT_NOTHING = "import_nothing"
+# whether the DVLA's key is set, it never being shown again
+DVLA_KEY_SET = "dvla_key_set"
+DVLA_KEY_UNSET = "dvla_key_unset"
 # what an import from anpr2mqtt added, once done
 IMPORTED_CATEGORIES = "imported_categories"
 IMPORTED_PLATES = "imported_plates"

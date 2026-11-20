@@ -57,7 +57,7 @@ def test_from_anpr2mqtt():
     assert found.settings == {"dvla_api_key": "placeholder", "lookup_cache_hours": 2, "min_visit_gap": 60}
     assert found.not_imported == [
         "priority critical of dangerous, set by the vehicle rules instead",
-        "corrections to UN001TST, in no category",
+        "corrections for UN001TST, as they're in no category. Add them to one to correct them",
     ]
 
 
@@ -66,6 +66,30 @@ def test_from_anpr2mqtt_older_style():
     found = from_anpr2mqtt({"targets": {"plate": {"known": {"AB12CDE": "Our car"}, "groups": [{"members": ["X"]}]}}})
     assert list(found.categories) == ["known"]
     assert found.categories["known"]["plates"] == [{"plate": "AB12CDE", "description": "Our car"}]
+
+
+def test_from_anpr2mqtt_older_style_details():
+    """A plate's mapping of description and `entity_id`, the sensors of which there are none here, and corrections
+    the same as a plate's own taken once"""
+    found = from_anpr2mqtt({
+        "targets": {
+            "plate": {
+                "known": {"MY13CAR": {"entity_id": "my_truck", "description": "Ramzi's Land Rover"}, "AB12CDE": None},
+                "groups": [{"name": "Vans", "entity_id": "vans", "members": [{"id": "VN01VAN", "correction": ["VN0IVAN"]}]}],
+                "correction": {"VN01VAN": ["VN0IVAN", "VNO1VAN"], "LD71HVF": ["D71HVF"], "XX11XXX": ["X11XXX"]},
+            }
+        }
+    })
+    assert found.categories["known"]["plates"] == [
+        {"plate": "MY13CAR", "description": "Ramzi's Land Rover"},
+        {"plate": "AB12CDE"},
+    ]
+    assert "entity_id" not in found.categories["Vans"]
+    assert found.categories["Vans"]["plates"][0]["corrections"] == ["VN0IVAN", "VNO1VAN"]
+    assert found.not_imported == [
+        "entity_id of Vans, MY13CAR, as there's no sensor for each vehicle here",
+        "corrections for LD71HVF, XX11XXX, as they're in no category. Add them to one to correct them",
+    ]
 
 
 def archive(folder: Path, files: Mapping[str, str | bytes], name: str = "anpr2mqtt.tgz") -> Path:
@@ -173,7 +197,7 @@ async def test_import_in_global_settings(hass: HomeAssistant, tmp_path: Path):
     assert "- Plates in known: 2" in found
     assert "- Visit history: 1 plates, 2 sightings" in found
     assert "DVLA API key" in found
-    assert "Not imported: corrections to UN001TST, in no category" in found
+    assert "Not imported: corrections for UN001TST, as they're in no category" in found
     entry = next(e for e in hass.config_entries.async_entries(DOMAIN) if e.data.get(CONF_TYPE) == TYPE_DISCOVERY)
     # nothing until confirmed
     assert not entry.subentries

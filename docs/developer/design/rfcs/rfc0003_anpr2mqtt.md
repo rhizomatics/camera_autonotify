@@ -7,9 +7,7 @@ Reviewed 2026-11-11, design agreed, upstream changes released in anpr2mqtt 1.3.0
 
 ## Summary
 
-Add [anpr2mqtt](https://anpr2mqtt.rhizomatics.org.uk) cameras, found automatically or added by hand, from the
-entities anpr2mqtt creates by MQTT discovery, and notify with everything the example automation below does, without
-the automation.
+Add [anpr2mqtt](https://anpr2mqtt.rhizomatics.org.uk) cameras, found automatically or added by hand, from the entities anpr2mqtt creates by MQTT discovery, and notify with everything the example automation below does, without the automation.
 
 `anpr2mqtt` has two sources of images: a camera writing to a directory, by FTP or otherwise, or a Frigate licence
 plate recognition (ANPR/ALPR). From either, it can do more OCR, and in the UK, look the plate up with the DVLA and correct it.
@@ -33,7 +31,7 @@ its entities and devices, and the last populated states of `sensor.anpr_driveway
 On 2026-11-09 at 14:25:03, `PX19TVD` arrived at the driveway, and was reported four times:
 
 1. a Frigate review, notified by Camera AutoNotify as *Car detected at Driveway*
-2. Frigate's own licence plate recognition (ANPR/ALPR), which knows the car as `jey_outlander`, updating the review with a sub
+2. Frigate's own licence plate recognition (ANPR/ALPR), which knows the car as `joe_pickup`, updating the review with a sub
    label
 3. anpr2mqtt, `source: filesystem`, from the Hikvision camera's FTP upload, at `14:25:03.000`
 4. anpr2mqtt, `source: frigate`, from the same Frigate event, at `14:25:03.652`, 0.65 seconds later
@@ -192,7 +190,7 @@ without a match, or with another primary or none, it's notified by itself.
 The same title and message for the same plate from either source, per decision 13, so built only from what both
 sources have:
 
-- **Title**: `{description} at {where}`, such as *Jey's Outlander at Driveway*, `where` being the linked camera's
+- **Title**: `{description} at {where}`, such as *Joe's Pickup at Driveway*, `where` being the linked camera's
   name, or the anpr2mqtt camera's without one
 - **Message**: the plate, then the previous sightings and when last seen, then the DVLA details if there are any
 - **Spoken message**: the title and the plate
@@ -327,7 +325,7 @@ A category of vehicles, a subentry of *Global Settings*, as rules are, modelled 
 
 | Field | What it is |
 |-------|------------|
-| Name | Such as *Jey's Outlander*, *Family cars* or *Amazon Prime vans*, what rules match on |
+| Name | Such as *Joe's Pickup*, *Family cars* or *Amazon Prime vans*, what rules match on |
 | Icon | For its entity and where it's shown, as anpr2mqtt's `icon` |
 | Description | What it's said as in a notification, where a plate of it has no description of its own |
 | Entity id | Its sensor, the last plate seen of it and when, as anpr2mqtt's target sensors, to use in automations and dashboards |
@@ -373,8 +371,8 @@ Settings*, given an uploaded archive of anpr2mqtt's config file and, optionally,
 
 | anpr2mqtt | Camera AutoNotify |
 |-----------|-------------------|
-| `targets.plate.groups`, with `name`, `icon`, `entity_id` and `members` | A category each, the `dangerous` group with the dangerous rule |
-| A member's `id`, `description`, `icon`, `entity_id` and `correction` | A plate of the category, with its corrections |
+| `targets.plate.groups`, with `name`, `icon` and `members` | A category each, the `dangerous` group with the dangerous rule |
+| A member's `id`, `description` and `correction` | A plate of the category, with its corrections |
 | `targets.plate.correction`, the older style | Corrections on the plate corrected to, in whichever category has it |
 | `targets.plate.ignore` | A category with *Ignore* on, of those patterns |
 | `dvla.api_key`, `dvla.cache_ttl` | The DVLA's *Vehicle lookup* settings |
@@ -382,7 +380,8 @@ Settings*, given an uploaded archive of anpr2mqtt's config file and, optionally,
 | `data_dir/plate/{plate}.json`, each a list of sighting times | Each plate's visit history, merged with any sightings already here |
 
 The import shows what it will create before it does, and can be run again, adding only what's new. A correction to a
-plate in no category, and a group's own `priority`, are listed as not imported, since categories carry neither.
+plate in no category, a group's own `priority`, and any `entity_id`, are listed as not imported, since categories
+carry no priority, and there's no sensor for each vehicle here.
 
 Then a time of running both: anpr2mqtt carries on reading the ANPR/ALPR camera's images, and its sightings are notified
 here, classified by the categories, while its own `known`, `dangerous` and `ignore` are no longer relied on. Once

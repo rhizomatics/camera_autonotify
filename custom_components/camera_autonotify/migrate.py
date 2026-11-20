@@ -66,8 +66,9 @@ class Added:
     settings: list[str] = field(default_factory=list)
 
 
-def _members(members: object) -> list[dict[str, Any]]:
-    """anpr2mqtt's group members, each a plate, or a mapping with its `id`, as plates of a category"""
+def _members(members: object, sensors: list[str]) -> list[dict[str, Any]]:
+    """anpr2mqtt's group members, each a plate, or a mapping with its `id`, as plates of a category, with the plate of
+    each that has an `entity_id` noted, there being no sensor for each vehicle here"""
     plates: list[dict[str, Any]] = []
     for member in members if isinstance(members, list) else []:
         if isinstance(member, str | int):
@@ -77,9 +78,19 @@ def _members(members: object) -> list[dict[str, Any]]:
             plates.append({
                 "plate": str(member["id"]),
                 **({"description": str(member["description"])} if member.get("description") else {}),
-                **({"corrections": [str(c) for c in corrections]} if corrections else {}),
+                **({"corrections": list(dict.fromkeys(str(c) for c in corrections))} if corrections else {}),
             })
+            if member.get("entity_id"):
+                sensors.append(str(member["id"]))
     return plates
+
+
+def _legacy(plates: dict[Any, Any]) -> list[dict[str, Any]]:
+    """The older style's plates, each to a description, or a mapping of its description and `entity_id`"""
+    return [
+        {"id": plate, **(value if isinstance(value, dict) else {"description": value} if value else {})}
+        for plate, value in plates.items()
+    ]
 
 
 def from_anpr2mqtt(config: dict[str, Any]) -> Imported:
@@ -90,32 +101,42 @@ def from_anpr2mqtt(config: dict[str, Any]) -> Imported:
     # the older style, `known` and `dangerous` as plates to descriptions
     for name in (KIND_KNOWN, KIND_DANGEROUS):
         if isinstance(old := targets.get(name), dict) and old:
-            groups.append({"name": name, "members": [{"id": k, "description": v} for k, v in old.items()]})
+            groups.append({"name": name, "members": _legacy(old)})
+    # what has an `entity_id`, for anpr2mqtt's sensor of a vehicle, which there's none of here
+    sensors: list[str] = []
     for group in groups:
         if not isinstance(group, dict) or not group.get("name"):
             continue
         name = str(group["name"])
         data: dict[str, Any] = {
             "kind": KIND_DANGEROUS if name.lower() == KIND_DANGEROUS else KIND_KNOWN,
-            "plates": _members(group.get("members")),
+            "plates": _members(group.get("members"), sensors),
             "lookup": bool(group.get("lookup", False)),
         }
-        for key in ("icon", "entity_id"):
-            if group.get(key):
-                data[key] = str(group[key])
+        if group.get("icon"):
+            data["icon"] = str(group["icon"])
+        if group.get("entity_id"):
+            sensors.append(name)
         if group.get("priority"):
             found.not_imported.append(f"priority {group['priority']} of {name}, set by the vehicle rules instead")
         found.categories[name] = data
+    if sensors:
+        found.not_imported.append(f"entity_id of {', '.join(sensors)}, as there's no sensor for each vehicle here")
     # the older style, corrections for the plate corrected to, wherever it is
+    uncategorised: list[str] = []
     for plate, reads in (targets.get("correction") or {}).items():
         entry = next(
             (p for c in found.categories.values() for p in c["plates"] if normalised(p["plate"]) == normalised(str(plate))),
             None,
         )
         if entry is None:
-            found.not_imported.append(f"corrections to {plate}, in no category")
+            uncategorised.append(str(plate))
             continue
-        entry["corrections"] = [*entry.get("corrections", []), *(str(r) for r in reads or [])]
+        entry["corrections"] = list(dict.fromkeys([*entry.get("corrections", []), *(str(r) for r in reads or [])]))
+    if uncategorised:
+        found.not_imported.append(
+            f"corrections for {', '.join(uncategorised)}, as they're in no category. Add them to one to correct them"
+        )
     if ignore := [str(pattern) for pattern in targets.get("ignore") or []]:
         found.categories[IGNORED_CATEGORY] = {
             "kind": KIND_KNOWN,
