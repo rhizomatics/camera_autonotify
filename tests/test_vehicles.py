@@ -279,8 +279,8 @@ def sighting(**given: Any) -> Sighting:
     )
 
 
-async def anpr_notifier(hass: HomeAssistant) -> AnprNotifier:
-    entry = MockConfigEntry(domain=DOMAIN, data={CONF_TYPE: "anpr", "source_name": "anpr_driveway"})
+async def anpr_notifier(hass: HomeAssistant, **options: Any) -> AnprNotifier:
+    entry = MockConfigEntry(domain=DOMAIN, data={CONF_TYPE: "anpr", "source_name": "anpr_driveway"}, options=options)
     entry.add_to_hass(hass)
     await async_load_texts(hass)
     return AnprNotifier(hass, entry)
@@ -294,15 +294,26 @@ async def test_anpr2mqtt_own_classification_to_begin_with(hass: HomeAssistant, r
     assert register.asked == []
 
 
+async def test_visits_not_tracked(hass: HomeAssistant, register: FakeRegister):
+    """Neither counted nor said, those already kept left as they are"""
+    entry = global_settings(hass)
+    await vehicles(hass).async_classify("PX19TVD", record=True)
+    hass.config_entries.async_update_entry(entry, options={"track_visits": False})
+    vehicle = await vehicles(hass).async_classify("PX19TVD", record=True)
+    assert vehicle.history.previous_sightings == 0
+    assert len(vehicles(hass).sightings("PX19TVD")) == 1
+
+
 async def test_anpr2mqtt_classified_here(hass: HomeAssistant, register: FakeRegister):
     """anpr2mqtt only the source of the plate and image"""
     global_settings(
         hass,
         {"Watch": {"kind": "dangerous", "plates": [{"plate": "PX19TVD", "description": "Stolen van"}]}},
-        anpr_own_classification=False,
         vehicle_scenarios_dangerous=["alarm"],
     )
-    found, priority, scenarios = await (await anpr_notifier(hass)).async_classified(sighting(plate="PX19TV0"))
+    found, priority, scenarios = await (await anpr_notifier(hass, anpr_own_classification=False)).async_classified(
+        sighting(plate="PX19TV0")
+    )
     assert found is not None
     assert (found.plate, found.kind, found.description, priority) == ("PX19TVD", "dangerous", "Stolen van", "critical")
     assert scenarios == (["alarm"], ["alarm"])
@@ -310,8 +321,9 @@ async def test_anpr2mqtt_classified_here(hass: HomeAssistant, register: FakeRegi
 
 
 async def test_anpr2mqtt_ignored_here(hass: HomeAssistant):
-    global_settings(hass, {"Ignored": {"ignore": True, "plates": ["PX19TVD"]}}, anpr_own_classification=False)
-    assert (await (await anpr_notifier(hass)).async_classified(sighting()))[0] is None
+    global_settings(hass, {"Ignored": {"ignore": True, "plates": ["PX19TVD"]}})
+    found = await anpr_notifier(hass, anpr_own_classification=False)
+    assert (await found.async_classified(sighting()))[0] is None
 
 
 # --- the actions
@@ -419,7 +431,7 @@ async def test_vehicle_settings_in_global_settings(hass: HomeAssistant):
     assert {
         "vehicles.vehicle_priority_known",
         "vehicles.vehicle_scenarios_dangerous",
-        "vehicles.anpr_own_classification",
+        "vehicles.track_visits",
         "vehicles.min_visit_gap",
         "vehicle_lookup.dvla_api_key",
     } <= set(shown)
@@ -557,8 +569,8 @@ async def test_known_vehicle_button(hass: HomeAssistant, register: FakeRegister)
 
 
 async def test_anpr2mqtt_known_vehicle_button(hass: HomeAssistant, register: FakeRegister):
-    global_settings(hass, {"Family cars": FAMILY}, anpr_own_classification=False)
-    found = await anpr_notifier(hass)
+    global_settings(hass, {"Family cars": FAMILY})
+    found = await anpr_notifier(hass, anpr_own_classification=False)
     classified, priority, scenarios = await found.async_classified(sighting())
     assert classified is not None and priority is not None
     data = found.supernotify_data(classified, priority, scenarios)

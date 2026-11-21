@@ -18,7 +18,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 
 from .compat import LINKED_DEVICES
 from .const import ALPR_TIMEOUT, CONF_SOURCE_ENTRY_ID, DOMAIN
-from .entries import wants_last_snapshot
+from .entries import entry_name, wants_last_snapshot
 from .frigate import notifications_url, snapshot_url
 from .hub import ReviewWatcher
 
@@ -65,7 +65,7 @@ class LastSnapshotCamera(Camera):
             self._attr_has_entity_name = True
             self._attr_device_info = DeviceInfo(identifiers=set(source.identifiers))
         else:
-            self._attr_name = f"{entry.title} Last notification snapshot"
+            self._attr_name = f"{entry_name(entry)} Last notification snapshot"
         self._fetched: tuple[str, bytes] | None = None
 
     async def async_camera_image(self, width: int | None = None, height: int | None = None) -> bytes | None:

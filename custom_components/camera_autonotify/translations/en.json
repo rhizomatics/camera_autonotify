@@ -117,18 +117,18 @@
                             "vehicle_scenarios_known": "Known vehicle scenarios",
                             "vehicle_scenarios_dangerous": "Dangerous vehicle scenarios",
                             "vehicle_scenarios_unknown": "Unknown vehicle scenarios",
-                            "anpr_own_classification": "Use anpr2mqtt's own classification",
                             "min_visit_gap": "Minimum gap between visits",
                             "history_days": "Keep history for",
                             "vehicle_priority_unreadable": "Unreadable vehicle priority",
                             "vehicle_scenarios_unreadable": "Unreadable vehicle scenarios",
-                            "known_category": "Category for the Known vehicle button"
+                            "known_category": "Category for the Known vehicle button",
+                            "track_visits": "Track visits"
                         },
                         "data_description": {
-                            "anpr_own_classification": "Keep anpr2mqtt's own known, dangerous and ignored, history and DVLA details for its sightings. Switch off to classify them here, with the vehicle categories, as Frigate's plates are, anpr2mqtt then being only the source of the plate and image.",
                             "min_visit_gap": "A plate seen again within this long is the same visit, and isn't counted again.",
                             "history_days": "How long each plate's sightings are kept, never leaving Home Assistant.",
-                            "known_category": "Notifications of an unknown vehicle have a Known vehicle button. Tapping it adds the plate, with any description typed, to this vehicle category, which is created if it doesn't exist."
+                            "known_category": "Notifications of an unknown vehicle have a Known vehicle button. Tapping it adds the plate, with any description typed, to this vehicle category, which is created if it doesn't exist.",
+                            "track_visits": "Keep each plate's sightings, to say in notifications how often and when it's usually seen. Switch off to keep none. Sightings already kept stay until reset."
                         }
                     },
                     "vehicle_lookup": {
@@ -281,8 +281,9 @@
                 "sections": {
                     "vehicles": {
                         "name": "Vehicles",
-                        "description": "A priority for each kind of vehicle, or no notification, and the Supernotify scenarios each applies. Known, dangerous and ignored vehicles are as anpr2mqtt's targets and groups say.",
+                        "description": "A priority for each kind of vehicle, or no notification, and the Supernotify scenarios each applies. Known, dangerous and ignored vehicles are as anpr2mqtt's targets and groups say. Switch off anpr2mqtt's own classification to use the vehicle categories and the vehicle priorities of Global Settings instead.",
                         "data": {
+                            "anpr_own_classification": "Use anpr2mqtt's own classification",
                             "priority_dangerous": "Dangerous vehicles",
                             "priority_unknown": "Unknown vehicles",
                             "priority_known": "Known vehicles",
@@ -293,6 +294,7 @@
                             "scenarios_ignored": "Scenarios for ignored vehicles"
                         },
                         "data_description": {
+                            "anpr_own_classification": "Keep anpr2mqtt's own known, dangerous and ignored, history and DVLA details for its sightings. Switch off to classify them here, with the vehicle categories, as Frigate's plates are, anpr2mqtt then being only the source of the plate and image.",
                             "priority_known": "As anpr2mqtt says is the priority anpr2mqtt gives the vehicle's target or group, or medium."
                         }
                     },

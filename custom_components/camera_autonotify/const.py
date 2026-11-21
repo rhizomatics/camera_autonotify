@@ -201,8 +201,11 @@ ALPR_MIN_CONFIDENCE: Final[float] = 80
 ALPR_TIMEOUT: Final[float] = 10
 # fired for each sighting of a plate, as OpenALPR's `image_processing.found_plate` with more
 EVENT_VEHICLE: Final[str] = "camera_autonotify_vehicle"
-# whether anpr2mqtt's sightings keep its own classification, history and lookup, or are classified here
+# an anpr2mqtt source's, whether its sightings keep anpr2mqtt's own classification, history and lookup, or are
+# classified here
 CONF_ANPR_OWN_CLASSIFICATION: Final[str] = "anpr_own_classification"
+# whether each plate's visits are tracked, its sightings kept and what they say of it notified
+CONF_TRACK_VISITS: Final[str] = "track_visits"
 # the visit history: a sighting within this many seconds of the last isn't a new visit, and how long it's kept
 CONF_MIN_VISIT_GAP: Final[str] = "min_visit_gap"
 DEFAULT_MIN_VISIT_GAP: Final[int] = 300

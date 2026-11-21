@@ -117,18 +117,18 @@
                             "vehicle_scenarios_known": "Cenários de veículos conhecidos",
                             "vehicle_scenarios_dangerous": "Cenários de veículos perigosos",
                             "vehicle_scenarios_unknown": "Cenários de veículos desconhecidos",
-                            "anpr_own_classification": "Usar a classificação do anpr2mqtt",
                             "min_visit_gap": "Intervalo mínimo entre visitas",
                             "history_days": "Guardar histórico por",
                             "vehicle_priority_unreadable": "Prioridade de veículos ilegíveis",
                             "vehicle_scenarios_unreadable": "Cenários de veículos ilegíveis",
-                            "known_category": "Categoria do botão Veículo conhecido"
+                            "known_category": "Categoria do botão Veículo conhecido",
+                            "track_visits": "Rastrear visitas"
                         },
                         "data_description": {
-                            "anpr_own_classification": "Manter a classificação própria do anpr2mqtt, conhecido, perigoso e ignorado, o histórico e os detalhes da DVLA para seus avistamentos. Desative para classificá-los aqui, com as categorias de veículos, como as placas do Frigate, sendo o anpr2mqtt apenas a fonte da placa e da imagem.",
                             "min_visit_gap": "Uma placa vista de novo dentro deste tempo é a mesma visita, e não é contada outra vez.",
                             "history_days": "Por quanto tempo os avistamentos de cada placa são guardados, sem nunca sair do Home Assistant.",
-                            "known_category": "As notificações de um veículo desconhecido têm um botão Veículo conhecido. Ao tocá-lo, a placa, com a descrição digitada, é adicionada a esta categoria de veículos, criada se não existir."
+                            "known_category": "As notificações de um veículo desconhecido têm um botão Veículo conhecido. Ao tocá-lo, a placa, com a descrição digitada, é adicionada a esta categoria de veículos, criada se não existir.",
+                            "track_visits": "Guardar os avistamentos de cada placa, para dizer nas notificações com que frequência e quando ela costuma ser vista. Desligue para não guardar nenhum. Os avistamentos já guardados ficam até serem redefinidos."
                         }
                     },
                     "vehicle_lookup": {
@@ -281,8 +281,9 @@
                 "sections": {
                     "vehicles": {
                         "name": "Veículos",
-                        "description": "Uma prioridade para cada tipo de veículo, ou nenhuma notificação, e os cenários do Supernotify que cada um aplica. Os veículos conhecidos, perigosos e ignorados são os dos alvos e grupos do anpr2mqtt.",
+                        "description": "Uma prioridade para cada tipo de veículo, ou nenhuma notificação, e os cenários do Supernotify que cada um aplica. Os veículos conhecidos, perigosos e ignorados são os dos alvos e grupos do anpr2mqtt. Desligue a classificação própria do anpr2mqtt para usar em vez disso as categorias de veículos e as prioridades de veículos das configurações globais.",
                         "data": {
+                            "anpr_own_classification": "Usar a classificação do anpr2mqtt",
                             "priority_dangerous": "Veículos perigosos",
                             "priority_unknown": "Veículos desconhecidos",
                             "priority_known": "Veículos conhecidos",
@@ -293,6 +294,7 @@
                             "scenarios_ignored": "Cenários para veículos ignorados"
                         },
                         "data_description": {
+                            "anpr_own_classification": "Manter a classificação própria do anpr2mqtt, conhecido, perigoso e ignorado, o histórico e os detalhes da DVLA para seus avistamentos. Desative para classificá-los aqui, com as categorias de veículos, como as placas do Frigate, sendo o anpr2mqtt apenas a fonte da placa e da imagem.",
                             "priority_known": "Como diz o anpr2mqtt é a prioridade que o anpr2mqtt dá ao alvo ou grupo do veículo, ou média."
                         }
                     },

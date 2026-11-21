@@ -24,7 +24,7 @@ Once it has a plate, then it has several ways to enrich it:
 
 ## How it Works
 
-Every licence plate read, by Frigate's plate recognition (ANPR/ALPR), OpenALPR or [anpr2mqtt], is classified here, its visit history kept, and in the UK, looked up with the DVLA:
+Every licence plate read, by Frigate's plate recognition (ANPR/ALPR), OpenALPR or [anpr2mqtt], is classified here, its visit history kept unless *Track visits* is off, and in the UK, looked up with the DVLA:
 
 - **Vehicle categories**, added under *Global Settings*: a single vehicle, every family car, or a delivery company's vans, known or dangerous, by their plates, each a plate or a regular expression, with its own description and the misreads that are really it. *Ignore* drops a category's plates altogether, such as a tanker's logo read as a plate
 - **Priority**: in the *Vehicles* section of *Global Settings*, once there's a category, each with its own Supernotify scenarios: `medium` for a known vehicle, `high` for an unknown plate or one that couldn't be read, and `critical` for a dangerous one. A misread plate can match a dangerous one, so `critical` can be a false alarm; corrections on the plate, or a lower priority, help where it happens

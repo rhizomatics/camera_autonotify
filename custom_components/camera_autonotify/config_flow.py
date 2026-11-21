@@ -117,6 +117,7 @@ from .const import (
     CONF_TARGETS,
     CONF_THREAT_PRIORITIES,
     CONF_TIMEOUT,
+    CONF_TRACK_VISITS,
     CONF_UNREVIEWED_DESCRIPTIONS,
     CONF_UPDATE_SUB_LABEL,
     CONF_VEHICLE_PRIORITIES,
@@ -167,7 +168,7 @@ from .const import (
     VEHICLE_RULE_PRIORITIES,
 )
 from .discovery import find_anpr, find_cameras
-from .entries import global_settings, wants_last_snapshot
+from .entries import entry_name, entry_title, global_settings, wants_last_snapshot
 from .frigate import (
     all_labels,
     camera_autotracks,
@@ -255,6 +256,7 @@ SECTIONS = (
 # an anpr2mqtt entry's settings as they come, not stored
 ANPR_DEFAULTS: dict[str, Any] = {
     CONF_LINKED_CAMERA_AUTO: True,
+    CONF_ANPR_OWN_CLASSIFICATION: True,
     **{CONF_KIND_PRIORITIES[kind]: priority for kind, priority in VEHICLE_PRIORITY_DEFAULTS.items()},
 }
 # a setting left as it comes isn't stored, so it follows any better default of a later version
@@ -408,8 +410,8 @@ def added_summary(hass: HomeAssistant, added: Added) -> dict[str, str]:
 
 
 def vehicles_schema(scenarios: list[str] | None) -> dict[vol.Marker, Any]:
-    """The pre-defined vehicle rules, their condition fixed, a priority and scenarios for each, whether anpr2mqtt's
-    sightings keep its own classification, and the visit history"""
+    """The pre-defined vehicle rules, their condition fixed, a priority and scenarios for each, and whether visits are
+    tracked, and how"""
     fields_: dict[vol.Marker, Any] = {}
     for kind, key in CONF_VEHICLE_PRIORITIES.items():
         fields_[vol.Required(key, default=VEHICLE_RULE_PRIORITIES[kind])] = _priority()
@@ -418,7 +420,7 @@ def vehicles_schema(scenarios: list[str] | None) -> dict[vol.Marker, Any]:
                 SelectSelectorConfig(options=scenarios, multiple=True, custom_value=True, mode=SelectSelectorMode.DROPDOWN)
             )
     fields_[vol.Required(CONF_KNOWN_CATEGORY, default=DEFAULT_KNOWN_CATEGORY)] = TextSelector()
-    fields_[vol.Required(CONF_ANPR_OWN_CLASSIFICATION, default=True)] = BooleanSelector()
+    fields_[vol.Required(CONF_TRACK_VISITS, default=True)] = BooleanSelector()
     fields_[vol.Required(CONF_MIN_VISIT_GAP, default=DEFAULT_MIN_VISIT_GAP)] = _seconds(86400)
     fields_[vol.Required(CONF_HISTORY_DAYS, default=DEFAULT_HISTORY_DAYS)] = NumberSelector(
         NumberSelectorConfig(min=1, max=3650, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement=UnitOfTime.DAYS)
@@ -697,8 +699,11 @@ async def target_fields(hass: HomeAssistant) -> dict[vol.Marker, Any]:
 
 
 async def anpr_schema(hass: HomeAssistant) -> vol.Schema:
-    """An anpr2mqtt entry's linked camera, a priority and scenarios for each kind of vehicle, and who is told"""
-    vehicles: dict[vol.Marker, Any] = {}
+    """An anpr2mqtt entry's linked camera, whether anpr2mqtt classifies its sightings, a priority and scenarios for
+    each kind of vehicle, and who is told"""
+    vehicles: dict[vol.Marker, Any] = {
+        vol.Required(CONF_ANPR_OWN_CLASSIFICATION, default=ANPR_DEFAULTS[CONF_ANPR_OWN_CLASSIFICATION]): BooleanSelector()
+    }
     scenarios = await scenario_names(hass) if supernotify_available(hass) else None
     priorities = [VEHICLE_PRIORITY_SOURCE, *PRIORITIES, VEHICLE_NO_DELIVERY]
     for kind in KINDS:
@@ -798,7 +803,8 @@ class CameraAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(_unique_id(import_data), raise_on_progress=False)
         self._abort_if_unique_id_configured()
         return self.async_create_entry(
-            title=import_data[CONF_NAME], data={k: v for k, v in import_data.items() if k in ENTRY_DATA}
+            title=entry_title(import_data[CONF_NAME], import_data.get(CONF_TYPE)),
+            data={k: v for k, v in import_data.items() if k in ENTRY_DATA},
         )
 
     async def async_step_integration_discovery(self, discovery_info: dict[str, Any]) -> ConfigFlowResult:
@@ -806,14 +812,14 @@ class CameraAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
         self._found = dict(discovery_info)
         await self.async_set_unique_id(_unique_id(discovery_info))
         self._abort_if_unique_id_configured()
-        self.context["title_placeholders"] = {"name": discovery_info[CONF_NAME]}
+        self.context["title_placeholders"] = {"name": entry_title(discovery_info[CONF_NAME], discovery_info.get(CONF_TYPE))}
         if discovery_info.get(CONF_TYPE) == TYPE_ANPR:
             return await self.async_step_confirm_anpr()
         return await self.async_step_confirm()
 
     def _create_found(self, added: Added | None = None) -> ConfigFlowResult:
         return self.async_create_entry(
-            title=self._found[CONF_NAME],
+            title=entry_title(self._found[CONF_NAME], self._found.get(CONF_TYPE)),
             data={k: v for k, v in self._found.items() if k in ENTRY_DATA},
             description=IMPORTED if added is not None else None,
             description_placeholders=added_summary(self.hass, added) if added is not None else None,
@@ -907,7 +913,7 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
             step_id=STEP_ANPR,
             data_schema=self.add_suggested_values_to_schema(schema, sectioned(schema, dict(self.config_entry.options))),
             description_placeholders={
-                "name": self.config_entry.title,
+                "name": entry_name(self.config_entry),
                 "supernotify": await supernotify_status(self.hass),
                 "linked": linked,
             },
@@ -1043,7 +1049,7 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
             step_id=STEP_SETTINGS,
             data_schema=self.add_suggested_values_to_schema(schema, sectioned(schema, shown)),
             description_placeholders={
-                "name": self.config_entry.title,
+                "name": entry_name(self.config_entry),
                 "supernotify": await supernotify_status(self.hass),
                 "proxy": await proxy_status(self.hass, data[CONF_SOURCE_ENTRY_ID]),
                 "autotracking": autotracking,

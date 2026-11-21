@@ -117,18 +117,18 @@
                             "vehicle_scenarios_known": "Szenarien bekannter Fahrzeuge",
                             "vehicle_scenarios_dangerous": "Szenarien gefährlicher Fahrzeuge",
                             "vehicle_scenarios_unknown": "Szenarien unbekannter Fahrzeuge",
-                            "anpr_own_classification": "anpr2mqtts eigene Einordnung verwenden",
                             "min_visit_gap": "Mindestabstand zwischen Besuchen",
                             "history_days": "Verlauf behalten für",
                             "vehicle_priority_unreadable": "Priorität unlesbarer Fahrzeuge",
                             "vehicle_scenarios_unreadable": "Szenarien unlesbarer Fahrzeuge",
-                            "known_category": "Kategorie für die Schaltfläche Bekanntes Fahrzeug"
+                            "known_category": "Kategorie für die Schaltfläche Bekanntes Fahrzeug",
+                            "track_visits": "Besuche verfolgen"
                         },
                         "data_description": {
-                            "anpr_own_classification": "anpr2mqtts eigene Einordnung als bekannt, gefährlich und ignoriert, Verlauf und DVLA-Daten für seine Sichtungen behalten. Ausschalten, um sie hier mit den Fahrzeugkategorien einzuordnen, wie Frigates Kennzeichen, anpr2mqtt ist dann nur Quelle von Kennzeichen und Bild.",
                             "min_visit_gap": "Ein Kennzeichen, das innerhalb dieser Zeit erneut gesehen wird, ist derselbe Besuch und wird nicht erneut gezählt.",
                             "history_days": "Wie lange die Sichtungen jedes Kennzeichens behalten werden, ohne Home Assistant je zu verlassen.",
-                            "known_category": "Benachrichtigungen zu einem unbekannten Fahrzeug haben eine Schaltfläche Bekanntes Fahrzeug. Sie fügt das Kennzeichen mit einer eingegebenen Beschreibung dieser Fahrzeugkategorie hinzu, die angelegt wird, falls sie nicht existiert."
+                            "known_category": "Benachrichtigungen zu einem unbekannten Fahrzeug haben eine Schaltfläche Bekanntes Fahrzeug. Sie fügt das Kennzeichen mit einer eingegebenen Beschreibung dieser Fahrzeugkategorie hinzu, die angelegt wird, falls sie nicht existiert.",
+                            "track_visits": "Die Sichtungen jedes Kennzeichens speichern, um in Benachrichtigungen zu sagen, wie oft und wann es üblicherweise gesehen wird. Ausschalten, um keine zu speichern. Bereits gespeicherte Sichtungen bleiben bis zum Zurücksetzen."
                         }
                     },
                     "vehicle_lookup": {
@@ -281,8 +281,9 @@
                 "sections": {
                     "vehicles": {
                         "name": "Fahrzeuge",
-                        "description": "Eine Priorität für jede Art von Fahrzeug, oder keine Benachrichtigung, und die Supernotify-Szenarien, die jede anwendet. Bekannte, gefährliche und ignorierte Fahrzeuge sind, wie anpr2mqtts Ziele und Gruppen sagen.",
+                        "description": "Eine Priorität für jede Art von Fahrzeug, oder keine Benachrichtigung, und die Supernotify-Szenarien, die jede anwendet. Bekannte, gefährliche und ignorierte Fahrzeuge sind, wie anpr2mqtts Ziele und Gruppen sagen. Schalten Sie die eigene Klassifizierung von anpr2mqtt aus, um stattdessen die Fahrzeugkategorien und die Fahrzeugprioritäten der globalen Einstellungen zu verwenden.",
                         "data": {
+                            "anpr_own_classification": "anpr2mqtts eigene Einordnung verwenden",
                             "priority_dangerous": "Gefährliche Fahrzeuge",
                             "priority_unknown": "Unbekannte Fahrzeuge",
                             "priority_known": "Bekannte Fahrzeuge",
@@ -293,6 +294,7 @@
                             "scenarios_ignored": "Szenarien für Ignorierte Fahrzeuge"
                         },
                         "data_description": {
+                            "anpr_own_classification": "anpr2mqtts eigene Einordnung als bekannt, gefährlich und ignoriert, Verlauf und DVLA-Daten für seine Sichtungen behalten. Ausschalten, um sie hier mit den Fahrzeugkategorien einzuordnen, wie Frigates Kennzeichen, anpr2mqtt ist dann nur Quelle von Kennzeichen und Bild.",
                             "priority_known": "Wie anpr2mqtt sagt ist die Priorität, die anpr2mqtt dem Ziel oder der Gruppe des Fahrzeugs gibt, oder mittel."
                         }
                     },

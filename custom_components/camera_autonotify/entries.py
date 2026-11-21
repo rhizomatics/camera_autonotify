@@ -8,10 +8,26 @@ from typing import TYPE_CHECKING
 from homeassistant.const import CONF_TYPE
 from homeassistant.core import HomeAssistant, callback
 
-from .const import CONF_ALPR_ENTITY, CONF_LAST_SNAPSHOT, DOMAIN, TYPE_DISCOVERY, TYPE_ZONE
+from .const import CONF_ALPR_ENTITY, CONF_LAST_SNAPSHOT, DOMAIN, TYPE_ANPR, TYPE_DISCOVERY, TYPE_ZONE
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
+
+
+# what a Frigate camera or zone's entry title says after its name, so the entries list shows where each is from, as an
+# anpr2mqtt source's name already says
+FRIGATE_SUFFIX = " (Frigate)"
+
+
+def entry_title(name: str, entry_type: str | None) -> str:
+    """A new entry's title: its name, and for Frigate's cameras and zones, that they're Frigate's"""
+    return name if entry_type == TYPE_ANPR else f"{name}{FRIGATE_SUFFIX}"
+
+
+def entry_name(entry: ConfigEntry) -> str:
+    """What an entry's camera or zone is called, as notifications say it: its title, renamed or not, without where
+    it's from"""
+    return entry.title.removesuffix(FRIGATE_SUFFIX)
 
 
 @callback

@@ -20,6 +20,7 @@ from custom_components.camera_autonotify.const import (
     TYPE_ZONE,
 )
 from custom_components.camera_autonotify.discovery import find_cameras, find_zones
+from custom_components.camera_autonotify.entries import entry_name
 
 from .conftest import FRIGATE_ENTRY_ID, add_camera, add_frigate
 
@@ -34,7 +35,7 @@ async def set_up_discovery(hass: HomeAssistant, auto_discover: bool = True, disc
 
 def watched(hass: HomeAssistant) -> dict[str, dict]:
     return {
-        entry.title: dict(entry.data)
+        entry_name(entry): dict(entry.data)
         for entry in hass.config_entries.async_entries(DOMAIN)
         if entry.data.get(CONF_TYPE) != TYPE_DISCOVERY
     }
@@ -61,6 +62,11 @@ async def test_zones_are_the_other_frigate_devices(hass: HomeAssistant):
 async def test_cameras_set_up_automatically(hass: HomeAssistant):
     frigate = add_frigate(hass)
     await set_up_discovery(hass)
+    # the entries list says they're Frigate's, as an anpr2mqtt source's name says it's anpr2mqtt's
+    assert {e.title for e in hass.config_entries.async_entries(DOMAIN) if e.data.get(CONF_TYPE) != TYPE_DISCOVERY} == {
+        "Courtyard (Frigate)",
+        "Driveway (Frigate)",
+    }
     assert watched(hass) == {
         "Driveway": {
             CONF_DEVICE_ID: frigate.cameras["driveway"],
@@ -118,7 +124,7 @@ async def test_offered_without_automatic_discovery(hass: HomeAssistant):
     assert (shown.get("description_placeholders") or {}).get("proxy") == ""
     result = await hass.config_entries.flow.async_configure(flow["flow_id"], {})
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["title"] == "Driveway"
+    assert result["title"] == "Driveway (Frigate)"
     assert result["data"][CONF_SOURCE_NAME] == "driveway"
 
 
@@ -140,7 +146,7 @@ async def test_nothing_found_without_discovery_entry(hass: HomeAssistant):
 async def test_device_linked_to_camera(hass: HomeAssistant):
     frigate = add_frigate(hass)
     await set_up_discovery(hass)
-    entry = next(e for e in hass.config_entries.async_entries(DOMAIN) if e.title == "Driveway")
+    entry = next(e for e in hass.config_entries.async_entries(DOMAIN) if e.title == "Driveway (Frigate)")
     devices = dr.async_entries_for_config_entry(dr.async_get(hass), entry.entry_id)
     if not LINKED_DEVICES:
         # before devices were linked, the camera's own device is all there is
@@ -159,3 +165,18 @@ async def test_offered_with_proxy_warning(hass: HomeAssistant):
     (flow,) = hass.config_entries.flow.async_progress_by_handler(DOMAIN)
     shown = await hass.config_entries.flow.async_configure(flow["flow_id"])
     assert "switched off for House" in (shown.get("description_placeholders") or {}).get("proxy", "")
+
+
+async def test_entry_named_without_its_source(hass: HomeAssistant):
+    """The entries list says where each is from, while notifications and entities say only the camera's name, even
+    once renamed"""
+    from custom_components.camera_autonotify.notifier import Notifier
+
+    add_frigate(hass)
+    await set_up_discovery(hass)
+    entry = next(e for e in hass.config_entries.async_entries(DOMAIN) if e.title == "Driveway (Frigate)")
+    assert Notifier(hass, entry).name == "Driveway"
+    hass.config_entries.async_update_entry(entry, title="Front Drive (Frigate)")
+    assert Notifier(hass, entry).name == "Front Drive"
+    hass.config_entries.async_update_entry(entry, title="Front Drive")
+    assert entry_name(entry) == "Front Drive"

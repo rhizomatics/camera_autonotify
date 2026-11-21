@@ -117,18 +117,18 @@
                             "vehicle_scenarios_known": "Escenarios de vehículos conocidos",
                             "vehicle_scenarios_dangerous": "Escenarios de vehículos peligrosos",
                             "vehicle_scenarios_unknown": "Escenarios de vehículos desconocidos",
-                            "anpr_own_classification": "Usar la clasificación de anpr2mqtt",
                             "min_visit_gap": "Intervalo mínimo entre visitas",
                             "history_days": "Guardar historial durante",
                             "vehicle_priority_unreadable": "Prioridad de vehículos ilegibles",
                             "vehicle_scenarios_unreadable": "Escenarios de vehículos ilegibles",
-                            "known_category": "Categoría del botón Vehículo conocido"
+                            "known_category": "Categoría del botón Vehículo conocido",
+                            "track_visits": "Seguir visitas"
                         },
                         "data_description": {
-                            "anpr_own_classification": "Mantener la clasificación propia de anpr2mqtt, conocido, peligroso e ignorado, su historial y los detalles de la DVLA para sus avistamientos. Desactívalo para clasificarlos aquí, con las categorías de vehículos, como las matrículas de Frigate, siendo anpr2mqtt solo la fuente de la matrícula y la imagen.",
                             "min_visit_gap": "Una matrícula vista de nuevo en este tiempo es la misma visita, y no se cuenta otra vez.",
                             "history_days": "Cuánto tiempo se guardan los avistamientos de cada matrícula, sin salir nunca de Home Assistant.",
-                            "known_category": "Las notificaciones de un vehículo desconocido tienen un botón Vehículo conocido. Al pulsarlo, la matrícula, con la descripción que se escriba, se añade a esta categoría de vehículos, que se crea si no existe."
+                            "known_category": "Las notificaciones de un vehículo desconocido tienen un botón Vehículo conocido. Al pulsarlo, la matrícula, con la descripción que se escriba, se añade a esta categoría de vehículos, que se crea si no existe.",
+                            "track_visits": "Guardar los avistamientos de cada matrícula, para decir en las notificaciones con qué frecuencia y cuándo se ve normalmente. Desactívelo para no guardar ninguno. Los avistamientos ya guardados se conservan hasta restablecerlos."
                         }
                     },
                     "vehicle_lookup": {
@@ -281,8 +281,9 @@
                 "sections": {
                     "vehicles": {
                         "name": "Vehículos",
-                        "description": "Una prioridad para cada tipo de vehículo, o ninguna notificación, y los escenarios de Supernotify que aplica cada uno. Los vehículos conocidos, peligrosos e ignorados son los de los objetivos y grupos de anpr2mqtt.",
+                        "description": "Una prioridad para cada tipo de vehículo, o ninguna notificación, y los escenarios de Supernotify que aplica cada uno. Los vehículos conocidos, peligrosos e ignorados son los de los objetivos y grupos de anpr2mqtt. Desactive la clasificación propia de anpr2mqtt para usar en su lugar las categorías de vehículos y las prioridades de vehículos de los ajustes globales.",
                         "data": {
+                            "anpr_own_classification": "Usar la clasificación de anpr2mqtt",
                             "priority_dangerous": "Vehículos peligrosos",
                             "priority_unknown": "Vehículos desconocidos",
                             "priority_known": "Vehículos conocidos",
@@ -293,6 +294,7 @@
                             "scenarios_ignored": "Escenarios para vehículos ignorados"
                         },
                         "data_description": {
+                            "anpr_own_classification": "Mantener la clasificación propia de anpr2mqtt, conocido, peligroso e ignorado, su historial y los detalles de la DVLA para sus avistamientos. Desactívalo para clasificarlos aquí, con las categorías de vehículos, como las matrículas de Frigate, siendo anpr2mqtt solo la fuente de la matrícula y la imagen.",
                             "priority_known": "Como dice anpr2mqtt es la prioridad que anpr2mqtt da al objetivo o grupo del vehículo, o media."
                         }
                     },

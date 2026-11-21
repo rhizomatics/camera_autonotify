@@ -117,18 +117,18 @@
                             "vehicle_scenarios_known": "Scenari veicoli noti",
                             "vehicle_scenarios_dangerous": "Scenari veicoli pericolosi",
                             "vehicle_scenarios_unknown": "Scenari veicoli sconosciuti",
-                            "anpr_own_classification": "Usa la classificazione di anpr2mqtt",
                             "min_visit_gap": "Intervallo minimo tra visite",
                             "history_days": "Conserva la cronologia per",
                             "vehicle_priority_unreadable": "Priorità veicoli illeggibili",
                             "vehicle_scenarios_unreadable": "Scenari veicoli illeggibili",
-                            "known_category": "Categoria del pulsante Veicolo noto"
+                            "known_category": "Categoria del pulsante Veicolo noto",
+                            "track_visits": "Traccia le visite"
                         },
                         "data_description": {
-                            "anpr_own_classification": "Mantieni la classificazione propria di anpr2mqtt, noto, pericoloso e ignorato, la cronologia e i dettagli DVLA per i suoi avvistamenti. Disattiva per classificarli qui, con le categorie di veicoli, come le targhe di Frigate, anpr2mqtt diventando solo la fonte della targa e dell'immagine.",
                             "min_visit_gap": "Una targa rivista entro questo tempo è la stessa visita, e non è contata di nuovo.",
                             "history_days": "Per quanto tempo sono conservati gli avvistamenti di ogni targa, senza mai lasciare Home Assistant.",
-                            "known_category": "Le notifiche di un veicolo sconosciuto hanno un pulsante Veicolo noto. Toccandolo, la targa, con la descrizione scritta, viene aggiunta a questa categoria di veicoli, creata se non esiste."
+                            "known_category": "Le notifiche di un veicolo sconosciuto hanno un pulsante Veicolo noto. Toccandolo, la targa, con la descrizione scritta, viene aggiunta a questa categoria di veicoli, creata se non esiste.",
+                            "track_visits": "Conserva gli avvistamenti di ogni targa, per dire nelle notifiche quanto spesso e quando viene vista di solito. Disattiva per non conservarne nessuno. Gli avvistamenti già conservati restano finché non vengono azzerati."
                         }
                     },
                     "vehicle_lookup": {
@@ -281,8 +281,9 @@
                 "sections": {
                     "vehicles": {
                         "name": "Veicoli",
-                        "description": "Una priorità per ogni tipo di veicolo, o nessuna notifica, e gli scenari Supernotify che ciascuno applica. I veicoli noti, pericolosi e ignorati sono quelli dei bersagli e gruppi di anpr2mqtt.",
+                        "description": "Una priorità per ogni tipo di veicolo, o nessuna notifica, e gli scenari Supernotify che ciascuno applica. I veicoli noti, pericolosi e ignorati sono quelli dei bersagli e gruppi di anpr2mqtt. Disattiva la classificazione propria di anpr2mqtt per usare invece le categorie di veicoli e le priorità dei veicoli delle impostazioni globali.",
                         "data": {
+                            "anpr_own_classification": "Usa la classificazione di anpr2mqtt",
                             "priority_dangerous": "Veicoli pericolosi",
                             "priority_unknown": "Veicoli sconosciuti",
                             "priority_known": "Veicoli noti",
@@ -293,6 +294,7 @@
                             "scenarios_ignored": "Scenari per veicoli ignorati"
                         },
                         "data_description": {
+                            "anpr_own_classification": "Mantieni la classificazione propria di anpr2mqtt, noto, pericoloso e ignorato, la cronologia e i dettagli DVLA per i suoi avvistamenti. Disattiva per classificarli qui, con le categorie di veicoli, come le targhe di Frigate, anpr2mqtt diventando solo la fonte della targa e dell'immagine.",
                             "priority_known": "Come dice anpr2mqtt è la priorità che anpr2mqtt dà al bersaglio o al gruppo del veicolo, o media."
                         }
                     },

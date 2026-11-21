@@ -14,17 +14,18 @@ Features from `anpr2mqtt` are now brought directly into this plugin, so classify
 
 - Vehicle categories, known or dangerous, by plates or regular expressions, with each plate's corrections, and *Ignore*
 - Pre-defined vehicle rules, once there's a category: a priority and scenarios for known (`medium`), unknown and unreadable (`high`) and dangerous (`critical`) vehicles. A misread plate matching a dangerous one can raise a false `critical`
-- Each plate's visit history, kept, as its DVLA details are, by a salted hash of the plate, never the plate itself: previous sightings, count by hour, new visits, the times of day it's usually seen, and whether it's a *Daily visitor* (5 days of 7, each of the last two weeks), *Weekly visitor* (each of the last two weeks) or *Occasional visitor* (every month back to its first sighting), or otherwise previously seen
+- Each plate's visit history, kept, as its DVLA details are, by a salted hash of the plate, never the plate itself: previous sightings, count by hour, new visits, the times of day it's usually seen, and whether it's a *Daily visitor* (5 days of 7, each of the last two weeks), *Weekly visitor* (each of the last two weeks) or *Occasional visitor* (every month back to its first sighting), or otherwise previously seen. *Track visits*, in *Vehicles*, switches it off
 - **DVLA lookup** for UK plates, cached, correcting a misread by the last plate confirmed on the same camera
   - The DVLA's API key kept as a credential, in the entry's data, never shown again or in diagnostics
 - Frigate's plates classified, looked up and said under the headline, with their sightings
-- anpr2mqtt's sightings classified here instead of by anpr2mqtt, with *Use anpr2mqtt's own classification* off
+- anpr2mqtt's sightings classified here instead of by anpr2mqtt, with *Use anpr2mqtt's own classification* off, in each anpr2mqtt source's settings
 - `classify_plate`, `add_plate`, `remove_plate`, `list_vehicle_categories` and `reset_sightings` actions
 - Import from anpr2mqtt by uploading an archive of its `config` and `data` folders, in *Global Settings* or as an anpr2mqtt source is set up, showing what was found before importing, and what was added after ([#27](https://github.com/rhizomatics/camera_autonotify/issues/27))
 - A *Known vehicle* button on a notification of an unknown plate, with a description typed on the phone
 - **OpenALPR**, or any image processing ANPR/ALPR entity, as a Frigate camera's source of plates where Frigate's own plate recognition is off or poor, Frigate's plate used only where it reads none, delaying its notifications by the time it takes, up to 10 seconds
 - A *Last notification snapshot* camera entity, an option of any camera, on where an ANPR/ALPR entity is chosen, for a dashboard or as OpenALPR's `source`
 - An anpr2mqtt source is always offered as discovered, and its setup asks about anpr2mqtt, not Frigate
+- A Frigate camera or zone's entry titled with *(Frigate)* after its name, so the entries list shows where each is from, as an anpr2mqtt source's already does. Notifications and entities still say only the name
 - A `camera_autonotify_vehicle` event for each sighting, with OpenALPR's `plate`, `entity_id` and `confidence`
 - Implements next phase of [RFC0003](./developer/design/rfcs/rfc0003_anpr2mqtt.md)
 ## 🐞 Fixes

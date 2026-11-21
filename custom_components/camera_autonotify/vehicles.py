@@ -34,6 +34,7 @@ from .const import (
     CONF_HISTORY_DAYS,
     CONF_LOOKUP_CACHE_HOURS,
     CONF_MIN_VISIT_GAP,
+    CONF_TRACK_VISITS,
     CONF_VEHICLE_PRIORITIES,
     CONF_VEHICLE_SCENARIOS,
     DEFAULT_HISTORY_DAYS,
@@ -317,9 +318,13 @@ class Vehicles:
         lookup: VehicleLookup | None = None
         if match.category is None or match.category.lookup:
             lookup, match = await self._async_lookup(match, register, camera, now, options)
-        history = analyse(self.sightings(match.plate), now, float(options.get(CONF_MIN_VISIT_GAP, DEFAULT_MIN_VISIT_GAP)))
-        if record and history.is_new_visit:
-            self._record(match.plate, now, options)
+        # visits not tracked, so neither counted nor said, the history kept for when they are again
+        history = History()
+        if options.get(CONF_TRACK_VISITS, True):
+            gap = float(options.get(CONF_MIN_VISIT_GAP, DEFAULT_MIN_VISIT_GAP))
+            history = analyse(self.sightings(match.plate), now, gap)
+            if record and history.is_new_visit:
+                self._record(match.plate, now, options)
         vehicle = Vehicle(match, history, lookup)
         if record:
             self.hass.bus.async_fire(

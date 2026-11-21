@@ -41,7 +41,7 @@ from .const import (
     TYPE_ZONE,
     VEHICLE_OBJECTS,
 )
-from .entries import global_settings
+from .entries import entry_name, global_settings
 from .frigate import (
     camera_entity_id,
     camera_records,
@@ -215,7 +215,7 @@ class Notifier:
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         self.hass = hass
         self.entry = entry
-        self.name: str = entry.title
+        self.name: str = entry_name(entry)
         self.is_zone: bool = entry.data.get(CONF_TYPE) == TYPE_ZONE
         self.source_entry_id: str = entry.data[CONF_SOURCE_ENTRY_ID]
         # each review's plate read by ANPR/ALPR image processing, or none, so it's scanned once

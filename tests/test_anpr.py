@@ -465,18 +465,28 @@ async def test_settings_form(hass: HomeAssistant):
         "viseron",
         "blueiris",
     }
-    assert {"linked_camera_auto", "linked_camera", "vehicles.scenarios_unknown", "notify.deliveries"} <= set(shown)
+    assert {
+        "linked_camera_auto",
+        "linked_camera",
+        "vehicles.anpr_own_classification",
+        "vehicles.scenarios_unknown",
+        "notify.deliveries",
+    } <= set(shown)
     await hass.config_entries.options.async_configure(
         form["flow_id"],
         {
             CONF_LINKED_CAMERA_AUTO: True,
-            "vehicles": {CONF_KIND_PRIORITIES["known"]: "none", CONF_KIND_PRIORITIES["unknown"]: "high"},
+            "vehicles": {
+                "anpr_own_classification": False,
+                CONF_KIND_PRIORITIES["known"]: "none",
+                CONF_KIND_PRIORITIES["unknown"]: "high",
+            },
             "notify": {},
         },
     )
     await hass.async_block_till_done()
     # only what differs from as they come
-    assert dict(entry.options) == {CONF_KIND_PRIORITIES["known"]: "none"}
+    assert dict(entry.options) == {"anpr_own_classification": False, CONF_KIND_PRIORITIES["known"]: "none"}
 
 
 async def test_settings_without_linked_camera(hass: HomeAssistant):

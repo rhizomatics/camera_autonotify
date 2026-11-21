@@ -14,6 +14,7 @@ from .anpr import AnprWatcher
 from .const import CONF_SOURCE_ENTRY_ID, DISCOVERY_TITLE, DISCOVERY_TITLE_BEFORE, DOMAIN, TYPE_ANPR, TYPE_DISCOVERY
 from .device import async_register_device
 from .discovery import async_discover, async_start_discovery
+from .entries import entry_name
 from .frigate import frigate_config, topic_prefix
 from .health import HealthMonitor, async_start_health_check
 from .hub import ReviewWatcher, async_watch
@@ -65,14 +66,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: CameraAutoNotifyConfigEn
     config = frigate_config(hass, entry.data[CONF_SOURCE_ENTRY_ID])
     if config is None:
         raise ConfigEntryNotReady(
-            translation_domain=DOMAIN, translation_key="frigate_not_ready", translation_placeholders={"name": entry.title}
+            translation_domain=DOMAIN, translation_key="frigate_not_ready", translation_placeholders={"name": entry_name(entry)}
         )
     if not await mqtt.async_wait_for_mqtt_client(hass):
         raise ConfigEntryNotReady(translation_domain=DOMAIN, translation_key="mqtt_not_ready")
     watcher = ReviewWatcher(hass, entry)
     entry.async_on_unload(await async_watch(hass, topic_prefix(config), watcher))
     entry.runtime_data = watcher
-    async_register_device(hass, entry, entry.title)
+    async_register_device(hass, entry, entry_name(entry))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 

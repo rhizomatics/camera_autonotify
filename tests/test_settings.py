@@ -20,6 +20,7 @@ from custom_components.camera_autonotify.const import (
     CONF_ZONES,
     DOMAIN,
 )
+from custom_components.camera_autonotify.entries import entry_name
 from custom_components.camera_autonotify.frigate import camera_choices, genai_features, zone_labels
 from custom_components.camera_autonotify.tracker import Settings
 
@@ -28,7 +29,7 @@ from .test_discovery import set_up_discovery
 
 
 def entry_titled(hass: HomeAssistant, title: str) -> ConfigEntry:
-    return next(e for e in hass.config_entries.async_entries(DOMAIN) if e.title == title)
+    return next(e for e in hass.config_entries.async_entries(DOMAIN) if entry_name(e) == title)
 
 
 def fields_of(result: dict[str, Any]) -> dict[str, Any]:

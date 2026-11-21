@@ -408,10 +408,10 @@ class AnprNotifier:
         """The sighting as anpr2mqtt classified it, as it comes, or else classified here, by the vehicle categories,
         with the history and lookup here, anpr2mqtt being only the source of the plate and image, and the pre-defined
         vehicle rules' priority and scenarios, or nothing for a vehicle ignored"""
+        if self.entry.options.get(CONF_ANPR_OWN_CLASSIFICATION, True):
+            return sighting, self.priority(sighting), None
         settings = global_settings(self.hass)
         options = dict(settings.options) if settings else {}
-        if options.get(CONF_ANPR_OWN_CLASSIFICATION, True):
-            return sighting, self.priority(sighting), None
         camera = self.linked_camera(sighting)
         sensor = sensor_entity(self.hass, self.entry)
         vehicle = await vehicles(self.hass).async_classify(
