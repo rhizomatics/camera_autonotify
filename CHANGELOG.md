@@ -34,6 +34,8 @@ Features from `anpr2mqtt` are now brought directly into this plugin, so classify
 - The facts under the headline are separated by a plain `-` rather than `·`
 - anpr2mqtt's spoken message only adds the plate where the title is the vehicle's description, so an unknown vehicle's plate isn't said twice
 - The buttons on a phone say what they do: *Keep clip*, *Mark reviewed*, *Submit to Frigate+* and *Export recording*, rather than *Keep*, *Seen*, *Frigate+* and *Export*
+## 📚 Documentation
+- Draft RFCs for [0010 - Unifi Protect](./developer/design/rfcs/rfc0010_unifi_protect.md), [0009 - Image Pipelines](./developer/design/rfcs/rfc0009_pipelines.md), [0008 - Visits](./developer/design/rfcs/rfc0008_visits.md), [0007 - Rich Emails](./developer/design/rfcs/rfc0007_rich_email.md) and [0006 - Frigate Config Health Report](./developer/design/rfcs/rfc0006_config_health_report.md)
 
 # 0.11.1
 ## ✨ Enhancements
