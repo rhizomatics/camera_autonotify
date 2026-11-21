@@ -5,7 +5,7 @@ ANPR/ALPR entity such as OpenALPR's reads, and `image_processing.detect_face` fo
 
 from __future__ import annotations
 
-from homeassistant.components.image_processing.const import EVENT_DETECT_FACE, ImageProcessingDeviceClass
+from homeassistant.components.image_processing import EVENT_DETECT_FACE, ImageProcessingDeviceClass
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 
