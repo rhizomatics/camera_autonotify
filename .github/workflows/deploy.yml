@@ -10,11 +10,14 @@ on:
     branches: [ "main" ]
   # releases are published, with their zip, by release.yml
 
+# Nothing by default; each job grants only what it needs (OpenSSF Scorecard Token-Permissions).
+permissions: {}
+
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       pull-requests: read
 
     strategy:
@@ -24,6 +27,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
     - name: Marketplace Action
       uses: hacs/action@1ebf01c408f29afcb6406bd431bc98fd8cbb15aa # main
       with:
@@ -43,34 +48,20 @@ jobs:
     - name: Ruff format
       run: uv run ruff format --check custom_components tests
     - name: Test with pytest
+      env:
+        PYTHON_VERSION: ${{ matrix.python-version }}
       run: |
-        uv run pytest . --junitxml=junit/test-results-${{ matrix.python-version }}.xml --cov=custom_components.camera_autonotify --cov-report=xml --cov-report=html
-    - name: Generate badges
+        uv run pytest . --junitxml="junit/test-results-$PYTHON_VERSION.xml" --cov=custom_components.camera_autonotify --cov-report=xml --cov-report=html
+    - name: Keep the test results for the badges
       # the tests of a pull request aren't those of main
       if: github.event_name == 'push'
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        uv run genbadge coverage -i coverage.xml -o badges/coverage.svg
-        uv run genbadge tests -i junit/test-results-${{ matrix.python-version }}.xml -o badges/tests.svg
-
-        git config --global user.name "github-actions[bot]"
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        TEMP_DIR=$(mktemp -d)
-        cd $TEMP_DIR
-        # the first time there's no badges branch to add to, so one is started with nothing else on it
-        if ! git clone --single-branch --branch badges https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git . 2>/dev/null; then
-          git init --initial-branch badges .
-          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-        fi
-        cp -r ${{ github.workspace }}/badges .
-        git add badges
-        if git commit -m "Update badges [skip ci]"; then
-          git push origin badges --force
-          echo "Badges updated successfully"
-        else
-          echo "No changes to badges"
-        fi
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: badge-inputs
+        path: |
+          coverage.xml
+          junit/test-results-${{ matrix.python-version }}.xml
+        retention-days: 1
 
     - name: Upload pytest test results
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -91,13 +82,64 @@ jobs:
       with:
         path: site
 
+  # From main only - never from a pull request. The only job here that can write to the repository, and the token is
+  # given to just the step that pushes, never left in a checkout.
+  badges:
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      # to push the badges branch
+      contents: write
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: Install uv
+      uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      with:
+        python-version: "3.14"
+    - name: Install dependencies
+      run: uv sync
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        name: badge-inputs
+    - name: Generate badges
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        uv run genbadge coverage -i coverage.xml -o badges/coverage.svg
+        uv run genbadge tests -i junit/test-results-*.xml -o badges/tests.svg
+
+        TEMP_DIR=$(mktemp -d)
+        cd "$TEMP_DIR"
+        REMOTE_URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+        # the first time there's no badges branch to add to, so one is started with nothing else on it
+        if ! git clone --single-branch --branch badges "$REMOTE_URL" . 2>/dev/null; then
+          git init --initial-branch badges .
+          git remote add origin "$REMOTE_URL"
+        fi
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        cp -r "$GITHUB_WORKSPACE/badges" .
+        git add badges
+        if git commit -m "Update badges [skip ci]"; then
+          git push origin badges --force
+          echo "Badges updated successfully"
+        else
+          echo "No changes to badges"
+        fi
+        rm -rf "$TEMP_DIR"
+
   deploy-docs:
     # Pages is set to deploy from GitHub Actions, so the site goes up as an artifact rather than a gh-pages branch
     if: github.event_name == 'push'
     needs: build
     runs-on: ubuntu-latest
     permissions:
+      # to deploy the site to Pages
       pages: write
+      # for the Pages deployment's OIDC token
       id-token: write
     environment:
       name: github-pages
