@@ -36,6 +36,10 @@
                 "data_description": {
                     "anpr2mqtt_archive": "Traz os grupos de placas do anpr2mqtt como categorias de veículos, com suas correções e ignorados, suas configurações do DVLA e seu histórico de visitas. Você verá o que foi encontrado antes de qualquer importação. Um .tar ou .tar.gz das pastas config e data do anpr2mqtt, feito por exemplo com: tar czf anpr2mqtt.tgz config data/plate"
                 }
+            },
+            "confirm_image_processing": {
+                "title": "Notificações para {name}",
+                "description": "Ser notificado das placas ou rostos que {name} encontra nas imagens da própria câmera, quando o Home Assistant as analisa?\n\n{supernotify}"
             }
         },
         "error": {
@@ -250,19 +254,7 @@
                             "deliveries": "Limitar as notificações a estas entregas do Supernotify. Deixe vazio para o Supernotify escolher.",
                             "actions_global": "Usar as Ações escolhidas nas Configurações globais. Desative para escolher abaixo as desta câmera ou zona, ou nenhuma.",
                             "actions": "Os botões das notificações desta câmera ou zona, quando não são como nas Configurações globais. Deixe vazio para nenhum.",
-                            "last_snapshot": "Uma entidade de câmera com a captura da última notificação, para um painel ou como fonte de uma entidade ANPR/ALPR como o OpenALPR. Ligada no início onde uma entidade ANPR/ALPR é escolhida."
-                        }
-                    },
-                    "plates": {
-                        "name": "Placas",
-                        "description": "Ler placas com uma entidade de processamento de imagem ANPR/ALPR, como a do OpenALPR, em vez do Frigate, para uma câmera em que o reconhecimento de placas do Frigate está desligado ou é fraco. A placa do Frigate só é usada quando a entidade não lê nenhuma. Cada notificação de um veículo espera por ela, até 10 segundos, uma vez por revisão. Defina a fonte dela como a câmera Último instantâneo de notificação desta câmera, para que leia o instantâneo notificado e não a visualização ao vivo. O OpenALPR Cloud é configurado no YAML do Home Assistant, em image_processing:, e sua entidade é então escolhida aqui.",
-                        "data": {
-                            "alpr_entity": "Entidade ANPR/ALPR",
-                            "alpr_vehicles_only": "Apenas para veículos"
-                        },
-                        "data_description": {
-                            "alpr_entity": "A entidade de processamento de imagem que lê as placas desta câmera, como a do OpenALPR.",
-                            "alpr_vehicles_only": "Ler placas apenas quando foi visto um carro, van, caminhão, ônibus ou moto."
+                            "last_snapshot": "Uma entidade de câmera que mostra o instantâneo da última notificação, para um painel."
                         }
                     }
                 }
@@ -319,6 +311,40 @@
             "import_anpr2mqtt": {
                 "title": "Importar do anpr2mqtt",
                 "description": "Encontrado no arquivo:\n\n{found}\n\nImportar? Nada aqui é removido: novas categorias e placas são adicionadas, as categorias já existentes recebem apenas as placas que não têm, e as configurações encontradas substituem as definidas aqui."
+            },
+            "image_processing": {
+                "title": "Notificações para {name}",
+                "description": "As placas ou rostos que {name} encontra nas imagens da própria câmera, quando o Home Assistant as analisa.",
+                "data": {
+                    "camera_entity": "Câmera",
+                    "image_processing_confidence": "Confiança mínima",
+                    "quiet_period": "Período de silêncio",
+                    "priority": "Prioridade"
+                },
+                "data_description": {
+                    "camera_entity": "A câmera que a entidade analisa, para a imagem dela em cada notificação. Deixe vazio para nenhuma.",
+                    "image_processing_confidence": "Ignorar o que a entidade tiver menos certeza.",
+                    "quiet_period": "Não notificar novamente a mesma placa ou rosto dentro deste tempo.",
+                    "priority": "Para um rosto. A prioridade de uma placa segue as regras de veículos das configurações globais."
+                },
+                "sections": {
+                    "notify": {
+                        "name": "Destinatários",
+                        "description": "Quem e o que é notificado. Deixe vazio para a escolha habitual.",
+                        "data": {
+                            "targets": "Destinatários",
+                            "target": "Destinatários",
+                            "custom_target": "Destinatários personalizados",
+                            "deliveries": "Entregas"
+                        },
+                        "data_description": {
+                            "targets": "Entidades de notificação para onde enviar. Deixe vazio para todos os celulares com o app do Home Assistant.",
+                            "target": "Quem ou o que notificar, como em qualquer notificação do Supernotify. Deixe vazio para o Supernotify escolher.",
+                            "custom_target": "Destinatários fora do Home Assistant, como endereços de e-mail ou números de telefone.",
+                            "deliveries": "Limitar as notificações a estas entregas do Supernotify. Deixe vazio para o Supernotify escolher."
+                        }
+                    }
+                }
             }
         },
         "error": {

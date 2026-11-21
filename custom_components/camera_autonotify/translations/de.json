@@ -36,6 +36,10 @@
                 "data_description": {
                     "anpr2mqtt_archive": "Übernimmt die Kennzeichengruppen von anpr2mqtt als Fahrzeugkategorien, mit ihren Korrekturen und Ignorierungen, seinen DVLA-Einstellungen und seinem Besuchsverlauf. Sie sehen, was gefunden wurde, bevor etwas importiert wird. Ein .tar oder .tar.gz der Ordner config und data von anpr2mqtt, etwa erstellt mit: tar czf anpr2mqtt.tgz config data/plate"
                 }
+            },
+            "confirm_image_processing": {
+                "title": "Benachrichtigungen für {name}",
+                "description": "Über die Kennzeichen oder Gesichter benachrichtigt werden, die {name} in den Bildern der eigenen Kamera findet, während Home Assistant sie scannt?\n\n{supernotify}"
             }
         },
         "error": {
@@ -250,19 +254,7 @@
                             "deliveries": "Benachrichtigungen auf diese Supernotify-Zustellungen beschränken. Leer lassen, damit Supernotify wählt.",
                             "actions_global": "Die in den globalen Einstellungen gewählten Aktionen verwenden. Ausschalten, um unten eigene für diese Kamera oder Zone zu wählen, oder keine.",
                             "actions": "Die Schaltflächen der Benachrichtigungen dieser Kamera oder Zone, wenn nicht wie globale Einstellungen. Leer lassen für keine.",
-                            "last_snapshot": "Eine Kamera-Entität mit dem Schnappschuss der letzten Benachrichtigung, für ein Dashboard oder als Quelle einer ANPR/ALPR-Entität wie OpenALPR. Anfangs an, wo eine ANPR/ALPR-Entität gewählt ist."
-                        }
-                    },
-                    "plates": {
-                        "name": "Kennzeichen",
-                        "description": "Kennzeichen mit einer ANPR/ALPR-Bildverarbeitungsentität wie der von OpenALPR statt mit Frigate lesen, für eine Kamera, bei der Frigates Kennzeichenerkennung aus oder schwach ist. Frigates Kennzeichen wird nur verwendet, wenn sie keines liest. Jede Benachrichtigung zu einem Fahrzeug wartet darauf, bis zu 10 Sekunden, einmal pro Überprüfung. Setzen Sie ihre Quelle auf die Kamera Letzter Benachrichtigungs-Schnappschuss dieser Kamera, damit sie den benachrichtigten Schnappschuss liest, nicht das Live-Bild. OpenALPR Cloud wird in Home Assistants YAML unter image_processing: eingerichtet und seine Entität dann hier gewählt.",
-                        "data": {
-                            "alpr_entity": "ANPR/ALPR-Entität",
-                            "alpr_vehicles_only": "Nur für Fahrzeuge"
-                        },
-                        "data_description": {
-                            "alpr_entity": "Die Bildverarbeitungsentität, die die Kennzeichen dieser Kamera liest, etwa die von OpenALPR.",
-                            "alpr_vehicles_only": "Nur Kennzeichen lesen, wo ein Auto, Transporter, Lkw, Bus oder Motorrad gesehen wurde."
+                            "last_snapshot": "Eine Kamera-Entität, die den Schnappschuss der letzten Benachrichtigung zeigt, für ein Dashboard."
                         }
                     }
                 }
@@ -319,6 +311,40 @@
             "import_anpr2mqtt": {
                 "title": "Aus anpr2mqtt importieren",
                 "description": "Im Archiv gefunden:\n\n{found}\n\nImportieren? Hier wird nichts entfernt: neue Kategorien und Kennzeichen werden hinzugefügt, vorhandene Kategorien erhalten nur die Kennzeichen, die sie noch nicht haben, und die gefundenen Einstellungen ersetzen die hier gesetzten."
+            },
+            "image_processing": {
+                "title": "Benachrichtigungen für {name}",
+                "description": "Die Kennzeichen oder Gesichter, die {name} in den Bildern der eigenen Kamera findet, während Home Assistant sie scannt.",
+                "data": {
+                    "camera_entity": "Kamera",
+                    "image_processing_confidence": "Mindestkonfidenz",
+                    "quiet_period": "Ruhezeit",
+                    "priority": "Priorität"
+                },
+                "data_description": {
+                    "camera_entity": "Die Kamera, die die Entität scannt, für ihr Bild in jeder Benachrichtigung. Leer lassen für keines.",
+                    "image_processing_confidence": "Ignorieren, wessen sich die Entität weniger sicher ist.",
+                    "quiet_period": "Dasselbe Kennzeichen oder Gesicht innerhalb dieser Zeit nicht erneut melden.",
+                    "priority": "Für ein Gesicht. Die Priorität eines Kennzeichens folgt den Fahrzeugregeln der globalen Einstellungen."
+                },
+                "sections": {
+                    "notify": {
+                        "name": "Empfänger",
+                        "description": "Wer und was benachrichtigt wird. Leer lassen für die übliche Wahl.",
+                        "data": {
+                            "targets": "Ziele",
+                            "target": "Ziele",
+                            "custom_target": "Benutzerdefinierte Ziele",
+                            "deliveries": "Zustellungen"
+                        },
+                        "data_description": {
+                            "targets": "Notify-Entitäten, an die gesendet wird. Leer lassen für jedes Handy mit der Home Assistant App.",
+                            "target": "Wer oder was benachrichtigt wird, wie bei jeder Supernotify-Benachrichtigung. Leer lassen, damit Supernotify wählt.",
+                            "custom_target": "Ziele außerhalb von Home Assistant, etwa E-Mail-Adressen oder Telefonnummern.",
+                            "deliveries": "Benachrichtigungen auf diese Supernotify-Zustellungen beschränken. Leer lassen, damit Supernotify wählt."
+                        }
+                    }
+                }
             }
         },
         "error": {

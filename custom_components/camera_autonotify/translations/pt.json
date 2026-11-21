@@ -36,6 +36,10 @@
                 "data_description": {
                     "anpr2mqtt_archive": "Traz os grupos de matrículas do anpr2mqtt como categorias de veículos, com as suas correções e ignorados, as suas definições do DVLA e o seu histórico de visitas. Verá o que foi encontrado antes de qualquer importação. Um .tar ou .tar.gz das pastas config e data do anpr2mqtt, feito por exemplo com: tar czf anpr2mqtt.tgz config data/plate"
                 }
+            },
+            "confirm_image_processing": {
+                "title": "Notificações para {name}",
+                "description": "Ser notificado das matrículas ou rostos que {name} encontra nas imagens da própria câmara, quando o Home Assistant as analisa?\n\n{supernotify}"
             }
         },
         "error": {
@@ -250,19 +254,7 @@
                             "deliveries": "Limitar as notificações a estas entregas do Supernotify. Deixe vazio para o Supernotify escolher.",
                             "actions_global": "Usar as Ações escolhidas nas Definições globais. Desligue para escolher abaixo as desta câmara ou zona, ou nenhuma.",
                             "actions": "Os botões das notificações desta câmara ou zona, quando não são como nas Definições globais. Deixe vazio para nenhum.",
-                            "last_snapshot": "Uma entidade de câmara com a captura da última notificação, para um painel ou como fonte de uma entidade ANPR/ALPR como o OpenALPR. Ligada no início onde é escolhida uma entidade ANPR/ALPR."
-                        }
-                    },
-                    "plates": {
-                        "name": "Matrículas",
-                        "description": "Ler matrículas com uma entidade de processamento de imagem ANPR/ALPR, como a do OpenALPR, em vez do Frigate, para uma câmara em que o reconhecimento de matrículas do Frigate está desligado ou é fraco. A matrícula do Frigate só é usada quando a entidade não lê nenhuma. Cada notificação de um veículo espera por ela, até 10 segundos, uma vez por revisão. Defina a fonte dela como a câmara Último instantâneo de notificação desta câmara, para que leia o instantâneo notificado e não a visualização em direto. O OpenALPR Cloud é configurado no YAML do Home Assistant, em image_processing:, e a sua entidade é depois escolhida aqui.",
-                        "data": {
-                            "alpr_entity": "Entidade ANPR/ALPR",
-                            "alpr_vehicles_only": "Apenas para veículos"
-                        },
-                        "data_description": {
-                            "alpr_entity": "A entidade de processamento de imagem que lê as matrículas desta câmara, como a do OpenALPR.",
-                            "alpr_vehicles_only": "Ler matrículas apenas quando foi visto um carro, carrinha, camião, autocarro ou mota."
+                            "last_snapshot": "Uma entidade de câmara que mostra o instantâneo da última notificação, para um painel."
                         }
                     }
                 }
@@ -319,6 +311,40 @@
             "import_anpr2mqtt": {
                 "title": "Importar do anpr2mqtt",
                 "description": "Encontrado no arquivo:\n\n{found}\n\nImportar? Nada aqui é removido: são adicionadas novas categorias e matrículas, as categorias já existentes recebem apenas as matrículas que não têm, e as definições encontradas substituem as definidas aqui."
+            },
+            "image_processing": {
+                "title": "Notificações para {name}",
+                "description": "As matrículas ou rostos que {name} encontra nas imagens da própria câmara, quando o Home Assistant as analisa.",
+                "data": {
+                    "camera_entity": "Câmara",
+                    "image_processing_confidence": "Confiança mínima",
+                    "quiet_period": "Período de silêncio",
+                    "priority": "Prioridade"
+                },
+                "data_description": {
+                    "camera_entity": "A câmara que a entidade analisa, para a imagem dela em cada notificação. Deixe vazio para nenhuma.",
+                    "image_processing_confidence": "Ignorar aquilo de que a entidade tiver menos certeza.",
+                    "quiet_period": "Não notificar novamente a mesma matrícula ou rosto dentro deste tempo.",
+                    "priority": "Para um rosto. A prioridade de uma matrícula segue as regras de veículos das definições globais."
+                },
+                "sections": {
+                    "notify": {
+                        "name": "Destinatários",
+                        "description": "Quem e o que é notificado. Deixe vazio para a escolha habitual.",
+                        "data": {
+                            "targets": "Destinatários",
+                            "target": "Destinatários",
+                            "custom_target": "Destinatários personalizados",
+                            "deliveries": "Entregas"
+                        },
+                        "data_description": {
+                            "targets": "Entidades de notificação para onde enviar. Deixe vazio para todos os telemóveis com a app do Home Assistant.",
+                            "target": "Quem ou o que notificar, como em qualquer notificação do Supernotify. Deixe vazio para o Supernotify escolher.",
+                            "custom_target": "Destinatários fora do Home Assistant, como endereços de e-mail ou números de telefone.",
+                            "deliveries": "Limitar as notificações a estas entregas do Supernotify. Deixe vazio para o Supernotify escolher."
+                        }
+                    }
+                }
             }
         },
         "error": {

@@ -22,8 +22,8 @@ Features from `anpr2mqtt` are now brought directly into this plugin, so classify
 - `classify_plate`, `add_plate`, `remove_plate`, `list_vehicle_categories` and `reset_sightings` actions
 - Import from anpr2mqtt by uploading an archive of its `config` and `data` folders, in *Global Settings* or as an anpr2mqtt source is set up, showing what was found before importing, and what was added after ([#27](https://github.com/rhizomatics/camera_autonotify/issues/27))
 - A *Known vehicle* button on a notification of an unknown plate, with a description typed on the phone
-- **OpenALPR**, or any image processing ANPR/ALPR entity, as a Frigate camera's source of plates where Frigate's own plate recognition is off or poor, Frigate's plate used only where it reads none, delaying its notifications by the time it takes, up to 10 seconds
-- A *Last notification snapshot* camera entity, an option of any camera, on where an ANPR/ALPR entity is chosen, for a dashboard or as OpenALPR's `source`
+- **Image processing** integrations, such as OpenALPR, as a source of their own, each plate or face they find in their own camera's images notified, by Home Assistant's `found_plate` and `detect_face` events, found and set up by itself by its device class. See [Image Processing](./image_processing.md)
+- A *Last notification snapshot* camera entity, an option of any camera, for a dashboard
 - An anpr2mqtt source is always offered as discovered, and its setup asks about anpr2mqtt, not Frigate
 - A Frigate camera or zone's entry titled with *(Frigate)* after its name, so the entries list shows where each is from, as an anpr2mqtt source's already does. Notifications and entities still say only the name
 - A `camera_autonotify_vehicle` event for each sighting, with OpenALPR's `plate`, `entity_id` and `confidence`

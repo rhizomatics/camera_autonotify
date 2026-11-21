@@ -12,8 +12,7 @@ from aiohttp import ClientSession
 from freezegun.api import FrozenDateTimeFactory
 from homeassistant.config_entries import ConfigSubentryData
 from homeassistant.const import CONF_TYPE
-from homeassistant.core import Context, HomeAssistant, ServiceCall, State
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.core import Context, HomeAssistant, State
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.setup import async_setup_component
 from homeassistant.util import dt as dt_util
@@ -727,95 +726,3 @@ async def test_visitor_said(hass: HomeAssistant):
     await async_load_texts(hass)
     regular = Vehicle(Match("PX19TVD", "PX19TVD"), History(previous_sightings=12, visitor="daily"))
     assert notifier(hass).said_vehicle(regular) == ["PX19TVD", "Previous sightings: 12", "Daily visitor"]
-
-
-# --- plates read by an image processing ANPR/ALPR entity, such as OpenALPR's
-
-ALPR = "image_processing.openalpr_courtyard"
-
-
-def openalpr(hass: HomeAssistant, plates: dict[str, float], fail: bool = False) -> list[ServiceCall]:
-    """OpenALPR's entity, its scan setting its plates, by confidence as a percentage, or failing"""
-    hass.states.async_set(ALPR, "unknown", {"device_class": "alpr", "plates": {}})
-    scans: list[ServiceCall] = []
-
-    async def scan(call: ServiceCall) -> None:
-        scans.append(call)
-        if fail:
-            raise HomeAssistantError("OpenALPR not answering")
-        best = max(plates, key=plates.__getitem__) if plates else None
-        hass.states.async_set(ALPR, best or "unknown", {"device_class": "alpr", "plates": plates})
-
-    hass.services.async_register("image_processing", "scan", scan)
-    return scans
-
-
-async def test_alpr_read(hass: HomeAssistant, register: FakeRegister):
-    add_frigate(hass)
-    global_settings(hass, {"Family cars": FAMILY})
-    scans = openalpr(hass, {"PX19TVD": 92.5, "PX19TV0": 60.0})
-    fired: list[dict[str, Any]] = []
-    hass.bus.async_listen("camera_autonotify_vehicle", lambda event: fired.append(dict(event.data)))
-    found = notifier(hass, options={"alpr_entity": ALPR})
-    car = replace(decision(), review=replace(decision().review, objects=("car",)))
-    vehicle = await found.async_vehicle(car)
-    assert vehicle is not None
-    assert (vehicle.plate, vehicle.lookup) == ("PX19TVD", PICKUP_TRUCK)
-    # once for the review
-    await found.async_vehicle(car)
-    await hass.async_block_till_done()
-    assert len(scans) == 1
-    assert (fired[0]["source"], fired[0]["confidence"]) == ("openalpr", 0.925)
-
-
-async def test_alpr_only_for_vehicles(hass: HomeAssistant):
-    add_frigate(hass)
-    scans = openalpr(hass, {"PX19TVD": 92.5})
-    assert await notifier(hass, options={"alpr_entity": ALPR}).async_vehicle(decision()) is None
-    assert scans == []
-    # unless chosen otherwise
-    found = notifier(hass, options={"alpr_entity": ALPR, "alpr_vehicles_only": False})
-    assert await found.async_vehicle(decision()) is not None
-
-
-async def test_alpr_not_sure_enough(hass: HomeAssistant):
-    add_frigate(hass)
-    openalpr(hass, {"PX19TVD": 70.0})
-    car = replace(decision(), review=replace(decision().review, objects=("car",)))
-    assert await notifier(hass, options={"alpr_entity": ALPR}).async_vehicle(car) is None
-
-
-async def test_alpr_failing(hass: HomeAssistant, caplog: pytest.LogCaptureFixture):
-    add_frigate(hass)
-    openalpr(hass, {"PX19TVD": 92.5}, fail=True)
-    car = replace(decision(), review=replace(decision().review, objects=("car",)))
-    assert await notifier(hass, options={"alpr_entity": ALPR}).async_vehicle(car) is None
-    assert "couldn't read a plate: OpenALPR not answering" in caplog.text
-
-
-async def test_alpr_before_frigate_plate(hass: HomeAssistant):
-    """Chosen where Frigate's own reading is poor, so read first, Frigate's plate only where it reads none"""
-    add_frigate(hass)
-    scans = openalpr(hass, {"AB12CDE": 99.0})
-    read_plate(hass)
-    car = replace(decision(), review=replace(decision().review, objects=("car",)))
-    vehicle = await notifier(hass, options={"alpr_entity": ALPR}).async_vehicle(car)
-    assert vehicle is not None and vehicle.plate == "AB12CDE"
-    assert len(scans) == 1
-    # nothing read by it, so Frigate's
-    openalpr(hass, {})
-    other = replace(car, review=replace(car.review, id="another_review"))
-    vehicle = await notifier(hass, options={"alpr_entity": ALPR}).async_vehicle(other)
-    assert vehicle is not None and vehicle.plate == "PX19TVD"
-
-
-async def test_alpr_setting_offered_for_every_camera(hass: HomeAssistant):
-    """Even before there's an ANPR/ALPR entity, so it can be found, there being no telling which cameras see vehicles"""
-    from .test_discovery import set_up_discovery
-    from .test_settings import fields_of, open_settings
-
-    add_frigate(hass)
-    await set_up_discovery(hass, discover_zones=True)
-    assert {"plates.alpr_entity", "plates.alpr_vehicles_only"} <= set(fields_of(await open_settings(hass)))
-    # not for a zone, which has no camera of its own
-    assert "plates.alpr_entity" not in fields_of(await open_settings(hass, "Pend"))

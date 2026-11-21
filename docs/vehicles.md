@@ -7,8 +7,8 @@
 Auto Notify has several ways to source a licence plate for a vehicle picked up by cameras:
 
 - Listen for Frigate's own plate recognition (ANPR/ALPR) on MQTT
-- Call an ANPR/ALPR image processing integration, such as OpenALPR, for a Frigate camera where Frigate's own plate recognition is off or poor
 - Subscribe to an [anpr2mqtt] topic on MQTT
+- Listen for `found_plate` events from a Home Assistant [Image Processing](./image_processing.md) integration, like OpenALPR, scanning any camera, a Frigate one included
 
 ## Enriching the Plate
 Once it has a plate, then it has several ways to enrich it:
@@ -24,17 +24,14 @@ Once it has a plate, then it has several ways to enrich it:
 
 ## How it Works
 
-Every licence plate read, by Frigate's plate recognition (ANPR/ALPR), OpenALPR or [anpr2mqtt], is classified here, its visit history kept unless *Track visits* is off, and in the UK, looked up with the DVLA:
+Every licence plate read, by Frigate's plate recognition (ANPR/ALPR), an image processing integration such as OpenALPR, or [anpr2mqtt], is classified here, its visit history kept unless *Track visits* is off, and in the UK, looked up with the DVLA:
 
 - **Vehicle categories**, added under *Global Settings*: a single vehicle, every family car, or a delivery company's vans, known or dangerous, by their plates, each a plate or a regular expression, with its own description and the misreads that are really it. *Ignore* drops a category's plates altogether, such as a tanker's logo read as a plate
 - **Priority**: in the *Vehicles* section of *Global Settings*, once there's a category, each with its own Supernotify scenarios: `medium` for a known vehicle, `high` for an unknown plate or one that couldn't be read, and `critical` for a dangerous one. A misread plate can match a dangerous one, so `critical` can be a false alarm; corrections on the plate, or a lower priority, help where it happens
 - **Descriptions**: the vehicle's description and plate, such as *Joe's mini (TJ912UKL)*, the DVLA's make, colour, year and tax, its previous sightings, whether it's a daily, weekly or occasional visitor, and whether it's at an unusual time of day
 - **DVLA (UK)**: with an API key from the UK DVLA's Vehicle Enquiry Service, in *Vehicle lookup*, kept as a credential and never shown again. A plate a character off the last one confirmed on the same camera is taken as a misread of it
 - **Known vehicle**: a button on a notification of an unknown plate, with a description typed on the phone, adding it to the category set in *Category for the Known vehicle button*, *Known vehicles* to begin with
-- **OpenALPR, or another ANPR/ALPR image processing integration**: for a Frigate camera whose own plate recognition is off or poor, chosen in the camera's *Number plates* settings, it reads the plate in the notified image instead of Frigate. Frigate's plate is used only where it reads none
-  - OpenALPR Cloud is set up in Home Assistant's YAML, under `image_processing:`, and its entity then chosen in *Number plates*
-  - Choosing it switches on the camera's *Last notification snapshot* camera: set that as OpenALPR's `source`, so it reads the snapshot notified rather than the camera as it currently is
-  - **Each notification of a vehicle waits for it**, up to 10 seconds, once for the review
+- **OpenALPR, or another ANPR/ALPR image processing integration**: a source of its own, each plate it reads classified as any other. See [Image Processing](./image_processing.md)
 - **Actions**:
   - `camera_autonotify.classify_plate`, for any other plate source or automation, returning the plate's category, lookup and history
   - `camera_autonotify.add_plate`

@@ -51,11 +51,10 @@ from .const import (
     CONF_ACTIONS,
     CONF_ACTIONS_GLOBAL,
     CONF_ALERT_ONCE,
-    CONF_ALPR_ENTITY,
-    CONF_ALPR_VEHICLES_ONLY,
     CONF_ANPR2MQTT_ARCHIVE,
     CONF_ANPR_OWN_CLASSIFICATION,
     CONF_AUTO_DISCOVER,
+    CONF_CAMERA_ENTITY,
     CONF_COOLDOWN,
     CONF_CUSTOM_TARGET,
     CONF_DELIVERIES,
@@ -73,6 +72,8 @@ from .const import (
     CONF_HEALTH_RETRIES,
     CONF_HISTORY_DAYS,
     CONF_IMAGE,
+    CONF_IMAGE_PROCESSING_CONFIDENCE,
+    CONF_IMAGE_PROCESSING_EVENTS,
     CONF_INITIAL_DELAY,
     CONF_KIND_PRIORITIES,
     CONF_KIND_SCENARIOS,
@@ -97,6 +98,7 @@ from .const import (
     CONF_POWER_ENTITY,
     CONF_POWER_GRACE,
     CONF_PRIORITY,
+    CONF_QUIET_PERIOD,
     CONF_REMOVE,
     CONF_SCENARIOS,
     CONF_SEVERITIES,
@@ -129,10 +131,12 @@ from .const import (
     DEFAULT_GENAI_IMAGE,
     DEFAULT_HISTORY_DAYS,
     DEFAULT_IMAGE,
+    DEFAULT_IMAGE_PROCESSING_CONFIDENCE,
     DEFAULT_KNOWN_CATEGORY,
     DEFAULT_LOOKUP_CACHE_HOURS,
     DEFAULT_MIN_VISIT_GAP,
     DEFAULT_POWER_GRACE,
+    DEFAULT_QUIET_PERIOD,
     DEFAULT_SUMMARY_INTERVAL,
     DEFAULT_SUMMARY_RETRIES,
     DEFAULT_SUMMARY_TIME,
@@ -150,6 +154,7 @@ from .const import (
     PRIORITIES,
     SEVERITIES,
     SOURCE_ANPR2MQTT,
+    SOURCE_IMAGE_PROCESSING,
     SPEED_AUTO,
     SPEED_UNITS,
     SUBENTRY_PLATES,
@@ -161,6 +166,7 @@ from .const import (
     THREAT_PRIORITY_DEFAULTS,
     TYPE_ANPR,
     TYPE_DISCOVERY,
+    TYPE_IMAGE_PROCESSING,
     TYPE_ZONE,
     VEHICLE_NO_DELIVERY,
     VEHICLE_PRIORITY_DEFAULTS,
@@ -229,10 +235,11 @@ STEP_DISCOVERY = "discovery"
 STEP_SETTINGS = "settings"
 STEP_ANPR = "anpr"
 STEP_CONFIRM_ANPR = "confirm_anpr"
+STEP_IMAGE_PROCESSING = "image_processing"
+STEP_CONFIRM_IMAGE_PROCESSING = "confirm_image_processing"
 STEP_IMPORT = "import_anpr2mqtt"
 SECTION_VEHICLES = "vehicles"
 SECTION_VEHICLE_LOOKUP = "vehicle_lookup"
-SECTION_PLATES = "plates"
 SECTION_TIMING = "timing"
 SECTION_GENAI = "genai"
 SECTION_NOTIFY = "notify"
@@ -250,7 +257,6 @@ SECTIONS = (
     SECTION_SUMMARY_UNAVAILABLE,
     SECTION_VEHICLES,
     SECTION_VEHICLE_LOOKUP,
-    SECTION_PLATES,
     SECTION_IMPORT,
 )
 # an anpr2mqtt entry's settings as they come, not stored
@@ -269,7 +275,6 @@ DEFAULTS: dict[str, Any] = (
         CONF_IMAGE: DEFAULT_IMAGE,
         CONF_GENAI_IMAGE: GENAI_IMAGE_GLOBAL,
         CONF_ACTIONS_GLOBAL: True,
-        CONF_ALPR_VEHICLES_ONLY: True,
     }
 )
 SUMMARY_OPTIONS = (
@@ -283,7 +288,20 @@ SUMMARY_OPTIONS = (
 # what a rule holds, its name being the subentry's title
 RULE_DATA = (CONF_MATCH, CONF_PATTERN, CONF_PRIORITY, CONF_SILENCE, CONF_SCENARIOS, CONF_REMOVE)
 # what a camera or zone's entry holds, as it's found
-ENTRY_DATA = (CONF_DEVICE_ID, CONF_TYPE, CONF_SOURCE, CONF_SOURCE_ENTRY_ID, CONF_SOURCE_NAME)
+ENTRY_DATA = (
+    CONF_DEVICE_ID,
+    CONF_TYPE,
+    CONF_SOURCE,
+    CONF_SOURCE_ENTRY_ID,
+    CONF_SOURCE_NAME,
+    CONF_IMAGE_PROCESSING_EVENTS,
+)
+# an image processing source's settings as they come, not stored unless changed
+IMAGE_PROCESSING_DEFAULTS: dict[str, Any] = {
+    CONF_IMAGE_PROCESSING_CONFIDENCE: DEFAULT_IMAGE_PROCESSING_CONFIDENCE,
+    CONF_QUIET_PERIOD: DEFAULT_QUIET_PERIOD,
+    CONF_PRIORITY: "medium",
+}
 
 
 async def supernotify_status(hass: HomeAssistant) -> str:
@@ -672,15 +690,6 @@ async def settings_schema(
     fields_[vol.Required(SECTION_TIMING)] = section(vol.Schema(timing), {"collapsed": True})
     if genai:
         fields_[vol.Required(SECTION_GENAI)] = section(vol.Schema(genai), {"collapsed": True})
-    if zones is not None:
-        # for any camera, there being no telling which see vehicles, an image processing ANPR/ALPR entity, such as OpenALPR's, reading plates instead of Frigate
-        plates = {
-            vol.Optional(CONF_ALPR_ENTITY): EntitySelector(
-                EntitySelectorConfig(filter=[{"domain": "image_processing", "device_class": "alpr"}])
-            ),
-            vol.Required(CONF_ALPR_VEHICLES_ONLY, default=DEFAULTS[CONF_ALPR_VEHICLES_ONLY]): BooleanSelector(),
-        }
-        fields_[vol.Optional(SECTION_PLATES)] = section(vol.Schema(plates), {"collapsed": True})
     fields_[vol.Required(SECTION_NOTIFY)] = section(vol.Schema(notify), {"collapsed": True})
     return vol.Schema(fields_)
 
@@ -750,7 +759,23 @@ def _unique_id(found: Mapping[str, Any]) -> str:
     sensor's unique id"""
     if found.get(CONF_TYPE) == TYPE_ANPR:
         return f"{SOURCE_ANPR2MQTT}:{found[CONF_SOURCE_NAME]}"
+    if found.get(CONF_TYPE) == TYPE_IMAGE_PROCESSING:
+        return f"{SOURCE_IMAGE_PROCESSING}:{found[CONF_SOURCE_NAME]}"
     return str(found[CONF_DEVICE_ID])
+
+
+async def image_processing_schema(hass: HomeAssistant) -> vol.Schema:
+    """An image processing source's settings: the camera whose image is notified, how sure the entity must be, how
+    soon the same again, the priority of a face, and who is told"""
+    return vol.Schema({
+        vol.Optional(CONF_CAMERA_ENTITY): EntitySelector(EntitySelectorConfig(domain="camera")),
+        vol.Required(
+            CONF_IMAGE_PROCESSING_CONFIDENCE, default=IMAGE_PROCESSING_DEFAULTS[CONF_IMAGE_PROCESSING_CONFIDENCE]
+        ): NumberSelector(NumberSelectorConfig(min=1, max=100, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="%")),
+        vol.Required(CONF_QUIET_PERIOD, default=IMAGE_PROCESSING_DEFAULTS[CONF_QUIET_PERIOD]): _seconds(86400),
+        vol.Required(CONF_PRIORITY, default=IMAGE_PROCESSING_DEFAULTS[CONF_PRIORITY]): _priority(),
+        vol.Required(SECTION_NOTIFY): section(vol.Schema(await target_fields(hass)), {"collapsed": True}),
+    })
 
 
 class CameraAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -815,6 +840,8 @@ class CameraAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
         self.context["title_placeholders"] = {"name": entry_title(discovery_info[CONF_NAME], discovery_info.get(CONF_TYPE))}
         if discovery_info.get(CONF_TYPE) == TYPE_ANPR:
             return await self.async_step_confirm_anpr()
+        if discovery_info.get(CONF_TYPE) == TYPE_IMAGE_PROCESSING:
+            return await self.async_step_confirm_image_processing()
         return await self.async_step_confirm()
 
     def _create_found(self, added: Added | None = None) -> ConfigFlowResult:
@@ -823,6 +850,15 @@ class CameraAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
             data={k: v for k, v in self._found.items() if k in ENTRY_DATA},
             description=IMPORTED if added is not None else None,
             description_placeholders=added_summary(self.hass, added) if added is not None else None,
+        )
+
+    async def async_step_confirm_image_processing(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """An image processing entity, as a source of its own, offered with automatic discovery off"""
+        if user_input is not None:
+            return self._create_found()
+        return self.async_show_form(
+            step_id=STEP_CONFIRM_IMAGE_PROCESSING,
+            description_placeholders={"name": self._found[CONF_NAME], "supernotify": await supernotify_status(self.hass)},
         )
 
     async def async_step_confirm_anpr(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
@@ -888,7 +924,25 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
             return await self.async_step_discovery()
         if self.config_entry.data.get(CONF_TYPE) == TYPE_ANPR:
             return await self.async_step_anpr()
+        if self.config_entry.data.get(CONF_TYPE) == TYPE_IMAGE_PROCESSING:
+            return await self.async_step_image_processing()
         return await self.async_step_settings()
+
+    async def async_step_image_processing(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """An image processing source's settings"""
+        if user_input is not None:
+            settings = {
+                key: value
+                for key, value in flattened(user_input).items()
+                if (value or value == 0) and value != IMAGE_PROCESSING_DEFAULTS.get(key)
+            }
+            return self.async_create_entry(data=settings)
+        schema = await image_processing_schema(self.hass)
+        return self.async_show_form(
+            step_id=STEP_IMAGE_PROCESSING,
+            data_schema=self.add_suggested_values_to_schema(schema, sectioned(schema, dict(self.config_entry.options))),
+            description_placeholders={"name": entry_name(self.config_entry)},
+        )
 
     async def async_step_anpr(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """An anpr2mqtt entry's settings, saying which camera is linked, as found by itself"""
@@ -1020,9 +1074,6 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
                 for key, value in flattened(user_input).items()
                 if (value or value is False or value == 0) and value != DEFAULTS.get(key)
             }
-            if settings.get(CONF_ALPR_ENTITY) and not self.config_entry.options.get(CONF_ALPR_ENTITY):
-                # for the ANPR/ALPR entity to read the snapshot notified, chosen as its source
-                settings[CONF_LAST_SNAPSHOT] = True
             return self.async_create_entry(data=settings)
         data = self.config_entry.data
         config = frigate_config(self.hass, data[CONF_SOURCE_ENTRY_ID])

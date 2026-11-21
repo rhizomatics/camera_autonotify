@@ -36,6 +36,10 @@
                 "data_description": {
                     "anpr2mqtt_archive": "Porta i gruppi di targhe di anpr2mqtt come categorie di veicoli, con le loro correzioni ed esclusioni, le sue impostazioni DVLA e la sua cronologia delle visite. Vedrai cosa è stato trovato prima di importare qualcosa. Un .tar o .tar.gz delle cartelle config e data di anpr2mqtt, creato ad esempio con: tar czf anpr2mqtt.tgz config data/plate"
                 }
+            },
+            "confirm_image_processing": {
+                "title": "Notifiche per {name}",
+                "description": "Ricevere notifiche delle targhe o dei volti che {name} trova nelle immagini della propria telecamera, quando Home Assistant le analizza?\n\n{supernotify}"
             }
         },
         "error": {
@@ -250,19 +254,7 @@
                             "deliveries": "Limita le notifiche a queste delivery Supernotify. Lascia vuoto per far scegliere a Supernotify.",
                             "actions_global": "Usa le Azioni scelte nelle Impostazioni globali. Disattiva per scegliere qui sotto quelle di questa telecamera o zona, o nessuna.",
                             "actions": "I pulsanti delle notifiche di questa telecamera o zona, quando non come le Impostazioni globali. Lascia vuoto per nessuno.",
-                            "last_snapshot": "Un'entità telecamera con l'istantanea dell'ultima notifica, per una dashboard o come sorgente di un'entità ANPR/ALPR come OpenALPR. Attiva all'inizio dove è scelta un'entità ANPR/ALPR."
-                        }
-                    },
-                    "plates": {
-                        "name": "Targhe",
-                        "description": "Leggi le targhe con un'entità di elaborazione immagini ANPR/ALPR, come quella di OpenALPR, invece di Frigate, per una telecamera in cui il riconoscimento targhe di Frigate è disattivato o scarso. La targa di Frigate viene usata solo se l'entità non ne legge nessuna. Ogni notifica di un veicolo la attende, fino a 10 secondi, una volta per revisione. Imposta la sua sorgente sulla telecamera Ultima istantanea di notifica di questa telecamera, così legge l'istantanea notificata e non la vista dal vivo. OpenALPR Cloud si configura nello YAML di Home Assistant, sotto image_processing:, e la sua entità si sceglie poi qui.",
-                        "data": {
-                            "alpr_entity": "Entità ANPR/ALPR",
-                            "alpr_vehicles_only": "Solo per veicoli"
-                        },
-                        "data_description": {
-                            "alpr_entity": "L'entità di elaborazione immagini che legge le targhe di questa telecamera, come quella di OpenALPR.",
-                            "alpr_vehicles_only": "Leggi le targhe solo dove è stata vista un'auto, un furgone, un camion, un autobus o una moto."
+                            "last_snapshot": "Un'entità telecamera che mostra l'istantanea dell'ultima notifica, per una dashboard."
                         }
                     }
                 }
@@ -319,6 +311,40 @@
             "import_anpr2mqtt": {
                 "title": "Importa da anpr2mqtt",
                 "description": "Trovato nell'archivio:\n\n{found}\n\nImportarlo? Qui non viene rimosso nulla: vengono aggiunte nuove categorie e targhe, le categorie già presenti ricevono solo le targhe che non hanno, e le impostazioni trovate sostituiscono quelle impostate qui."
+            },
+            "image_processing": {
+                "title": "Notifiche per {name}",
+                "description": "Le targhe o i volti che {name} trova nelle immagini della propria telecamera, quando Home Assistant le analizza.",
+                "data": {
+                    "camera_entity": "Telecamera",
+                    "image_processing_confidence": "Confidenza minima",
+                    "quiet_period": "Periodo di silenzio",
+                    "priority": "Priorità"
+                },
+                "data_description": {
+                    "camera_entity": "La telecamera che l'entità analizza, per la sua immagine in ogni notifica. Lascia vuoto per nessuna.",
+                    "image_processing_confidence": "Ignora ciò di cui l'entità è meno sicura.",
+                    "quiet_period": "Non notificare di nuovo la stessa targa o lo stesso volto entro questo tempo.",
+                    "priority": "Per un volto. La priorità di una targa segue le regole dei veicoli delle impostazioni globali."
+                },
+                "sections": {
+                    "notify": {
+                        "name": "Destinatari",
+                        "description": "Chi e cosa viene notificato. Lascia vuoto per la scelta abituale.",
+                        "data": {
+                            "targets": "Destinazioni",
+                            "target": "Destinazioni",
+                            "custom_target": "Destinazioni personalizzate",
+                            "deliveries": "Delivery"
+                        },
+                        "data_description": {
+                            "targets": "Entità di notifica a cui inviare. Lascia vuoto per tutti i telefoni con l'app Home Assistant.",
+                            "target": "Chi o cosa notificare, come per qualsiasi notifica Supernotify. Lascia vuoto per far scegliere a Supernotify.",
+                            "custom_target": "Destinazioni fuori da Home Assistant, come indirizzi e-mail o numeri di telefono.",
+                            "deliveries": "Limita le notifiche a queste delivery Supernotify. Lascia vuoto per far scegliere a Supernotify."
+                        }
+                    }
+                }
             }
         },
         "error": {

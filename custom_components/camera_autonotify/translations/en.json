@@ -36,6 +36,10 @@
                 "data_description": {
                     "anpr2mqtt_archive": "Bring over anpr2mqtt's plate groups as vehicle categories, with their corrections and ignores, its DVLA settings and its visit history. You'll see what's found before anything is imported. A .tar or .tar.gz of anpr2mqtt's config and data folders, such as made with: tar czf anpr2mqtt.tgz config data/plate"
                 }
+            },
+            "confirm_image_processing": {
+                "title": "Notifications for {name}",
+                "description": "Get notified of the plates or faces {name} finds in its own camera's images, as Home Assistant scans them?\n\n{supernotify}"
             }
         },
         "error": {
@@ -250,19 +254,7 @@
                             "deliveries": "Limit notifications to these Supernotify deliveries. Leave empty for Supernotify to choose.",
                             "actions_global": "Use the Actions chosen in Global Settings. Switch off to choose this camera's or zone's own below, or none.",
                             "actions": "The buttons on this camera's or zone's notifications, when not as Global Settings. Leave empty for none.",
-                            "last_snapshot": "A camera entity showing the snapshot of the last notification, for a dashboard, or as the source of an ANPR/ALPR entity such as OpenALPR. On to begin with where an ANPR/ALPR entity is chosen."
-                        }
-                    },
-                    "plates": {
-                        "name": "Number plates",
-                        "description": "Read plates with an image processing ANPR/ALPR entity, such as OpenALPR's, instead of Frigate, for a camera where Frigate's plate recognition is off or poor. Frigate's plate is used only where it reads none. Each notification of a vehicle waits for it, up to 10 seconds, once for each review. Set its source to this camera's Last notification snapshot camera, so it reads the snapshot notified, not the live view. OpenALPR Cloud is set up in Home Assistant's YAML, under image_processing:, and its entity then chosen here.",
-                        "data": {
-                            "alpr_entity": "ANPR/ALPR entity",
-                            "alpr_vehicles_only": "Only for vehicles"
-                        },
-                        "data_description": {
-                            "alpr_entity": "The image processing entity that reads this camera's plates, such as OpenALPR's.",
-                            "alpr_vehicles_only": "Only read plates where a car, van, truck, bus or motorcycle was seen."
+                            "last_snapshot": "A camera entity showing the snapshot of the last notification, for a dashboard."
                         }
                     }
                 }
@@ -319,6 +311,40 @@
             "import_anpr2mqtt": {
                 "title": "Import from anpr2mqtt",
                 "description": "Found in the archive:\n\n{found}\n\nImport it? Nothing here is removed: new categories and plates are added, categories already here get only the plates they don't have, and the settings found replace those set here."
+            },
+            "image_processing": {
+                "title": "Notifications for {name}",
+                "description": "The plates or faces {name} finds in its own camera's images, as Home Assistant scans them.",
+                "data": {
+                    "camera_entity": "Camera",
+                    "image_processing_confidence": "Minimum confidence",
+                    "quiet_period": "Quiet period",
+                    "priority": "Priority"
+                },
+                "data_description": {
+                    "camera_entity": "The camera the entity scans, for its image in each notification. Leave empty for none.",
+                    "image_processing_confidence": "Ignore what the entity is less sure of than this.",
+                    "quiet_period": "Don't notify the same plate or face again within this long.",
+                    "priority": "For a face. A plate's priority is by the vehicle rules of Global Settings."
+                },
+                "sections": {
+                    "notify": {
+                        "name": "Targets",
+                        "description": "Who and what is notified. Leave empty for the usual choice.",
+                        "data": {
+                            "targets": "Targets",
+                            "target": "Targets",
+                            "custom_target": "Custom targets",
+                            "deliveries": "Deliveries"
+                        },
+                        "data_description": {
+                            "targets": "Notify entities to send to. Leave empty for every phone with the Home Assistant app.",
+                            "target": "Who or what to notify, as for any Supernotify notification. Leave empty for Supernotify to choose.",
+                            "custom_target": "Targets outside of Home Assistant, such as e-mail addresses or phone numbers.",
+                            "deliveries": "Limit notifications to these Supernotify deliveries. Leave empty for Supernotify to choose."
+                        }
+                    }
+                }
             }
         },
         "error": {

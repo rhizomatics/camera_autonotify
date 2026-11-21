@@ -1,25 +1,21 @@
 """The Last notification snapshot camera of a camera's entry, Frigate's snapshot of the detection last notified, for a
-dashboard, or for an image processing ANPR/ALPR entity, such as OpenALPR's, to read as its source, since a scan reads
-only its source camera. An option of any camera, on to begin with where such an entity is chosen"""
+dashboard. An option of any camera"""
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from typing import TYPE_CHECKING
 
-from aiohttp import ClientError
 from homeassistant.components.camera import Camera
 from homeassistant.const import CONF_DEVICE_ID, Platform
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import DeviceInfo
 
 from .compat import LINKED_DEVICES
-from .const import ALPR_TIMEOUT, CONF_SOURCE_ENTRY_ID, DOMAIN
+from .const import CONF_SOURCE_ENTRY_ID, DOMAIN
 from .entries import entry_name, wants_last_snapshot
-from .frigate import notifications_url, snapshot_url
+from .frigate import async_snapshot
 from .hub import ReviewWatcher
 
 if TYPE_CHECKING:
@@ -74,16 +70,8 @@ class LastSnapshotCamera(Camera):
             return None
         if self._fetched is not None and self._fetched[0] == detection:
             return self._fetched[1]
-        notifications = notifications_url(self.hass, self.source_entry_id, internal=True)
-        if notifications is None:
-            return None
-        try:
-            async with asyncio.timeout(ALPR_TIMEOUT):
-                response = await async_get_clientsession(self.hass).get(snapshot_url(notifications, detection))
-                response.raise_for_status()
-                image = await response.read()
-        except (TimeoutError, ClientError) as error:
-            _LOGGER.warning("CAMERA_AUTONOTIFY No snapshot of %s for %s: %s", detection, self.entity_id, error)
+        image = await async_snapshot(self.hass, self.source_entry_id, detection)
+        if image is None:
             return None
         self._fetched = (detection, image)
         return image

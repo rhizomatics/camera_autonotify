@@ -11,11 +11,13 @@ Notifications for what your security cameras see in Home Assistant, sent through
 
 ## Integrations
 
-At present there are two supported image sources to drive notifications:
+At present there are three supported image sources to drive notifications:
 
 -  [Frigate](https://frigate.video): every camera is found and set up by itself, and each Frigate review is sent as a notification with its snapshot, tapped to play the clip.
 
 - [anpr2mqtt](https://anpr2mqtt.rhizomatics.org.uk) images detected on FTP or NAS "landing zones" when images uploaded by cameras, usually for ANPR/ALPR, but can be for any reason. Can also OCR into images, for example detecting `forward` or `backward` on an ANPR camera image. Images are picked up from MQTT, and some of the advanced `anpr2mqtt` features like plate tracking, DVLA lookup, known plate patterns are available now inside Camera Auto Notify.
+
+- [Home Assistant Image Processing](https://www.home-assistant.io/integrations/image_processing/) integrations, such as OpenALPR, scanning any Home Assistant camera, a Frigate one included: plates by `found_plate` events, faces by `detect_face`. See [Image Processing](./image_processing.md).
 
 Other camera integrations may follow, possibly UniFi Protect or Viseron.
 

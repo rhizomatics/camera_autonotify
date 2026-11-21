@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import time
 from dataclasses import replace
@@ -15,10 +14,6 @@ from homeassistant.helpers import entity_registry as er
 
 from .actions import buttons
 from .const import (
-    ALPR_MIN_CONFIDENCE,
-    ALPR_TIMEOUT,
-    CONF_ALPR_ENTITY,
-    CONF_ALPR_VEHICLES_ONLY,
     CONF_CUSTOM_TARGET,
     CONF_DELIVERIES,
     CONF_GENAI_IMAGE,
@@ -164,11 +159,18 @@ def mobile_app_targets(hass: HomeAssistant) -> list[str]:
 
 
 async def async_notify_message(
-    hass: HomeAssistant, title: str, message: str, priority: str, tag: str, options: Mapping[str, Any] | None = None
+    hass: HomeAssistant,
+    title: str,
+    message: str,
+    priority: str,
+    tag: str,
+    options: Mapping[str, Any] | None = None,
+    extra: Mapping[str, Any] | None = None,
 ) -> None:
     """A notification of the integration's own, not of a review, such as a Frigate server failing its health check,
-    with the rules applied to its message like any other, through Supernotify, or else to every phone, and for a
-    camera, to whoever its options choose"""
+    or an image processing entity's sighting, with the rules applied to its message like any other, through
+    Supernotify, with whatever more it's given, such as a camera's image, or else to every phone, and for a camera,
+    to whoever its options choose"""
     options = options or {}
     await async_load_texts(hass)
     outcome = apply_rules(notification_rules(hass), message)
@@ -191,8 +193,9 @@ async def async_notify_message(
             for key in (CONF_TARGET, CONF_CUSTOM_TARGET):
                 if value := options.get(key):
                     data[key] = value
+            data.update(extra or {})
             if outcome.scenarios:
-                data["apply_scenarios"] = list(outcome.scenarios)
+                data["apply_scenarios"] = [*data.get("apply_scenarios", []), *outcome.scenarios]
             await hass.services.async_call(SUPERNOTIFY_DOMAIN, "notify", data, blocking=True, context=context)
             return
         if not (targets := options.get(CONF_TARGETS) or mobile_app_targets(hass)):
@@ -209,6 +212,23 @@ async def async_notify_message(
         _LOGGER.exception("CAMERA_AUTONOTIFY Notification failed: %s", title)
 
 
+def said_vehicle(hass: HomeAssistant, vehicle: Vehicle) -> list[str]:
+    """The vehicle as its category describes it, with its plate, what its register knows, and its sightings"""
+    description = vehicle.match.description
+    said = [f"{description} ({vehicle.plate})" if description else vehicle.plate]
+    if vehicle.lookup is not None and (looked_up := vehicle.lookup.said()):
+        said.append(looked_up)
+    history = vehicle.history
+    if history.previous_sightings:
+        said.append(text(hass, FACT_SIGHTINGS, count=history.previous_sightings))
+    if history.visitor in FACT_VISITORS:
+        # previously seen being said by the sightings before already
+        said.append(text(hass, FACT_VISITORS[history.visitor]))
+    if history.within_time_range is False:
+        said.append(text(hass, FACT_UNUSUAL_TIME))
+    return said
+
+
 class Notifier:
     """Sends each notification for a camera's or a zone's entry"""
 
@@ -218,8 +238,6 @@ class Notifier:
         self.name: str = entry_name(entry)
         self.is_zone: bool = entry.data.get(CONF_TYPE) == TYPE_ZONE
         self.source_entry_id: str = entry.data[CONF_SOURCE_ENTRY_ID]
-        # each review's plate read by ANPR/ALPR image processing, or none, so it's scanned once
-        self._alpr: dict[str, tuple[str, float] | None] = {}
         # the detection whose snapshot was last notified or read for a plate, for the Last notification snapshot camera
         self.last_snapshot: str | None = None
 
@@ -273,25 +291,20 @@ class Notifier:
         return replace(outcome, priority=priority, silence=outcome.silence or found.silence, scenarios=scenarios)
 
     async def async_vehicle(self, decision: Decision) -> Vehicle | None:
-        """The vehicle whose plate was read in the review, classified, looked up and its history, counting it as a
-        sighting once for the review: read by the camera's ANPR/ALPR entity where one is chosen, it being chosen where
-        Frigate's own reading is missing or poor, and by Frigate where there's none or it reads nothing"""
+        """The vehicle whose plate Frigate read in the review, classified, looked up and its history, counting it as
+        a sighting once for the review"""
         store = fact_store(self.hass, self.source_entry_id)
         review = decision.review
-        best, source = await self.async_alpr(decision), "openalpr"
-        if best is None:
-            best = store.best_plate(review.detections) if store is not None else None
-            source = "frigate"
+        best = store.best_plate(review.detections) if store is not None else None
         if best is None:
             return None
         plate, score = best
         found = vehicles(self.hass)
-        record = found.first_time_for(f"{review.id}:{plate}", time.time())
         return await found.async_classify(
             plate,
             review.camera,
-            record=record,
-            source=source,
+            record=found.first_time_for(f"{review.id}:{plate}", time.time()),
+            source="frigate",
             entity_id=camera_entity_id(self.hass, self.source_entry_id, review.camera),
             confidence=score,
         )
@@ -324,53 +337,8 @@ class Notifier:
         said.extend(text(self.hass, FACT_STATE, model=_friendly(m), state=s.replace("_", " ")) for m, s in found.states)
         return FACTS_SEPARATOR.join(said)
 
-    async def async_alpr(self, decision: Decision) -> tuple[str, float] | None:
-        """The plate an image processing ANPR/ALPR entity, such as OpenALPR's, reads in the camera's image, only for
-        a vehicle unless chosen otherwise, and once for each review, its scan delaying the
-        notification by however long it takes, at most ALPR_TIMEOUT"""
-        entity_id = self.entry.options.get(CONF_ALPR_ENTITY)
-        review = decision.review
-        if not entity_id:
-            return None
-        if self.entry.options.get(CONF_ALPR_VEHICLES_ONLY, True) and not VEHICLE_OBJECTS & set(review.objects):
-            return None
-        if review.id in self._alpr:
-            return self._alpr[review.id]
-        found: tuple[str, float] | None = None
-        # the snapshot for the Last notification snapshot camera, which the entity reads where it's chosen as its source
-        self.last_snapshot = decision.detection_id
-        try:
-            async with asyncio.timeout(ALPR_TIMEOUT):
-                await self.hass.services.async_call("image_processing", "scan", {ATTR_ENTITY_ID: entity_id}, blocking=True)
-        except (TimeoutError, HomeAssistantError) as error:
-            _LOGGER.warning("CAMERA_AUTONOTIFY %s couldn't read a plate: %s", entity_id, error or "timed out")
-        else:
-            state = self.hass.states.get(entity_id)
-            plates = state.attributes.get("plates") if state is not None else None
-            if isinstance(plates, dict) and plates:
-                plate, confidence = max(plates.items(), key=lambda item: float(item[1]))
-                if float(confidence) >= ALPR_MIN_CONFIDENCE:
-                    # as a fraction, as Frigate's own scores are
-                    found = (str(plate), float(confidence) / 100)
-        # the last few reviews only
-        self._alpr = {**dict(list(self._alpr.items())[-20:]), review.id: found}
-        return found
-
     def said_vehicle(self, vehicle: Vehicle) -> list[str]:
-        """The vehicle as its category describes it, with its plate, what its register knows, and its sightings"""
-        description = vehicle.match.description
-        said = [f"{description} ({vehicle.plate})" if description else vehicle.plate]
-        if vehicle.lookup is not None and (looked_up := vehicle.lookup.said()):
-            said.append(looked_up)
-        history = vehicle.history
-        if history.previous_sightings:
-            said.append(text(self.hass, FACT_SIGHTINGS, count=history.previous_sightings))
-        if history.visitor in FACT_VISITORS:
-            # previously seen being said by the sightings before already
-            said.append(text(self.hass, FACT_VISITORS[history.visitor]))
-        if history.within_time_range is False:
-            said.append(text(self.hass, FACT_UNUSUAL_TIME))
-        return said
+        return said_vehicle(self.hass, vehicle)
 
     def priority(self, decision: Decision, outcome: Outcome) -> str:
         """By the review's severity, or a summary's threat level, raised by a rule, and only sounding again for an

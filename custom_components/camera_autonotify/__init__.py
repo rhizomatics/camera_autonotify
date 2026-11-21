@@ -11,13 +11,22 @@ from homeassistant.helpers import config_validation as cv
 
 from .actions import async_listen
 from .anpr import AnprWatcher
-from .const import CONF_SOURCE_ENTRY_ID, DISCOVERY_TITLE, DISCOVERY_TITLE_BEFORE, DOMAIN, TYPE_ANPR, TYPE_DISCOVERY
+from .const import (
+    CONF_SOURCE_ENTRY_ID,
+    DISCOVERY_TITLE,
+    DISCOVERY_TITLE_BEFORE,
+    DOMAIN,
+    TYPE_ANPR,
+    TYPE_DISCOVERY,
+    TYPE_IMAGE_PROCESSING,
+)
 from .device import async_register_device
 from .discovery import async_discover, async_start_discovery
 from .entries import entry_name
 from .frigate import frigate_config, topic_prefix
 from .health import HealthMonitor, async_start_health_check
 from .hub import ReviewWatcher, async_watch
+from .image_source import ImageSourceWatcher
 from .services import async_register_services
 from .summary import async_start_summaries
 from .texts import async_load_texts
@@ -33,7 +42,7 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 PLATFORMS: list[Platform] = [Platform.CAMERA]
 
 # a camera's or zone's reviews, or the health checks of the discovery entry, unless switched off
-type CameraAutoNotifyConfigEntry = ConfigEntry[ReviewWatcher | AnprWatcher | HealthMonitor | None]
+type CameraAutoNotifyConfigEntry = ConfigEntry[ReviewWatcher | AnprWatcher | ImageSourceWatcher | HealthMonitor | None]
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -55,6 +64,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: CameraAutoNotifyConfigEn
         async_discover(hass)
         entry.runtime_data = async_start_health_check(hass, entry)
         async_start_summaries(hass, entry)
+        return True
+    if entry.data.get(CONF_TYPE) == TYPE_IMAGE_PROCESSING:
+        # an image processing entity's own scans of its own camera, needing neither Frigate nor MQTT
+        source = ImageSourceWatcher(hass, entry)
+        entry.async_on_unload(source.async_start())
+        entry.runtime_data = source
         return True
     if entry.data.get(CONF_TYPE) == TYPE_ANPR:
         # plates read by anpr2mqtt, from its sensor's state, needing neither Frigate nor MQTT here

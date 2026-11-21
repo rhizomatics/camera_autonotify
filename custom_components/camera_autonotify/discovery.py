@@ -1,9 +1,9 @@
-"""Find Frigate cameras, and zones if wanted, and anpr2mqtt's cameras, and set each up or offer it as a discovered
-config entry"""
+"""Find Frigate cameras, and zones if wanted, anpr2mqtt's cameras, and Home Assistant's image processing entities, and
+set each up or offer it as a discovered config entry"""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from homeassistant.config_entries import SOURCE_IMPORT, SOURCE_INTEGRATION_DISCOVERY
@@ -12,10 +12,12 @@ from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import discovery_flow
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.start import async_at_started
 
 from .const import (
     CONF_AUTO_DISCOVER,
     CONF_DISCOVER_ZONES,
+    CONF_IMAGE_PROCESSING_EVENTS,
     CONF_SOURCE,
     CONF_SOURCE_ENTRY_ID,
     CONF_SOURCE_NAME,
@@ -23,23 +25,29 @@ from .const import (
     FRIGATE_DOMAIN,
     SOURCE_ANPR2MQTT,
     SOURCE_FRIGATE,
+    SOURCE_IMAGE_PROCESSING,
     TYPE_ANPR,
     TYPE_CAMERA,
     TYPE_DISCOVERY,
+    TYPE_IMAGE_PROCESSING,
     TYPE_ZONE,
 )
+from .imaging import IMAGE_PROCESSING_DOMAIN, kind_of
 
 if TYPE_CHECKING:
     from homeassistant.helpers.entity_registry import EventEntityRegistryUpdatedData
 
 CAMERA_DOMAIN = "camera"
+# where each kind of entry is from, a Frigate camera or zone otherwise
+SOURCES = {TYPE_ANPR: SOURCE_ANPR2MQTT, TYPE_IMAGE_PROCESSING: SOURCE_IMAGE_PROCESSING}
 # the unique id the Frigate integration gives a camera's entity, `{entry_id}:camera:{name}`, the name as in Frigate
 CAMERA_UNIQUE_ID = ":camera:"
 
 
 @dataclass(frozen=True)
 class Found:
-    """A Frigate camera or zone, each a device of the Frigate integration"""
+    """A Frigate camera or zone, each a device of the Frigate integration, an anpr2mqtt sensor, or an image processing
+    entity, with what it finds"""
 
     device_id: str
     name: str
@@ -48,6 +56,7 @@ class Found:
     # the camera's name as Frigate has it, as reviews give it, or a zone's as slugified for its device, since reviews
     # give a zone as written in the Frigate config, with whatever case it has there
     source_name: str
+    events: tuple[str, ...] = field(default=())
 
 
 def _device_name(device: dr.DeviceEntry) -> str:
@@ -116,6 +125,17 @@ def find_anpr(hass: HomeAssistant) -> list[Found]:
 
 
 @callback
+def find_image_processing(hass: HomeAssistant) -> list[Found]:
+    """Each image processing entity whose device class says it finds plates or faces, by its state, as Home Assistant's
+    Core interface has it"""
+    found: list[Found] = []
+    for state in hass.states.async_all(IMAGE_PROCESSING_DOMAIN):
+        if kind := kind_of(state.attributes.get("device_class")):
+            found.append(Found("", state.name, TYPE_IMAGE_PROCESSING, "", state.entity_id, (kind,)))
+    return found
+
+
+@callback
 def _discovery_options(hass: HomeAssistant) -> dict[str, bool]:
     """The choices of the discovery entry, nothing found while it's disabled or deleted"""
     for entry in hass.config_entries.async_entries(DOMAIN, include_disabled=False):
@@ -136,26 +156,30 @@ def async_discover(hass: HomeAssistant) -> None:
         return
     automatic = SOURCE_IMPORT if options[CONF_AUTO_DISCOVER] else SOURCE_INTEGRATION_DISCOVERY
     found = find_cameras(hass) + (find_zones(hass) if options[CONF_DISCOVER_ZONES] else []) + find_anpr(hass)
+    found += find_image_processing(hass)
     for item in found:
+        data: dict[str, object] = {
+            CONF_DEVICE_ID: item.device_id,
+            CONF_NAME: item.name,
+            CONF_TYPE: item.type,
+            CONF_SOURCE: SOURCES.get(item.type, SOURCE_FRIGATE),
+            CONF_SOURCE_ENTRY_ID: item.source_entry_id,
+            CONF_SOURCE_NAME: item.source_name,
+        }
+        source = automatic
+        if item.type == TYPE_ANPR:
+            source = SOURCE_INTEGRATION_DISCOVERY
+        elif item.type == TYPE_IMAGE_PROCESSING:
+            # what it finds, by its device class
+            data[CONF_IMAGE_PROCESSING_EVENTS] = list(item.events)
         # those already configured, ignored or in progress are dropped by the flow's unique id
-        discovery_flow.async_create_flow(
-            hass,
-            DOMAIN,
-            context={"source": SOURCE_INTEGRATION_DISCOVERY if item.type == TYPE_ANPR else automatic},
-            data={
-                CONF_DEVICE_ID: item.device_id,
-                CONF_NAME: item.name,
-                CONF_TYPE: item.type,
-                CONF_SOURCE: SOURCE_ANPR2MQTT if item.type == TYPE_ANPR else SOURCE_FRIGATE,
-                CONF_SOURCE_ENTRY_ID: item.source_entry_id,
-                CONF_SOURCE_NAME: item.source_name,
-            },
-        )
+        discovery_flow.async_create_flow(hass, DOMAIN, context={"source": source}, data=data)
 
 
 @callback
 def async_start_discovery(hass: HomeAssistant) -> None:
-    """Look for cameras now, and again whenever Frigate adds an entity, as it does for a new camera or zone"""
+    """Look for cameras now, again whenever Frigate adds an entity, as it does for a new camera or zone, and once Home
+    Assistant has started, for image processing entities"""
 
     @callback
     def entity_registry_updated(event: Event[EventEntityRegistryUpdatedData]) -> None:
@@ -167,3 +191,10 @@ def async_start_discovery(hass: HomeAssistant) -> None:
 
     hass.bus.async_listen(er.EVENT_ENTITY_REGISTRY_UPDATED, entity_registry_updated)
     async_discover(hass)
+
+    @callback
+    def started(_hass: HomeAssistant) -> None:
+        # image processing entities, set up from YAML, often with no registry entry, and maybe only after this
+        async_discover(hass)
+
+    async_at_started(hass, started)

@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import asyncio
+import logging
 from typing import Any, Protocol
 
+from aiohttp import ClientError
 from homeassistant.const import UnitOfSpeed
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.util import slugify
 from homeassistant.util.unit_conversion import SpeedConverter
@@ -21,10 +25,13 @@ from .const import (
     IMAGE_SNAPSHOT_CROP,
     IMAGE_THUMBNAIL,
     MPH_COUNTRIES,
+    SNAPSHOT_TIMEOUT,
     SPEED_KMH,
     SPEED_MPH,
 )
 from .facts import FactStore
+
+_LOGGER = logging.getLogger(__name__)
 
 DEFAULT_TOPIC_PREFIX = "frigate"
 # the Frigate integration keeps each server's config, as Frigate itself reports it, under its entry id
@@ -189,6 +196,21 @@ IMAGE_PATHS = {
     # only where the camera records, and never with the box or crop
     IMAGE_PREVIEW: "event_preview.gif",
 }
+
+
+async def async_snapshot(hass: HomeAssistant, source_entry_id: str, detection_id: str) -> bytes | None:
+    """Frigate's snapshot of a detection, by the notification proxy on Home Assistant's own address"""
+    notifications = notifications_url(hass, source_entry_id, internal=True)
+    if notifications is None:
+        return None
+    try:
+        async with asyncio.timeout(SNAPSHOT_TIMEOUT):
+            response = await async_get_clientsession(hass).get(snapshot_url(notifications, detection_id))
+            response.raise_for_status()
+            return await response.read()
+    except (TimeoutError, ClientError) as error:
+        _LOGGER.warning("CAMERA_AUTONOTIFY No snapshot of %s: %s", detection_id, error)
+        return None
 
 
 def image_url(notifications: str, detection_id: str, image: str | None = None) -> str:

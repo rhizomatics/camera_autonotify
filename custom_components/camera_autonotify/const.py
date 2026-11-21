@@ -27,6 +27,15 @@ CONF_SOURCE_NAME: Final[str] = "source_name"
 # source name, and the MQTT entry as the source entry
 TYPE_ANPR: Final[str] = "anpr"
 SOURCE_ANPR2MQTT: Final[str] = "anpr2mqtt"
+# an image processing entity of Home Assistant's, such as OpenALPR's, as a source of its own, its own scans of its own
+# camera notified: what it's notified of, plates or faces, by its device class, the camera whose image is notified, the
+# same plate or face not again within the quiet period, and the priority of a face, a plate's being by the vehicle rules
+TYPE_IMAGE_PROCESSING: Final[str] = "image_processing"
+SOURCE_IMAGE_PROCESSING: Final[str] = "image_processing"
+CONF_IMAGE_PROCESSING_EVENTS: Final[str] = "image_processing_events"
+CONF_CAMERA_ENTITY: Final[str] = "camera_entity"
+CONF_QUIET_PERIOD: Final[str] = "quiet_period"
+DEFAULT_QUIET_PERIOD: Final[int] = 300
 # the camera of a primary integration, such as Frigate, that sees what anpr2mqtt reads plates from, chosen by itself
 # unless set
 CONF_LINKED_CAMERA_AUTO: Final[str] = "linked_camera_auto"
@@ -189,16 +198,15 @@ CONF_DVLA_API_KEY_CLEAR: Final[str] = "dvla_api_key_clear"
 # the category the Known vehicle button adds a plate to, made if it isn't there
 CONF_KNOWN_CATEGORY: Final[str] = "known_category"
 DEFAULT_KNOWN_CATEGORY: Final[str] = "Known vehicles"
-# a plate read by an image processing ANPR/ALPR entity, such as OpenALPR's, for a camera, instead of Frigate,
-# only for a vehicle to begin with, a plate taken only at OpenALPR's own default confidence, as a percentage
-CONF_ALPR_ENTITY: Final[str] = "alpr_entity"
-CONF_ALPR_VEHICLES_ONLY: Final[str] = "alpr_vehicles_only"
-# a camera's Last notification snapshot camera entity, on where an ANPR/ALPR entity is chosen unless switched off
+# an image processing source's minimum confidence, as a percentage
+CONF_IMAGE_PROCESSING_CONFIDENCE: Final[str] = "image_processing_confidence"
+DEFAULT_IMAGE_PROCESSING_CONFIDENCE: Final[int] = 80
+# a camera's Last notification snapshot camera entity, for a dashboard
 CONF_LAST_SNAPSHOT: Final[str] = "last_snapshot"
 # an archive of anpr2mqtt's config and data folders, uploaded to import from
 CONF_ANPR2MQTT_ARCHIVE: Final[str] = "anpr2mqtt_archive"
-ALPR_MIN_CONFIDENCE: Final[float] = 80
-ALPR_TIMEOUT: Final[float] = 10
+# how long a snapshot is waited for
+SNAPSHOT_TIMEOUT: Final[float] = 10
 # fired for each sighting of a plate, as OpenALPR's `image_processing.found_plate` with more
 EVENT_VEHICLE: Final[str] = "camera_autonotify_vehicle"
 # an anpr2mqtt source's, whether its sightings keep anpr2mqtt's own classification, history and lookup, or are
