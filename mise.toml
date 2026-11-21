@@ -11,3 +11,4 @@ uv = { version = "latest", minimum_release_age = "2d" }
 [bootstrap.packages]
 # libturbojpeg for PyTurboJPEG; `mise bootstrap packages apply`
 "brew:jpeg-turbo" = { version = "latest", os = "macos" }
+"brew:pngquant" = { version = "latest", os = "macos" }
