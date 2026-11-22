@@ -39,7 +39,7 @@ Every licence plate read, by Frigate's plate recognition (ANPR/ALPR), an image p
   - `camera_autonotify.list_vehicle_categories`, with each category's plates
   - `camera_autonotify.reset_sightings`, forgetting a plate's sightings, or every plate's
 - **Import from anpr2mqtt**: upload a tarball of anpr2mqtt's `config` and `data` folders, such as made by `tar czf anpr2mqtt.tgz config data/plate`, in *Global Settings* or as an anpr2mqtt source is set up, to bring over its targets, corrections, ignores, DVLA settings and visit history. What's found is shown before anything is imported, and what was added after
-- **Event**: `camera_autonotify_vehicle` for each sighting, with `plate`, `entity_id` and `confidence` as OpenALPR's `image_processing.found_plate` has them, and the category, classification, lookup and history
+- **Event**: with *Fire vehicle events* on, in *Vehicles*, `camera_autonotify_vehicle` for each sighting, with `plate`, `entity_id` and `confidence` as OpenALPR's `image_processing.found_plate` has them, and the category, classification, lookup and history
 
 ![Plate Entry](./assets/screenshots/plate_entry.png){width=500}
 
@@ -68,7 +68,7 @@ anpr2mqtt reading the same plate from both Frigate and an ANPR/ALPR camera's ima
 
 Licence plates may be treated as personal data in your location, and it is your responsibility to know your obligations before collecting and using any data.
 
-Each plate's visit history, and its cached DVLA details, are kept by a hash of the plate salted with a secret of your installation's own, never the plate itself, and `reset_sightings` forgets a plate's history, or all of it.
+Each plate's visit history, and its cached DVLA details, are kept by a hash of the plate salted with a secret of your installation's own, never the plate itself, and `reset_sightings` forgets a plate's history, or all of it. *Fire vehicle events* is off to begin with, since Home Assistant's recorder keeps each event, plate included.
 
 This may mean that not all the features offered here are available for your use, especially if this plugin, intended for personal home use, is applied in a commercial environment.
 

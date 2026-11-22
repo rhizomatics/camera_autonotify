@@ -126,12 +126,14 @@
                             "vehicle_priority_unreadable": "Unreadable vehicle priority",
                             "vehicle_scenarios_unreadable": "Unreadable vehicle scenarios",
                             "known_category": "Category for the Known vehicle button",
+                            "vehicle_events": "Fire vehicle events",
                             "track_visits": "Track visits"
                         },
                         "data_description": {
                             "min_visit_gap": "A plate seen again within this long is the same visit, and isn't counted again.",
                             "history_days": "How long each plate's sightings are kept, never leaving Home Assistant.",
                             "known_category": "Notifications of an unknown vehicle have a Known vehicle button. Tapping it adds the plate, with any description typed, to this vehicle category, which is created if it doesn't exist.",
+                            "vehicle_events": "Fire a camera_autonotify_vehicle event for each sighting, with the plate, for automations. Off by default, since the recorder then keeps the plate in the clear.",
                             "track_visits": "Keep each plate's sightings, to say in notifications how often and when it's usually seen. Switch off to keep none. Sightings already kept stay until reset."
                         }
                     },

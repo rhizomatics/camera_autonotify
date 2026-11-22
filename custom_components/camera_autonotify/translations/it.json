@@ -126,12 +126,14 @@
                             "vehicle_priority_unreadable": "Priorità veicoli illeggibili",
                             "vehicle_scenarios_unreadable": "Scenari veicoli illeggibili",
                             "known_category": "Categoria del pulsante Veicolo noto",
+                            "vehicle_events": "Genera eventi veicolo",
                             "track_visits": "Traccia le visite"
                         },
                         "data_description": {
                             "min_visit_gap": "Una targa rivista entro questo tempo è la stessa visita, e non è contata di nuovo.",
                             "history_days": "Per quanto tempo sono conservati gli avvistamenti di ogni targa, senza mai lasciare Home Assistant.",
                             "known_category": "Le notifiche di un veicolo sconosciuto hanno un pulsante Veicolo noto. Toccandolo, la targa, con la descrizione scritta, viene aggiunta a questa categoria di veicoli, creata se non esiste.",
+                            "vehicle_events": "Genera un evento camera_autonotify_vehicle per ogni avvistamento, con la targa, per le automazioni. Disattivato per impostazione predefinita, perché il recorder conserva poi la targa in chiaro.",
                             "track_visits": "Conserva gli avvistamenti di ogni targa, per dire nelle notifiche quanto spesso e quando viene vista di solito. Disattiva per non conservarne nessuno. Gli avvistamenti già conservati restano finché non vengono azzerati."
                         }
                     },

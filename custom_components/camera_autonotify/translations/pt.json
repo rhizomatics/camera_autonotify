@@ -126,12 +126,14 @@
                             "vehicle_priority_unreadable": "Prioridade de veículos ilegíveis",
                             "vehicle_scenarios_unreadable": "Cenários de veículos ilegíveis",
                             "known_category": "Categoria do botão Veículo conhecido",
+                            "vehicle_events": "Gerar eventos de veículo",
                             "track_visits": "Acompanhar visitas"
                         },
                         "data_description": {
                             "min_visit_gap": "Uma matrícula vista de novo dentro deste tempo é a mesma visita, e não é contada outra vez.",
                             "history_days": "Durante quanto tempo os avistamentos de cada matrícula são guardados, sem nunca sair do Home Assistant.",
                             "known_category": "As notificações de um veículo desconhecido têm um botão Veículo conhecido. Ao tocá-lo, a matrícula, com a descrição escrita, é adicionada a esta categoria de veículos, criada se não existir.",
+                            "vehicle_events": "Gerar um evento camera_autonotify_vehicle por cada avistamento, com a matrícula, para automatizações. Desligado por omissão, pois o recorder guarda então a matrícula em claro.",
                             "track_visits": "Guardar os avistamentos de cada matrícula, para dizer nas notificações com que frequência e quando costuma ser vista. Desligue para não guardar nenhum. Os avistamentos já guardados ficam até serem repostos."
                         }
                     },

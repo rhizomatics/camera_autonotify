@@ -126,12 +126,14 @@
                             "vehicle_priority_unreadable": "Prioridade de veículos ilegíveis",
                             "vehicle_scenarios_unreadable": "Cenários de veículos ilegíveis",
                             "known_category": "Categoria do botão Veículo conhecido",
+                            "vehicle_events": "Gerar eventos de veículo",
                             "track_visits": "Rastrear visitas"
                         },
                         "data_description": {
                             "min_visit_gap": "Uma placa vista de novo dentro deste tempo é a mesma visita, e não é contada outra vez.",
                             "history_days": "Por quanto tempo os avistamentos de cada placa são guardados, sem nunca sair do Home Assistant.",
                             "known_category": "As notificações de um veículo desconhecido têm um botão Veículo conhecido. Ao tocá-lo, a placa, com a descrição digitada, é adicionada a esta categoria de veículos, criada se não existir.",
+                            "vehicle_events": "Gerar um evento camera_autonotify_vehicle a cada avistamento, com a placa, para automações. Desligado por padrão, pois o recorder passa a guardar a placa em texto puro.",
                             "track_visits": "Guardar os avistamentos de cada placa, para dizer nas notificações com que frequência e quando ela costuma ser vista. Desligue para não guardar nenhum. Os avistamentos já guardados ficam até serem redefinidos."
                         }
                     },

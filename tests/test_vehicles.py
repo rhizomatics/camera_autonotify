@@ -3,6 +3,7 @@ anpr2mqtt's, by an action, and imported from anpr2mqtt"""
 
 from __future__ import annotations
 
+import logging
 from dataclasses import replace
 from datetime import datetime, timedelta
 from typing import Any, Self, cast
@@ -22,6 +23,7 @@ from custom_components.camera_autonotify.compat import vol
 from custom_components.camera_autonotify.const import DOMAIN, SUBENTRY_PLATES, TYPE_DISCOVERY
 from custom_components.camera_autonotify.facts import FactStore
 from custom_components.camera_autonotify.frigate import fact_stores
+from custom_components.camera_autonotify.plates import redacted
 from custom_components.camera_autonotify.texts import async_load_texts
 from custom_components.camera_autonotify.vehicles import (
     ISSUE_LOOKUP_REFUSED,
@@ -143,7 +145,7 @@ async def test_failing_register_logged(hass: HomeAssistant, caplog: pytest.LogCa
     global_settings(hass)
     vehicles(hass).provider = Broken()
     assert (await vehicles(hass).async_classify("PX19TVD")).lookup is None
-    assert "couldn't look up PX19TVD: timed out" in caplog.text
+    assert "couldn't look up PX****D: timed out" in caplog.text
 
 
 async def test_no_lookup_without_a_key(hass: HomeAssistant):
@@ -451,7 +453,7 @@ class FakeResponse:
         if self.status >= 400:
             raise OSError(f"status {self.status}")
 
-    async def json(self) -> dict[str, Any]:
+    async def json(self, content_type: str | None = "application/json") -> dict[str, Any]:
         return self.body
 
 
@@ -493,6 +495,26 @@ async def test_dvla_provider():
         await DvlaProvider(as_session(FakeSession(FakeResponse(500))), "key").async_lookup("X")
 
 
+async def test_dvla_lookup_logged(caplog: pytest.LogCaptureFixture):
+    """Every call logged at info, the plate partly redacted, with the status and the DVLA's error where it gives one"""
+    caplog.set_level(logging.INFO)
+    await DvlaProvider(as_session(FakeSession(FakeResponse(200, {"make": "FORD"}))), "key").async_lookup("PX19 TVD")
+    assert "DVLA lookup of PX****D: 200" in caplog.text
+    assert "PX19TVD" not in caplog.text
+    errors = {"errors": [{"status": "400", "title": "Bad Request", "detail": "Invalid format for field - vrn"}]}
+    with pytest.raises(OSError, match="status 400"):
+        await DvlaProvider(as_session(FakeSession(FakeResponse(400, errors))), "key").async_lookup("X1")
+    assert "DVLA lookup of X*: 400 Bad Request: Invalid format for field - vrn" in caplog.text
+    with pytest.raises(LookupRefused):
+        await DvlaProvider(as_session(FakeSession(FakeResponse(403, {"message": "Forbidden"}))), "key").async_lookup("AB12CDE")
+    assert "DVLA lookup of AB****E: 403 Forbidden" in caplog.text
+
+
+def test_redacted():
+    assert redacted("px19 tvd") == "PX****D"
+    assert redacted("A1") == "A*"
+
+
 async def test_dvla_provider_from_key(hass: HomeAssistant):
     """The key in the entry's data, as Home Assistant keeps credentials, not its options"""
     entry = global_settings(hass, dvla_api_key="in the options")
@@ -517,10 +539,20 @@ async def test_unreadable_vehicle(hass: HomeAssistant):
     assert found.ruled(decision(), None)[1].priority is None
 
 
+async def test_no_event_unless_asked(hass: HomeAssistant, register: FakeRegister):
+    """Off to begin with, since it carries the plate, which the recorder would keep"""
+    global_settings(hass)
+    fired: list[dict[str, Any]] = []
+    hass.bus.async_listen("camera_autonotify_vehicle", lambda event: fired.append(dict(event.data)))
+    await vehicles(hass).async_classify("PX19TVD", record=True)
+    await hass.async_block_till_done()
+    assert fired == []
+
+
 async def test_event_for_each_sighting(hass: HomeAssistant, register: FakeRegister):
     """As OpenALPR's, plate, entity and confidence first, then what's known here"""
     add_frigate(hass)
-    global_settings(hass, {"Family cars": FAMILY})
+    global_settings(hass, {"Family cars": FAMILY}, vehicle_events=True)
     fired: list[dict[str, Any]] = []
     hass.bus.async_listen("camera_autonotify_vehicle", lambda event: fired.append(dict(event.data)))
     read_plate(hass, "J912UKL")
@@ -630,11 +662,41 @@ def salted(plate: str) -> str:
     return hmac.new(bytes.fromhex(SALT), plate.encode(), hashlib.sha256).hexdigest()
 
 
-async def test_history_kept_by_salted_hash(
+async def test_kept_by_salted_hash(
     hass: HomeAssistant, hass_storage: dict[str, Any], frozen: FrozenDateTimeFactory, register: FakeRegister
 ):
-    """Never by the plate, history or lookups, the betas' history, kept by plate, rewritten by hash and merged, and
-    their lookups, by plate, dropped"""
+    """One store, objects and lookups both kept by a salted hash of the plate's kind and itself, never the plate, with
+    each sighting's camera and source"""
+    hashed = salted("PX19TVD")
+    hass_storage["camera_autonotify.plate_salt"] = stored("plate_salt", {"salt": SALT})
+    earlier = round((NOW - timedelta(days=1)).timestamp())
+    hass_storage["camera_autonotify.tracker"] = stored(
+        "tracker", {"objects": {hashed: {"kind": "plate", "sightings": [[earlier, "gate", "frigate"]]}}, "lookups": {}}
+    )
+    global_settings(hass)
+    vehicle = await vehicles(hass).async_classify("PX19TVD", "drive", record=True, source="frigate")
+    assert vehicle.history.previous_sightings == 1
+    assert vehicle.lookup == PICKUP_TRUCK
+    await vehicles(hass).async_classify("AB12CDE", record=True)
+    # once saved, after the store's delay
+    frozen.tick(11)
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    data = hass_storage["camera_autonotify.tracker"]["data"]
+    assert set(data["objects"]) == {hashed, salted("AB12CDE")}
+    assert data["objects"][hashed] == {
+        "kind": "plate",
+        "sightings": [[earlier, "gate", "frigate"], [round(NOW.timestamp()), "drive", "frigate"]],
+    }
+    assert set(data["lookups"]) == {f"dvla:{hashed}", f"dvla:{salted('AB12CDE')}"}
+    assert "PX19TVD" not in str(data) and "AB12CDE" not in str(data)
+
+
+async def test_beta_history_moved(
+    hass: HomeAssistant, hass_storage: dict[str, Any], frozen: FrozenDateTimeFactory, register: FakeRegister
+):
+    """The betas' history, by plate or by hash, moved into the tracker, merged, and their stores removed, their lookups
+    dropped and looked up again"""
     hashed = salted("PX19TVD")
     hass_storage["camera_autonotify.plate_salt"] = stored("plate_salt", {"salt": SALT})
     hass_storage["camera_autonotify.plate_history"] = stored(
@@ -644,23 +706,38 @@ async def test_history_kept_by_salted_hash(
         "plate_lookup", {"dvla:AB12CDE": {"at": NOW.isoformat(), "found": None}}
     )
     global_settings(hass)
-    assert vehicles(hass).sightings("PX19TVD") == []
     vehicle = await vehicles(hass).async_classify("PX19TVD", record=True)
-    assert vehicle.history is not None and vehicle.history.previous_sightings == 2
-    assert vehicle.lookup == PICKUP_TRUCK
-    await vehicles(hass).async_classify("AB12CDE", record=True)
-    # looked up again, the beta's cached lookup being dropped
+    assert vehicle.history.previous_sightings == 2
+    await vehicles(hass).async_classify("AB12CDE")
     assert register.asked == ["PX19TVD", "AB12CDE"]
-    # once saved, after the store's delay
+    assert "camera_autonotify.plate_history" not in hass_storage
+    assert "camera_autonotify.plate_lookup" not in hass_storage
+    objects = hass_storage["camera_autonotify.tracker"]["data"]["objects"]
+    assert set(objects) == {hashed}
+    assert "PX19TVD" not in str(objects)
+
+
+async def test_pruned_when_loaded(
+    hass: HomeAssistant, hass_storage: dict[str, Any], frozen: FrozenDateTimeFactory, register: FakeRegister
+):
+    """A plate seen once, long ago, and an expired lookup, dropped, though the plate isn't seen again"""
+    hass_storage["camera_autonotify.plate_salt"] = stored("plate_salt", {"salt": SALT})
+    old = round((NOW - timedelta(days=30)).timestamp())
+    hass_storage["camera_autonotify.tracker"] = stored(
+        "tracker",
+        {
+            "objects": {salted("AB12CDE"): {"kind": "plate", "sightings": [[old, None, None]]}},
+            "lookups": {f"dvla:{salted('AB12CDE')}": {"at": old, "found": None}},
+        },
+    )
+    global_settings(hass, history_days=7)
+    await vehicles(hass).async_classify("PX19TVD")
     frozen.tick(11)
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
-    history = hass_storage["camera_autonotify.plate_history"]["data"]
-    assert set(history) == {hashed, salted("AB12CDE")}
-    lookups = hass_storage["camera_autonotify.plate_lookup"]["data"]
-    assert set(lookups) == {f"dvla:{hashed}", f"dvla:{salted('AB12CDE')}"}
-    for data in (history, lookups):
-        assert "PX19TVD" not in str(data) and "AB12CDE" not in str(data)
+    data = hass_storage["camera_autonotify.tracker"]["data"]
+    assert salted("AB12CDE") not in data["objects"]
+    assert f"dvla:{salted('AB12CDE')}" not in data["lookups"]
 
 
 async def test_salt_made_once(hass: HomeAssistant, hass_storage: dict[str, Any]):

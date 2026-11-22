@@ -31,6 +31,14 @@ def normalised(plate: str) -> str:
     return re.sub(r"[^A-Z0-9]", "", plate.upper())
 
 
+def redacted(plate: str) -> str:
+    """A plate as logged, only its first two characters and its last shown, `PX****D`"""
+    plate = normalised(plate)
+    if len(plate) <= 4:
+        return plate[:1] + "*" * (len(plate) - 1)
+    return plate[:2] + "*" * (len(plate) - 3) + plate[-1]
+
+
 def is_pattern(text: str) -> bool:
     return any(char in PATTERN_CHARS for char in text)
 

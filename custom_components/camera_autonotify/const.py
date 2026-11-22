@@ -209,6 +209,8 @@ CONF_ANPR2MQTT_ARCHIVE: Final[str] = "anpr2mqtt_archive"
 SNAPSHOT_TIMEOUT: Final[float] = 10
 # fired for each sighting of a plate, as OpenALPR's `image_processing.found_plate` with more
 EVENT_VEHICLE: Final[str] = "camera_autonotify_vehicle"
+# whether that event is fired, off unless asked for, since it carries the plate, which the recorder then keeps
+CONF_VEHICLE_EVENTS: Final[str] = "vehicle_events"
 # an anpr2mqtt source's, whether its sightings keep anpr2mqtt's own classification, history and lookup, or are
 # classified here
 CONF_ANPR_OWN_CLASSIFICATION: Final[str] = "anpr_own_classification"

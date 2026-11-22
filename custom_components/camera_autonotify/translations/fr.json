@@ -126,12 +126,14 @@
                             "vehicle_priority_unreadable": "Priorité des véhicules illisibles",
                             "vehicle_scenarios_unreadable": "Scénarios des véhicules illisibles",
                             "known_category": "Catégorie du bouton Véhicule connu",
+                            "vehicle_events": "Déclencher des événements de véhicule",
                             "track_visits": "Suivre les visites"
                         },
                         "data_description": {
                             "min_visit_gap": "Une plaque revue dans ce délai est la même visite, et n'est pas comptée à nouveau.",
                             "history_days": "Combien de temps les passages de chaque plaque sont gardés, sans jamais quitter Home Assistant.",
                             "known_category": "Les notifications d'un véhicule inconnu ont un bouton Véhicule connu. Il ajoute la plaque, avec la description saisie, à cette catégorie de véhicules, créée si elle n'existe pas.",
+                            "vehicle_events": "Déclencher un événement camera_autonotify_vehicle pour chaque passage, avec la plaque, pour les automatisations. Désactivé par défaut, car l'enregistreur conserve alors la plaque en clair.",
                             "track_visits": "Conserver les passages de chaque plaque, pour dire dans les notifications à quelle fréquence et quand elle est vue d'habitude. Désactivez pour n'en conserver aucun. Les passages déjà conservés restent jusqu'à leur réinitialisation."
                         }
                     },

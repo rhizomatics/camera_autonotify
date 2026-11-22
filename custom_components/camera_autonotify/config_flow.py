@@ -122,6 +122,7 @@ from .const import (
     CONF_TRACK_VISITS,
     CONF_UNREVIEWED_DESCRIPTIONS,
     CONF_UPDATE_SUB_LABEL,
+    CONF_VEHICLE_EVENTS,
     CONF_VEHICLE_PRIORITIES,
     CONF_VEHICLE_SCENARIOS,
     CONF_ZONE_MULTI,
@@ -438,6 +439,7 @@ def vehicles_schema(scenarios: list[str] | None) -> dict[vol.Marker, Any]:
                 SelectSelectorConfig(options=scenarios, multiple=True, custom_value=True, mode=SelectSelectorMode.DROPDOWN)
             )
     fields_[vol.Required(CONF_KNOWN_CATEGORY, default=DEFAULT_KNOWN_CATEGORY)] = TextSelector()
+    fields_[vol.Required(CONF_VEHICLE_EVENTS, default=False)] = BooleanSelector()
     fields_[vol.Required(CONF_TRACK_VISITS, default=True)] = BooleanSelector()
     fields_[vol.Required(CONF_MIN_VISIT_GAP, default=DEFAULT_MIN_VISIT_GAP)] = _seconds(86400)
     fields_[vol.Required(CONF_HISTORY_DAYS, default=DEFAULT_HISTORY_DAYS)] = NumberSelector(
