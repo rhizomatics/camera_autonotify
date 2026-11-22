@@ -104,7 +104,7 @@ The rest of the wording, such as "detected at", is translated into the language 
 
 ## What's New
 
-Things the blueprint doesn't do:
+Things AutoNotify does that the blueprint doesn't:
 
 - **Cameras set up by themselves**, including any added to Frigate later, with no automation per camera
 - **Zones of their own**, each notifying for reviews from any camera it's on. See [Zones](index.md#zones)
