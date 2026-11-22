@@ -21,11 +21,11 @@ def test_kinds_kept_apart():
 def test_round_trip():
     tracker = ObjectTracker(SALT)
     tracker.record(KIND_PLATE, "PX19TVD", Sighting(100, "gate", None))
-    tracker.remember("dvla", KIND_PLATE, "PX19TVD", 100, {"make": "FORD"})
+    tracker.remember("dvla", KIND_PLATE, "PX19TVD", 100, {"found": {"make": "FORD"}, "status": 200})
     again = ObjectTracker(SALT, tracker.as_dict())
     assert again.sightings(KIND_PLATE, "PX19TVD") == [Sighting(100, "gate", None)]
-    assert again.lookup("dvla", KIND_PLATE, "PX19TVD", 150, ttl=60) == (True, {"make": "FORD"})
-    assert again.lookup("dvla", KIND_PLATE, "PX19TVD", 200, ttl=60) == (False, None)
+    assert again.lookup("dvla", KIND_PLATE, "PX19TVD", 150, ttl=60) == {"at": 100, "found": {"make": "FORD"}, "status": 200}
+    assert again.lookup("dvla", KIND_PLATE, "PX19TVD", 200, ttl=60) is None
 
 
 def test_merge_only_new():
@@ -50,11 +50,11 @@ def test_prune_daily():
     tracker.record(KIND_PLATE, "OLD", Sighting(0))
     tracker.record(KIND_PLATE, "BOTH", Sighting(0))
     tracker.record(KIND_PLATE, "BOTH", Sighting(5 * DAY))
-    tracker.remember("dvla", KIND_PLATE, "OLD", 0, None)
+    tracker.remember("dvla", KIND_PLATE, "OLD", 0, {"found": None, "status": 404})
     assert tracker.prune(5 * DAY, keep=2 * DAY, ttl=DAY)
     assert tracker.sightings(KIND_PLATE, "OLD") == []
     assert tracker.sightings(KIND_PLATE, "BOTH") == [Sighting(5 * DAY)]
-    assert tracker.lookup("dvla", KIND_PLATE, "OLD", 5 * DAY, ttl=10 * DAY) == (False, None)
+    assert tracker.lookup("dvla", KIND_PLATE, "OLD", 5 * DAY, ttl=10 * DAY) is None
     # not again within the day
     tracker.record(KIND_PLATE, "OLD", Sighting(0))
     assert not tracker.prune(5 * DAY + 60, keep=2 * DAY, ttl=DAY)

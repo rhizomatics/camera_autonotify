@@ -29,11 +29,11 @@ Every licence plate read, by Frigate's plate recognition (ANPR/ALPR), an image p
 - **Vehicle categories**, added under *Global Settings*: a single vehicle, every family car, or a delivery company's vans, known or dangerous, by their plates, each a plate or a regular expression, with its own description and the misreads that are really it. *Ignore* drops a category's plates altogether, such as a tanker's logo read as a plate
 - **Priority**: in the *Vehicles* section of *Global Settings*, once there's a category, each with its own Supernotify scenarios: `medium` for a known vehicle, `high` for an unknown plate or one that couldn't be read, and `critical` for a dangerous one. A misread plate can match a dangerous one, so `critical` can be a false alarm; corrections on the plate, or a lower priority, help where it happens
 - **Descriptions**: the vehicle's description and plate, such as *Joe's mini (TJ912UKL)*, the DVLA's make, colour, year and tax, its previous sightings, whether it's a daily, weekly or occasional visitor, and whether it's at an unusual time of day
-- **DVLA (UK)**: with an API key from the UK DVLA's Vehicle Enquiry Service, in *Vehicle lookup*, kept as a credential and never shown again. A plate a character off the last one confirmed on the same camera is taken as a misread of it
+- **DVLA (UK)**: with an API key from the UK DVLA's Vehicle Enquiry Service, in *Vehicle lookup*, kept as a credential and never shown again, with *Test the key* to check it, by looking up `A123TST`. A plate a character off the last one confirmed on the same camera is taken as a misread of it
 - **Known vehicle**: a button on a notification of an unknown plate, with a description typed on the phone, adding it to the category set in *Category for the Known vehicle button*, *Known vehicles* to begin with
 - **OpenALPR, or another ANPR/ALPR image processing integration**: a source of its own, each plate it reads classified as any other. See [Image Processing](./image_processing.md)
 - **Actions**:
-  - `camera_autonotify.classify_plate`, for any other plate source or automation, returning the plate's category, lookup and history
+  - `camera_autonotify.classify_plate`, for any other plate source or automation, returning the plate's category, lookup and history. The lookup has the register's `status` and any `error`, and whether it's `cached`, or is `skipped: true` for a category not looked up, and is `null` only with no register set up
   - `camera_autonotify.add_plate`
   - `camera_autonotify.remove_plate`
   - `camera_autonotify.list_vehicle_categories`, with each category's plates

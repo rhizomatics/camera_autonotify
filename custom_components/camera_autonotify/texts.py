@@ -125,6 +125,10 @@ IMPORT_NOTHING = "import_nothing"
 # whether the DVLA's key is set, it never being shown again
 DVLA_KEY_SET = "dvla_key_set"
 DVLA_KEY_UNSET = "dvla_key_unset"
+# how the test of the DVLA's key went
+DVLA_TEST_PASSED = "dvla_test_passed"
+DVLA_TEST_FAILED = "dvla_test_failed"
+DVLA_TEST_NO_KEY = "dvla_test_no_key"
 # what an import from anpr2mqtt added, once done
 IMPORTED_CATEGORIES = "imported_categories"
 IMPORTED_PLATES = "imported_plates"

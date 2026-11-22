@@ -143,12 +143,14 @@
                         "data": {
                             "dvla_api_key": "DVLA API कुंजी",
                             "lookup_cache_hours": "जानकारी इतने समय रखें",
-                            "dvla_api_key_clear": "कुंजी भूल जाएँ"
+                            "dvla_api_key_clear": "कुंजी भूल जाएँ",
+                            "dvla_api_key_test": "कुंजी जाँचें"
                         },
                         "data_description": {
                             "dvla_api_key": "DVLA द्वारा उसकी Vehicle Enquiry Service के लिए जारी, क्रेडेंशियल के रूप में रखी जाती है और कभी दिखाई नहीं जाती। {dvla_key}",
                             "lookup_cache_hours": "फिर से पूछने से पहले किसी प्लेट का विवरण कितने समय रखा जाता है।",
-                            "dvla_api_key_clear": "DVLA की कुंजी हटा दें, ताकि प्लेटें न देखी जाएँ।"
+                            "dvla_api_key_clear": "DVLA की कुंजी हटा दें, ताकि प्लेटें न देखी जाएँ।",
+                            "dvla_api_key_test": "सबमिट करने पर, लिखी गई कुंजी या पहले से सेट कुंजी से A123TST खोजें, यह जाँचने के लिए कि DVLA जवाब देता है, कुछ भी सहेजे बिना।"
                         }
                     },
                     "anpr2mqtt_import": {
@@ -347,6 +349,10 @@
                         }
                     }
                 }
+            },
+            "dvla_test": {
+                "title": "DVLA कुंजी जाँच",
+                "description": "{result}"
             }
         },
         "error": {
@@ -679,7 +685,10 @@
         "imported_sightings": "जोड़े गए दर्शन: {count}",
         "imported_nothing": "कुछ नया नहीं: आर्काइव में सब कुछ पहले से मौजूद था",
         "dvla_key_set": "एक कुंजी सेट है: इसे रखने के लिए खाली छोड़ें, या बदलने के लिए नई कुंजी लिखें।",
-        "dvla_key_unset": "कोई कुंजी सेट नहीं है।"
+        "dvla_key_unset": "कोई कुंजी सेट नहीं है।",
+        "dvla_test_passed": "DVLA ने {plate} के लिए अपेक्षित जवाब दिया: {said}।",
+        "dvla_test_failed": "DVLA ने {plate} के लिए अपेक्षित जवाब नहीं दिया: {said}। उसे JSON के साथ 200 या 404 देना चाहिए।",
+        "dvla_test_no_key": "जाँचने के लिए कोई कुंजी नहीं है: पहले एक लिखें।"
     },
     "issues": {
         "lookup_refused": {

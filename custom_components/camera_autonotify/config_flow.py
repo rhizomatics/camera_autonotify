@@ -20,6 +20,7 @@ from homeassistant.config_entries import (
 from homeassistant.const import CONF_DEVICE_ID, CONF_NAME, CONF_TYPE, UnitOfTime
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import section
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
     BooleanSelector,
     EntitySelector,
@@ -62,6 +63,7 @@ from .const import (
     CONF_DISCOVER_ZONES,
     CONF_DVLA_API_KEY,
     CONF_DVLA_API_KEY_CLEAR,
+    CONF_DVLA_API_KEY_TEST,
     CONF_FINAL_DELAY,
     CONF_FINAL_UPDATE,
     CONF_GENAI_IMAGE,
@@ -208,6 +210,9 @@ from .texts import (
     CAMERAS_NONE,
     DVLA_KEY_SET,
     DVLA_KEY_UNSET,
+    DVLA_TEST_FAILED,
+    DVLA_TEST_NO_KEY,
+    DVLA_TEST_PASSED,
     IMPORT_CATEGORY,
     IMPORT_CATEGORY_EXISTING,
     IMPORT_HISTORY,
@@ -229,6 +234,7 @@ from .texts import (
     text,
 )
 from .tracker import Settings
+from .vehicles import DVLA_TEST_PLATE, DvlaProvider
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -239,6 +245,7 @@ STEP_CONFIRM_ANPR = "confirm_anpr"
 STEP_IMAGE_PROCESSING = "image_processing"
 STEP_CONFIRM_IMAGE_PROCESSING = "confirm_image_processing"
 STEP_IMPORT = "import_anpr2mqtt"
+STEP_DVLA_TEST = "dvla_test"
 SECTION_VEHICLES = "vehicles"
 SECTION_VEHICLE_LOOKUP = "vehicle_lookup"
 SECTION_TIMING = "timing"
@@ -453,6 +460,7 @@ def lookup_schema() -> dict[vol.Marker, Any]:
     return {
         vol.Optional(CONF_DVLA_API_KEY): TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD)),
         vol.Required(CONF_DVLA_API_KEY_CLEAR, default=False): BooleanSelector(),
+        vol.Required(CONF_DVLA_API_KEY_TEST, default=False): BooleanSelector(),
         vol.Required(CONF_LOOKUP_CACHE_HOURS, default=DEFAULT_LOOKUP_CACHE_HOURS): NumberSelector(
             NumberSelectorConfig(min=1, max=720, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement=UnitOfTime.HOURS)
         ),
@@ -920,6 +928,8 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
     # an anpr2mqtt archive read, and the global settings to save once it's imported
     _imported: Imported
     _settings: dict[str, Any]
+    # the global settings as they were when the DVLA's key was tested, shown again after
+    _tested: dict[str, Any]
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if self.config_entry.data.get(CONF_TYPE) == TYPE_DISCOVERY:
@@ -991,6 +1001,9 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
                 else {key: value for key, value in self.config_entry.options.items() if key in SUMMARY_OPTIONS}
             )
             settings = kept | flattened(user_input)
+            if settings.pop(CONF_DVLA_API_KEY_TEST, False):
+                self._tested = settings
+                return await self.async_step_dvla_test()
             archive = settings.pop(CONF_ANPR2MQTT_ARCHIVE, None)
             self._keep_credentials(settings)
             if archive:
@@ -1004,6 +1017,21 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
                 return await self.async_step_import_anpr2mqtt()
             return self.async_create_entry(data=settings)
         return await self._show_discovery(dict(self.config_entry.options))
+
+    async def async_step_dvla_test(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """The key typed, or else the one set, tried with a made up plate, and how it went shown, then the global
+        settings shown again as they were, nothing saved"""
+        if user_input is not None:
+            return await self._show_discovery(dict(self._tested), shown_as_is=True)
+        await async_load_texts(self.hass)
+        key = self._tested.get(CONF_DVLA_API_KEY) or self.config_entry.data.get(CONF_DVLA_API_KEY)
+        if not key:
+            result = text(self.hass, DVLA_TEST_NO_KEY)
+        else:
+            passed, status, error = await DvlaProvider(async_get_clientsession(self.hass), str(key)).async_test()
+            said = " ".join(str(part) for part in (status, error) if part is not None)
+            result = text(self.hass, DVLA_TEST_PASSED if passed else DVLA_TEST_FAILED, plate=DVLA_TEST_PLATE, said=said)
+        return self.async_show_form(step_id=STEP_DVLA_TEST, description_placeholders={"result": result})
 
     async def async_step_import_anpr2mqtt(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """What's imported from anpr2mqtt, to confirm, then imported and the global settings saved with it"""

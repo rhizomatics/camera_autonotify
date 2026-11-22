@@ -143,12 +143,14 @@
                         "data": {
                             "dvla_api_key": "Clé API DVLA",
                             "lookup_cache_hours": "Garder les recherches pendant",
-                            "dvla_api_key_clear": "Oublier la clé"
+                            "dvla_api_key_clear": "Oublier la clé",
+                            "dvla_api_key_test": "Tester la clé"
                         },
                         "data_description": {
                             "dvla_api_key": "Délivrée par la DVLA pour son Vehicle Enquiry Service, conservée comme identifiant et jamais affichée. {dvla_key}",
                             "lookup_cache_hours": "Combien de temps les détails d'une plaque sont gardés avant de redemander.",
-                            "dvla_api_key_clear": "Retirer la clé de la DVLA, pour que les plaques ne soient pas recherchées."
+                            "dvla_api_key_clear": "Retirer la clé de la DVLA, pour que les plaques ne soient pas recherchées.",
+                            "dvla_api_key_test": "À l'envoi, rechercher A123TST avec la clé saisie, ou celle déjà définie, pour vérifier que la DVLA répond, sans rien enregistrer."
                         }
                     },
                     "anpr2mqtt_import": {
@@ -347,6 +349,10 @@
                         }
                     }
                 }
+            },
+            "dvla_test": {
+                "title": "Test de la clé DVLA",
+                "description": "{result}"
             }
         },
         "error": {
@@ -679,7 +685,10 @@
         "imported_sightings": "Passages ajoutés : {count}",
         "imported_nothing": "Rien de nouveau : tout le contenu de l'archive était déjà là",
         "dvla_key_set": "Une clé est définie : laissez vide pour la garder, ou saisissez-en une nouvelle pour la remplacer.",
-        "dvla_key_unset": "Aucune clé n'est définie."
+        "dvla_key_unset": "Aucune clé n'est définie.",
+        "dvla_test_passed": "La DVLA a répondu comme prévu pour {plate} : {said}.",
+        "dvla_test_failed": "La DVLA n'a pas répondu comme prévu pour {plate} : {said}. Elle devrait répondre 200 ou 404, en JSON.",
+        "dvla_test_no_key": "Aucune clé à tester : saisissez-en une d'abord."
     },
     "issues": {
         "lookup_refused": {

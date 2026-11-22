@@ -143,12 +143,14 @@
                         "data": {
                             "dvla_api_key": "Clave API de la DVLA",
                             "lookup_cache_hours": "Guardar consultas durante",
-                            "dvla_api_key_clear": "Olvidar la clave"
+                            "dvla_api_key_clear": "Olvidar la clave",
+                            "dvla_api_key_test": "Probar la clave"
                         },
                         "data_description": {
                             "dvla_api_key": "Emitida por la DVLA para su Vehicle Enquiry Service, guardada como credencial y nunca mostrada. {dvla_key}",
                             "lookup_cache_hours": "Cuánto tiempo se guardan los detalles de una matrícula antes de volver a preguntar.",
-                            "dvla_api_key_clear": "Quitar la clave de la DVLA, para que no se consulten matrículas."
+                            "dvla_api_key_clear": "Quitar la clave de la DVLA, para que no se consulten matrículas.",
+                            "dvla_api_key_test": "Al enviar, consultar A123TST con la clave escrita, o la ya configurada, para comprobar que la DVLA responde, sin guardar nada."
                         }
                     },
                     "anpr2mqtt_import": {
@@ -347,6 +349,10 @@
                         }
                     }
                 }
+            },
+            "dvla_test": {
+                "title": "Prueba de la clave de la DVLA",
+                "description": "{result}"
             }
         },
         "error": {
@@ -679,7 +685,10 @@
         "imported_sightings": "Avistamientos añadidos: {count}",
         "imported_nothing": "Nada nuevo: todo lo del archivo ya estaba aquí",
         "dvla_key_set": "Hay una clave: déjelo vacío para conservarla o escriba una nueva para sustituirla.",
-        "dvla_key_unset": "No hay ninguna clave."
+        "dvla_key_unset": "No hay ninguna clave.",
+        "dvla_test_passed": "La DVLA respondió como se esperaba para {plate}: {said}.",
+        "dvla_test_failed": "La DVLA no respondió como se esperaba para {plate}: {said}. Debería responder 200 o 404, con JSON.",
+        "dvla_test_no_key": "No hay clave que probar: escriba una primero."
     },
     "issues": {
         "lookup_refused": {

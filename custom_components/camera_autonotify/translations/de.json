@@ -143,12 +143,14 @@
                         "data": {
                             "dvla_api_key": "DVLA-API-Schlüssel",
                             "lookup_cache_hours": "Abfragen zwischenspeichern für",
-                            "dvla_api_key_clear": "Schlüssel vergessen"
+                            "dvla_api_key_clear": "Schlüssel vergessen",
+                            "dvla_api_key_test": "Schlüssel testen"
                         },
                         "data_description": {
                             "dvla_api_key": "Von der DVLA für ihren Vehicle Enquiry Service ausgegeben, als Zugangsdaten gespeichert und nie angezeigt. {dvla_key}",
                             "lookup_cache_hours": "Wie lange die Daten eines Kennzeichens behalten werden, bevor erneut gefragt wird.",
-                            "dvla_api_key_clear": "Den DVLA-Schlüssel entfernen, sodass keine Kennzeichen nachgeschlagen werden."
+                            "dvla_api_key_clear": "Den DVLA-Schlüssel entfernen, sodass keine Kennzeichen nachgeschlagen werden.",
+                            "dvla_api_key_test": "Beim Absenden A123TST mit dem eingegebenen oder dem gesetzten Schlüssel abfragen, um zu prüfen, ob die DVLA antwortet, ohne etwas zu speichern."
                         }
                     },
                     "anpr2mqtt_import": {
@@ -347,6 +349,10 @@
                         }
                     }
                 }
+            },
+            "dvla_test": {
+                "title": "DVLA-Schlüsseltest",
+                "description": "{result}"
             }
         },
         "error": {
@@ -679,7 +685,10 @@
         "imported_sightings": "Hinzugefügte Sichtungen: {count}",
         "imported_nothing": "Nichts Neues: alles im Archiv war bereits vorhanden",
         "dvla_key_set": "Ein Schlüssel ist gesetzt: leer lassen, um ihn zu behalten, oder einen neuen eingeben, um ihn zu ersetzen.",
-        "dvla_key_unset": "Kein Schlüssel gesetzt."
+        "dvla_key_unset": "Kein Schlüssel gesetzt.",
+        "dvla_test_passed": "Die DVLA hat für {plate} wie erwartet geantwortet: {said}.",
+        "dvla_test_failed": "Die DVLA hat für {plate} nicht wie erwartet geantwortet: {said}. Erwartet wird 200 oder 404, mit JSON.",
+        "dvla_test_no_key": "Kein Schlüssel zum Testen: zuerst einen eingeben."
     },
     "issues": {
         "lookup_refused": {

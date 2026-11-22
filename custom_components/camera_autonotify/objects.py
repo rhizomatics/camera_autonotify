@@ -87,15 +87,15 @@ class ObjectTracker:
         )
         return sum(len((self._objects.pop(key, None) or {}).get("sightings") or []) for key in keys)
 
-    def lookup(self, provider: str, kind: str, identity: str, now: float, ttl: float) -> tuple[bool, dict[str, Any] | None]:
-        """Whether a lookup is cached and still fresh, and what it found, which may be nothing"""
+    def lookup(self, provider: str, kind: str, identity: str, now: float, ttl: float) -> dict[str, Any] | None:
+        """A cached lookup still fresh, as remembered, or none"""
         cached = self._lookups.get(f"{provider}:{self.key(kind, identity)}")
         if cached and isinstance(cached.get("at"), int | float) and now - cached["at"] <= ttl:
-            return True, cached.get("found")
-        return False, None
+            return cached
+        return None
 
-    def remember(self, provider: str, kind: str, identity: str, now: float, found: dict[str, Any] | None) -> None:
-        self._lookups[f"{provider}:{self.key(kind, identity)}"] = {"at": now, "found": found}
+    def remember(self, provider: str, kind: str, identity: str, now: float, answer: dict[str, Any]) -> None:
+        self._lookups[f"{provider}:{self.key(kind, identity)}"] = {"at": now, **answer}
 
     def prune(self, now: float, keep: float, ttl: float, force: bool = False) -> bool:
         """Sightings older than kept, objects with none left, and expired lookups, dropped, at most once a day

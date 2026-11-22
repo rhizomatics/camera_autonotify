@@ -69,8 +69,10 @@ DVLA_PLATE = "registrationNumber"
 RECORDED_FOR = 3600
 
 
-class LookupRefused(Exception):
-    """The register refused the key"""
+# a plate made up to check the DVLA's key with, either known or not, both answers meaning the key works
+DVLA_TEST_PLATE = "A123TST"
+# a register's answers to a key it refuses
+REFUSED = (401, 403)
 
 
 @dataclass(frozen=True)
@@ -115,13 +117,36 @@ class VehicleLookup:
         )
 
 
+@dataclass(frozen=True)
+class LookupResult:
+    """How a lookup went: what was found, if anything, the status the register gave and any error it said, whether
+    it came from the cache, or that it was skipped, the plate's category not being looked up"""
+
+    source: str | None = None
+    status: int | None = None
+    error: str | None = None
+    found: VehicleLookup | None = None
+    cached: bool = False
+    skipped: bool = False
+
+    def as_dict(self) -> dict[str, Any]:
+        if self.skipped:
+            return {"skipped": True}
+        return {
+            **(self.found.as_dict() if self.found else {"source": self.source}),
+            "status": self.status,
+            "error": self.error,
+            "cached": self.cached,
+        }
+
+
 class LookupProvider(Protocol):
     """A country's or region's vehicle register"""
 
     name: str
 
-    async def async_lookup(self, plate: str) -> VehicleLookup | None:
-        """What it knows of a plate, or nothing when it doesn't know it, raising LookupRefused for a refused key"""
+    async def async_lookup(self, plate: str) -> LookupResult:
+        """What it knows of a plate, with the status it gave, raising only where it couldn't be asked at all"""
         ...
 
 
@@ -134,34 +159,46 @@ class DvlaProvider:
         self.session = session
         self.api_key = api_key
 
-    async def async_lookup(self, plate: str) -> VehicleLookup | None:
+    async def _async_post(self, plate: str) -> tuple[int, object, str | None]:
+        """The status, the JSON body, if any, and the error the DVLA said, logged, the plate redacted"""
         async with self.session.post(
             DVLA_URL,
             headers={"x-api-key": self.api_key, "Content-Type": "application/json"},
             json={"registrationNumber": plate},
         ) as response:
             body = await _json_body(response)
-            error = _dvla_error(body) if response.status >= 400 else None
-            _LOGGER.info(
-                "CAMERA_AUTONOTIFY DVLA lookup of %s: %s%s", redacted(plate), response.status, f" {error}" if error else ""
-            )
-            if response.status == 404:
-                return None
-            if response.status in (401, 403):
-                raise LookupRefused
-            response.raise_for_status()
-            found: dict[str, Any] = body if isinstance(body, dict) else {}
-        year = found.get("yearOfManufacture")
-        return VehicleLookup(
-            source=self.name,
-            make=found.get("make"),
-            colour=found.get("colour"),
-            year=int(year) if isinstance(year, int | str) and str(year).isdigit() else None,
-            fuel=found.get("fuelType"),
-            tax=found.get("taxStatus"),
-            inspection=found.get("motStatus"),
-            raw={key: value for key, value in found.items() if key != DVLA_PLATE},
+        error = _dvla_error(body) if response.status >= 400 else None
+        _LOGGER.info(
+            "CAMERA_AUTONOTIFY DVLA lookup of %s: %s%s", redacted(plate), response.status, f" {error}" if error else ""
         )
+        return response.status, body, error
+
+    async def async_lookup(self, plate: str) -> LookupResult:
+        status, body, error = await self._async_post(plate)
+        if status != 200 or not isinstance(body, dict):
+            return LookupResult(self.name, status, error or (None if status == 200 else f"HTTP {status}"))
+        year = body.get("yearOfManufacture")
+        found = VehicleLookup(
+            source=self.name,
+            make=body.get("make"),
+            colour=body.get("colour"),
+            year=int(year) if isinstance(year, int | str) and str(year).isdigit() else None,
+            fuel=body.get("fuelType"),
+            tax=body.get("taxStatus"),
+            inspection=body.get("motStatus"),
+            raw={key: value for key, value in body.items() if key != DVLA_PLATE},
+        )
+        return LookupResult(self.name, status, found=found)
+
+    async def async_test(self) -> tuple[bool, int | None, str | None]:
+        """Whether the key works, by a made up plate answered with JSON and 200 or 404, with the status and error"""
+        try:
+            status, body, error = await self._async_post(DVLA_TEST_PLATE)
+        except Exception as failure:
+            return False, None, str(failure) or type(failure).__name__
+        if not isinstance(body, dict):
+            return False, status, error or "No JSON in the response"
+        return status in (200, 404), status, error
 
 
 async def _json_body(response: ClientResponse) -> object:
@@ -189,7 +226,12 @@ class Vehicle:
 
     match: Match
     history: History = field(default_factory=History)
-    lookup: VehicleLookup | None = None
+    # none where there's no register to look up with at all
+    looked_up: LookupResult | None = None
+
+    @property
+    def lookup(self) -> VehicleLookup | None:
+        return self.looked_up.found if self.looked_up else None
 
     @property
     def kind(self) -> str:
@@ -209,7 +251,7 @@ class Vehicle:
             "description": self.match.description,
             "icon": category.icon if category else None,
             "history": self.history.as_dict(),
-            "lookup": self.lookup.as_dict() if self.lookup else None,
+            "lookup": self.looked_up.as_dict() if self.looked_up else None,
         }
 
 
@@ -351,11 +393,13 @@ class Vehicles:
         options = self.options
         register = self.register()
         match = register.match(read)
+        provider = self._provider()
+        # a register to look up with, but not for this plate, ignored or in a category not looked up
+        lookup = LookupResult(provider.name, skipped=True) if provider else None
         if match.kind == KIND_IGNORED:
-            return Vehicle(match)
-        lookup: VehicleLookup | None = None
-        if match.category is None or match.category.lookup:
-            lookup, match = await self._async_lookup(match, register, camera, now, options)
+            return Vehicle(match, looked_up=lookup)
+        if provider is not None and (match.category is None or match.category.lookup):
+            lookup, match = await self._async_lookup(provider, match, register, camera, now, options)
         # visits not tracked, so neither counted nor said, the history kept for when they are again
         history = History()
         if options.get(CONF_TRACK_VISITS, True):
@@ -382,31 +426,48 @@ class Vehicles:
         return vehicle
 
     async def _async_lookup(
-        self, match: Match, register: PlateRegister, camera: str | None, now: datetime, options: dict[str, Any]
-    ) -> tuple[VehicleLookup | None, Match]:
-        lookup = await self._async_cached_lookup(match.plate, now, options)
+        self,
+        provider: LookupProvider,
+        match: Match,
+        register: PlateRegister,
+        camera: str | None,
+        now: datetime,
+        options: dict[str, Any],
+    ) -> tuple[LookupResult, Match]:
+        lookup = await self._async_cached_lookup(provider, match.plate, now, options)
         ttl = timedelta(hours=float(options.get(CONF_LOOKUP_CACHE_HOURS, DEFAULT_LOOKUP_CACHE_HOURS)))
-        if lookup is None and camera and (confirmed := self._confirmed.get(camera)):
+        if lookup.found is None and camera and (confirmed := self._confirmed.get(camera)):
             good, when = confirmed
             if now - when <= ttl and good != match.plate and distance(good, match.plate) <= 1:
                 _LOGGER.debug("CAMERA_AUTONOTIFY Correcting %s to %s, last confirmed on %s", match.plate, good, camera)
                 corrected = register.match(good)
-                return await self._async_cached_lookup(good, now, options), replace(corrected, read=match.read)
-        if lookup is not None and camera:
+                return await self._async_cached_lookup(provider, good, now, options), replace(corrected, read=match.read)
+        if lookup.found is not None and camera:
             self._confirmed[camera] = (match.plate, now)
         return lookup, match
 
-    async def _async_cached_lookup(self, plate: str, now: datetime, options: dict[str, Any]) -> VehicleLookup | None:
-        provider = self._provider()
-        if provider is None or self._tracker is None:
-            return None
+    async def _async_cached_lookup(
+        self, provider: LookupProvider, plate: str, now: datetime, options: dict[str, Any]
+    ) -> LookupResult:
+        """From the cache, or the register, an answer of found or not found being cached, a failure not"""
+        if self._tracker is None:
+            return LookupResult(provider.name, skipped=True)
         ttl = float(options.get(CONF_LOOKUP_CACHE_HOURS, DEFAULT_LOOKUP_CACHE_HOURS)) * 3600
-        cached, kept = self._tracker.lookup(provider.name, KIND_PLATE, plate, now.timestamp(), ttl)
-        if cached:
-            return VehicleLookup.from_dict(kept) if kept else None
+        if (cached := self._tracker.lookup(provider.name, KIND_PLATE, plate, now.timestamp(), ttl)) is not None:
+            found = cached.get("found")
+            return LookupResult(
+                provider.name,
+                cached.get("status") or (200 if found else 404),
+                cached.get("error"),
+                VehicleLookup.from_dict(found) if found else None,
+                cached=True,
+            )
         try:
-            found = await provider.async_lookup(plate)
-        except LookupRefused:
+            result = await provider.async_lookup(plate)
+        except Exception as error:
+            _LOGGER.warning("CAMERA_AUTONOTIFY %s couldn't look up %s: %s", provider.name, redacted(plate), error)
+            return LookupResult(provider.name, error=str(error) or type(error).__name__)
+        if result.status in REFUSED:
             ir.async_create_issue(
                 self.hass,
                 DOMAIN,
@@ -416,14 +477,18 @@ class Vehicles:
                 translation_key=ISSUE_LOOKUP_REFUSED,
                 translation_placeholders={"provider": provider.name.upper()},
             )
-            return None
-        except Exception as error:
-            _LOGGER.warning("CAMERA_AUTONOTIFY %s couldn't look up %s: %s", provider.name, redacted(plate), error)
-            return None
+            return result
         ir.async_delete_issue(self.hass, DOMAIN, ISSUE_LOOKUP_REFUSED)
-        self._tracker.remember(provider.name, KIND_PLATE, plate, round(now.timestamp()), found.as_dict() if found else None)
-        self._save()
-        return found
+        if result.status in (200, 404):
+            self._tracker.remember(
+                provider.name,
+                KIND_PLATE,
+                plate,
+                round(now.timestamp()),
+                {"found": result.found.as_dict() if result.found else None, "status": result.status, "error": result.error},
+            )
+            self._save()
+        return result
 
     def first_time_for(self, key: str, now: float) -> bool:
         """Whether a review's plate is yet to be counted, so it's counted once however many notifications it has"""

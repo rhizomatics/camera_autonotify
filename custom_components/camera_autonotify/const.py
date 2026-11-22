@@ -195,6 +195,8 @@ VEHICLE_RULE_PRIORITIES: Final[dict[str, str]] = {
 VEHICLE_OBJECTS: Final[frozenset[str]] = frozenset({"car", "motorcycle", "bus", "truck", "van"})
 # forgetting the DVLA's key, which is kept in the entry's data, never shown again once set
 CONF_DVLA_API_KEY_CLEAR: Final[str] = "dvla_api_key_clear"
+# the key typed, or the one set, tried with the DVLA, rather than the settings saved
+CONF_DVLA_API_KEY_TEST: Final[str] = "dvla_api_key_test"
 # the category the Known vehicle button adds a plate to, made if it isn't there
 CONF_KNOWN_CATEGORY: Final[str] = "known_category"
 DEFAULT_KNOWN_CATEGORY: Final[str] = "Known vehicles"

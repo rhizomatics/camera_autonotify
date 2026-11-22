@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 from dataclasses import replace
 from datetime import datetime, timedelta
-from typing import Any, Self, cast
+from typing import TYPE_CHECKING, Any, Self, cast
 
 import pytest
 from aiohttp import ClientSession
@@ -28,7 +28,7 @@ from custom_components.camera_autonotify.texts import async_load_texts
 from custom_components.camera_autonotify.vehicles import (
     ISSUE_LOOKUP_REFUSED,
     DvlaProvider,
-    LookupRefused,
+    LookupResult,
     VehicleLookup,
     vehicles,
 )
@@ -36,6 +36,9 @@ from tests.ha_testing import MockConfigEntry, async_fire_time_changed
 
 from .conftest import add_frigate, mock_supernotify
 from .test_notifier import DETECTION, decision, notifier
+
+if TYPE_CHECKING:
+    from pytest_homeassistant.test_util.aiohttp import AiohttpClientMocker
 
 NOW = datetime(2026, 11, 19, 14, 25, tzinfo=dt_util.UTC)
 FAMILY = {"plates": [{"plate": "TJ912UKL", "description": "Joe's mini", "corrections": ["J912UKL"]}]}
@@ -51,11 +54,12 @@ class FakeRegister:
         self.refuse = refuse
         self.asked: list[str] = []
 
-    async def async_lookup(self, plate: str) -> VehicleLookup | None:
+    async def async_lookup(self, plate: str) -> LookupResult:
         self.asked.append(plate)
         if self.refuse:
-            raise LookupRefused
-        return self.known.get(plate)
+            return LookupResult(self.name, 403, "Forbidden")
+        found = self.known.get(plate)
+        return LookupResult(self.name, 200 if found else 404, None if found else "Vehicle Not Found", found)
 
 
 PICKUP_TRUCK = VehicleLookup("dvla", "MITSUBISHI", "WHITE", 2019, "PETROL", "Taxed", "Valid", {"make": "MITSUBISHI"})
@@ -130,7 +134,8 @@ async def test_misread_corrected_by_last_confirmed(hass: HomeAssistant, register
 async def test_refused_key_repaired(hass: HomeAssistant):
     global_settings(hass)
     vehicles(hass).provider = FakeRegister(refuse=True)
-    assert (await vehicles(hass).async_classify("PX19TVD")).lookup is None
+    refused = await vehicles(hass).async_classify("PX19TVD")
+    assert refused.as_dict()["lookup"] == {"source": "dvla", "status": 403, "error": "Forbidden", "cached": False}
     assert ir.async_get(hass).async_get_issue(DOMAIN, ISSUE_LOOKUP_REFUSED) is not None
     vehicles(hass).provider = FakeRegister()
     await vehicles(hass).async_classify("AB12CDE")
@@ -139,12 +144,14 @@ async def test_refused_key_repaired(hass: HomeAssistant):
 
 async def test_failing_register_logged(hass: HomeAssistant, caplog: pytest.LogCaptureFixture):
     class Broken(FakeRegister):
-        async def async_lookup(self, plate: str) -> VehicleLookup | None:
+        async def async_lookup(self, plate: str) -> LookupResult:
             raise OSError("timed out")
 
     global_settings(hass)
     vehicles(hass).provider = Broken()
-    assert (await vehicles(hass).async_classify("PX19TVD")).lookup is None
+    found = await vehicles(hass).async_classify("PX19TVD")
+    assert found.lookup is None
+    assert found.as_dict()["lookup"] == {"source": "dvla", "status": None, "error": "timed out", "cached": False}
     assert "couldn't look up PX****D: timed out" in caplog.text
 
 
@@ -340,6 +347,23 @@ async def respond(hass: HomeAssistant, service: str, data: dict[str, Any]) -> di
     return cast("dict[str, Any]", response)
 
 
+async def test_classify_plate_lookup_said(hass: HomeAssistant, register: FakeRegister):
+    """The lookup's status and error, whether cached, skipped where the category isn't looked up, and null only
+    with no register at all"""
+    global_settings(hass, {"Family cars": FAMILY})
+    await set_up(hass)
+    found = (await respond(hass, "classify_plate", {"plate": "PX19TVD"}))["lookup"]
+    assert (found["make"], found["status"], found["error"], found["cached"]) == ("MITSUBISHI", 200, None, False)
+    assert (await respond(hass, "classify_plate", {"plate": "PX19TVD"}))["lookup"]["cached"]
+    unknown = (await respond(hass, "classify_plate", {"plate": "AB12CDE"}))["lookup"]
+    assert unknown == {"source": "dvla", "status": 404, "error": "Vehicle Not Found", "cached": False}
+    cached = (await respond(hass, "classify_plate", {"plate": "AB12CDE"}))["lookup"]
+    assert cached == {"source": "dvla", "status": 404, "error": "Vehicle Not Found", "cached": True}
+    assert (await respond(hass, "classify_plate", {"plate": "TJ912UKL"}))["lookup"] == {"skipped": True}
+    vehicles(hass).provider = None
+    assert (await respond(hass, "classify_plate", {"plate": "AB12CDE"}))["lookup"] is None
+
+
 async def test_classify_plate_action(hass: HomeAssistant, register: FakeRegister):
     global_settings(hass, {"Family cars": FAMILY})
     await set_up(hass)
@@ -439,9 +463,10 @@ async def test_vehicle_settings_in_global_settings(hass: HomeAssistant):
 
 
 class FakeResponse:
-    def __init__(self, status: int, body: dict[str, Any] | None = None) -> None:
+    def __init__(self, status: int, body: dict[str, Any] | None = None, no_json: bool = False) -> None:
         self.status = status
         self.body = body or {}
+        self.no_json = no_json
 
     async def __aenter__(self) -> Self:
         return self
@@ -454,6 +479,8 @@ class FakeResponse:
             raise OSError(f"status {self.status}")
 
     async def json(self, content_type: str | None = "application/json") -> dict[str, Any]:
+        if self.no_json:
+            raise ValueError("not JSON")
         return self.body
 
 
@@ -485,14 +512,34 @@ async def test_dvla_provider():
     session = FakeSession(FakeResponse(200, found))
     looked_up = await DvlaProvider(as_session(session), "key").async_lookup("PX19TVD")
     raw = {key: value for key, value in found.items() if key != "registrationNumber"}
-    assert looked_up == VehicleLookup("dvla", "MITSUBISHI", "WHITE", 2019, "PETROL", "Taxed", "Valid", raw)
+    assert looked_up == LookupResult(
+        "dvla", 200, found=VehicleLookup("dvla", "MITSUBISHI", "WHITE", 2019, "PETROL", "Taxed", "Valid", raw)
+    )
     assert session.posted[0]["headers"]["x-api-key"] == "key"
     assert session.posted[0]["json"] == {"registrationNumber": "PX19TVD"}
-    assert await DvlaProvider(as_session(FakeSession(FakeResponse(404))), "key").async_lookup("X") is None
-    with pytest.raises(LookupRefused):
-        await DvlaProvider(as_session(FakeSession(FakeResponse(403))), "key").async_lookup("X")
-    with pytest.raises(OSError, match="status 500"):
-        await DvlaProvider(as_session(FakeSession(FakeResponse(500))), "key").async_lookup("X")
+    not_found = {"errors": [{"status": "404", "title": "Vehicle Not Found", "detail": "Record for vehicle not found"}]}
+    assert await DvlaProvider(as_session(FakeSession(FakeResponse(404, not_found))), "key").async_lookup("X") == (
+        LookupResult("dvla", 404, "Vehicle Not Found: Record for vehicle not found")
+    )
+    assert await DvlaProvider(as_session(FakeSession(FakeResponse(500))), "key").async_lookup("X") == LookupResult(
+        "dvla", 500, "HTTP 500"
+    )
+
+
+@pytest.mark.parametrize(
+    ("response", "expected"),
+    [
+        (FakeResponse(404, {"errors": [{"title": "Vehicle Not Found"}]}), (True, 404, "Vehicle Not Found")),
+        (FakeResponse(200, {"make": "FORD"}), (True, 200, None)),
+        (FakeResponse(403, {"message": "Forbidden"}), (False, 403, "Forbidden")),
+        (FakeResponse(404, no_json=True), (False, 404, "No JSON in the response")),
+    ],
+)
+async def test_dvla_key_test(response: FakeResponse, expected: tuple[bool, int | None, str | None]):
+    """A made up plate, answered with JSON and 200 or 404 by a key that works"""
+    session = FakeSession(response)
+    assert await DvlaProvider(as_session(session), "key").async_test() == expected
+    assert session.posted[0]["json"] == {"registrationNumber": "A123TST"}
 
 
 async def test_dvla_lookup_logged(caplog: pytest.LogCaptureFixture):
@@ -502,11 +549,9 @@ async def test_dvla_lookup_logged(caplog: pytest.LogCaptureFixture):
     assert "DVLA lookup of PX****D: 200" in caplog.text
     assert "PX19TVD" not in caplog.text
     errors = {"errors": [{"status": "400", "title": "Bad Request", "detail": "Invalid format for field - vrn"}]}
-    with pytest.raises(OSError, match="status 400"):
-        await DvlaProvider(as_session(FakeSession(FakeResponse(400, errors))), "key").async_lookup("X1")
+    await DvlaProvider(as_session(FakeSession(FakeResponse(400, errors))), "key").async_lookup("X1")
     assert "DVLA lookup of X*: 400 Bad Request: Invalid format for field - vrn" in caplog.text
-    with pytest.raises(LookupRefused):
-        await DvlaProvider(as_session(FakeSession(FakeResponse(403, {"message": "Forbidden"}))), "key").async_lookup("AB12CDE")
+    await DvlaProvider(as_session(FakeSession(FakeResponse(403, {"message": "Forbidden"}))), "key").async_lookup("AB12CDE")
     assert "DVLA lookup of AB****E: 403 Forbidden" in caplog.text
 
 
@@ -793,6 +838,49 @@ async def test_key_kept_as_a_credential(hass: HomeAssistant):
     await save({"dvla_api_key_clear": True})
     assert "dvla_api_key" not in entry.data
     assert "dvla_api_key_clear" not in entry.options
+
+
+async def test_dvla_key_tested(hass: HomeAssistant, aioclient_mock: AiohttpClientMocker):
+    """The key typed tried, the result shown, then the settings again, nothing saved, or the key set where none's
+    typed"""
+    from .test_discovery import set_up_discovery
+
+    mock_supernotify(hass)
+    add_frigate(hass)
+    await set_up_discovery(hass)
+    entry = next(e for e in hass.config_entries.async_entries(DOMAIN) if e.data.get(CONF_TYPE) == TYPE_DISCOVERY)
+    form = {"auto_discover": True, "discover_zones": False, "health": {}, "summary": {}}
+
+    async def tested(lookup: dict[str, Any]) -> str:
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {**form, "vehicle_lookup": {**lookup, "dvla_api_key_test": True}}
+        )
+        assert result["step_id"] == "dvla_test"
+        said = str((result["description_placeholders"] or {})["result"])
+        result = await hass.config_entries.options.async_configure(result["flow_id"], {})
+        assert result["step_id"] == "discovery"
+        hass.config_entries.options.async_abort(result["flow_id"])
+        return said
+
+    assert await tested({}) == "There's no key to test: type one first."
+    aioclient_mock.post(
+        "https://driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1/vehicles",
+        status=404,
+        json={"errors": [{"title": "Vehicle Not Found"}]},
+    )
+    said = await tested({"dvla_api_key": "typed"})
+    assert said == "The DVLA answered as expected for A123TST: 404 Vehicle Not Found."
+    assert aioclient_mock.mock_calls[-1][3]["x-api-key"] == "typed"
+    assert "dvla_api_key" not in entry.data
+    aioclient_mock.clear_requests()
+    aioclient_mock.post(
+        "https://driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1/vehicles", status=403, json={"message": "Forbidden"}
+    )
+    hass.config_entries.async_update_entry(entry, data={**entry.data, "dvla_api_key": "set"})
+    said = await tested({})
+    assert said.startswith("The DVLA didn't answer as expected for A123TST: 403 Forbidden.")
+    assert aioclient_mock.mock_calls[-1][3]["x-api-key"] == "set"
 
 
 async def test_visitor_said(hass: HomeAssistant):
