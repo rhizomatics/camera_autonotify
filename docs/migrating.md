@@ -110,6 +110,7 @@ Things the blueprint doesn't do:
 - **Zones of their own**, each notifying for reviews from any camera it's on. See [Zones](index.md#zones)
 - **GenAI review summaries and object descriptions**, each updating the review's notification, with the priority set by the threat level Frigate's GenAI gives. See [GenAI Notifications](genai.md)
 - **Rules** on what any notification says, to raise its priority, silence it, or apply Supernotify scenarios
+- **LPR** for vehicle recognition, and prioritizing notifications based on known vehicles
 - **Buttons for what Frigate can do**: *Keep clip* from Frigate's retention, *Mark reviewed* in Frigate,
   *Submit to Frigate+* the snapshot, or *Export recording*, each offered only where Frigate can do it, and chosen
   for every camera or each one. See [Actions](index.md#actions)
