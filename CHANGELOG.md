@@ -12,31 +12,50 @@ title: What's New
 
 Features from `anpr2mqtt` are now brought directly into this plugin, so classifying, tracking and looking up plates happens here, for any source of plates, and `anpr2mqtt` is no longer need for Frigate LPR enrichment (e.g. DVLA):
 
-- Vehicle categories, known or dangerous, by plates or regular expressions, with each plate's corrections, and *Ignore*
-- Pre-defined vehicle rules, once there's a category: a priority and scenarios for known (`medium`), unknown and unreadable (`high`) and dangerous (`critical`) vehicles. A misread plate matching a dangerous one can raise a false `critical`
-- Each plate's visit history, kept by an object tracker, plates its first kind, with each sighting's camera and source, as its DVLA details are, by a salted hash, never the plate itself, pruned daily ([RFC 0011](./developer/design/rfcs/rfc0011_object_tracker.md)): previous sightings, count by hour, new visits, the times of day it's usually seen, and whether it's a *Daily visitor* (5 days of 7, each of the last two weeks), *Weekly visitor* (each of the last two weeks) or *Occasional visitor* (every month back to its first sighting), or otherwise previously seen. *Track visits*, in *Vehicles*, switches it off
-- **DVLA lookup** for UK plates, cached, correcting a misread by the last plate confirmed on the same camera
+- **Vehicle Categories**, known or dangerous, by plates or regular expressions, with each plate's corrections, and *Ignore*
+- Pre-defined **vehicle rules**, once there's a category: a priority and scenarios for known (`medium`), unknown and unreadable (`high`) and dangerous (`critical`) vehicles. A misread plate matching a dangerous one can raise a false `critical`
+- Each plate's visit history, with each sighting's camera and source
+  - Stored with salted hash, never the plate itself. Tracker can be switched on or off in Settings
+  - Pruned daily with configurable maximum days
+  - Provides counts of previous sightings, count by hour, new visits, the times of day it's usually seen
+    - Further classified into:
+      - *Daily visitor* (5 days of 7, each of the last two weeks)
+      - *Weekly visitor* (each of the last two weeks)
+      - *Occasional visitor* (every month back to its first sighting), or otherwise previously seen.
+- **DVLA lookup** for UK plates
+  - Cached, correcting a misread by the last plate confirmed on the same camera
   - The DVLA's API key kept as a credential, in the entry's data, never shown again or in diagnostics
   - Each DVLA call logged at info, with the plate partly redacted, the status code and any error the DVLA gives
   - *Test the key*, looking up `A123TST`, which should be answered with JSON and 200 or 404
   - `classify_plate`'s lookup has the status, any error, and whether cached, with when it was retrieved, or `skipped`
 - Frigate's plates classified, looked up and said under the headline, with their sightings
 - anpr2mqtt's sightings classified here instead of by anpr2mqtt, with *Use anpr2mqtt's own classification* off, in each anpr2mqtt source's settings
-- `classify_plate`, `add_plate`, `remove_plate`, `list_vehicle_categories` and `reset_sightings` actions
-- Import from anpr2mqtt by uploading an archive of its `config` and `data` folders, in *Global Settings* or as an anpr2mqtt source is set up, showing what was found before importing, and what was added after ([#27](https://github.com/rhizomatics/camera_autonotify/issues/27))
-- A *Known vehicle* button on a notification of an unknown plate, with a description typed on the phone
-- **Image processing** integrations, such as OpenALPR, as a source of their own, each plate or face they find in their own camera's images notified, by Home Assistant's `found_plate` and `detect_face` events, found and set up by itself by its device class. See [Image Processing](./image_processing.md)
+- **New Actions**
+  - `classify_plate` - Apply all the same lookups and enrichments as carried out for notifications, so can be used in other automations, e.g. to look up DVLA data, or get sightings
+  - `add_plate` - Add a plate to vehicle categories, with optional corrections
+  - `remove_plate` - Remove plate from vehicle categories
+  - `list_vehicle_categories` - all of the vehicle categories in one call
+  - `reset_sightings` - clear the sightings data for one, or all objects
+- **New Mobile Notification Actions**
+  - A *Known vehicle* button on a notification of an unknown plate, with a description typed on the phone
+- **Image processing** integrations, such as *OpenALPR*, as a source of their own, each plate or face they find in their own camera's images notified, by Home Assistant's `found_plate` and `detect_face` events, found and set up by itself by its device class. See [Image Processing](./image_processing.md)
 - A *Last notification snapshot* camera entity, an option of any camera, for a dashboard
+- A `camera_autonotify_vehicle` event for each sighting, with OpenALPR's `plate`, `entity_id` and `confidence`, with *Fire vehicle events* on
+- For `anpr2mqtt` users
+  - Import anpr2mqtt dara by uploading an archive of its `config` and `data` folders, in *Global Settings* or as an anpr2mqtt source is set up, showing what was found before importing, and what was added after ([#27](https://github.com/rhizomatics/camera_autonotify/issues/27))
+  - Switch on or off the server-side classifications and lookups, so this plugin can override
+## 📝 Other changes
+- Implemented next phase of [RFC0003](./developer/design/rfcs/rfc0003_anpr2mqtt.md)
 - An anpr2mqtt source is always offered as discovered, and its setup asks about anpr2mqtt, not Frigate
 - A Frigate camera or zone's entry titled with *(Frigate)* after its name, so the entries list shows where each is from, as an anpr2mqtt source's already does. Notifications and entities still say only the name
-- A `camera_autonotify_vehicle` event for each sighting, with OpenALPR's `plate`, `entity_id` and `confidence`, with *Fire vehicle events* on
-- Implements next phase of [RFC0003](./developer/design/rfcs/rfc0003_anpr2mqtt.md)
 ## 🐞 Fixes
 - Spoken announcements, such as Alexa's, say only the headline, or with GenAI's summary or description after it, rather than reading out the facts under it, the speed and plate among them, like bullet points ([#26](https://github.com/rhizomatics/camera_autonotify/issues/26))
 - A delivery company's logo from a Frigate+ model is said as its brand, such as *DPD* or *Royal Mail*, rather than *Dpd*, unless *Object names* names it otherwise, and isn't said again under the headline when it's already the object in it
 - The facts under the headline are separated by a plain `-` rather than `·`
 - anpr2mqtt's spoken message only adds the plate where the title is the vehicle's description, so an unknown vehicle's plate isn't said twice
 - The buttons on a phone say what they do: *Keep clip*, *Mark reviewed*, *Submit to Frigate+* and *Export recording*, rather than *Keep*, *Seen*, *Frigate+* and *Export*
+## 🌐 Translations
+- All new functionality translated for Deutsch, English, Español, Français, हिन्दी, Italian, Português, Português (Brasil)
 ## 📚 Documentation
 - Draft RFCs for [0010 - Unifi Protect](./developer/design/rfcs/rfc0010_unifi_protect.md), [0009 - Image Pipelines](./developer/design/rfcs/rfc0009_pipelines.md), [0008 - Visits](./developer/design/rfcs/rfc0008_visits.md), [0007 - Rich Emails](./developer/design/rfcs/rfc0007_rich_email.md) and [0006 - Frigate Config Health Report](./developer/design/rfcs/rfc0006_config_health_report.md)
 
