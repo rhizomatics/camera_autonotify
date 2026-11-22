@@ -128,6 +128,8 @@ class LookupResult:
     found: VehicleLookup | None = None
     cached: bool = False
     skipped: bool = False
+    # when a cached answer was retrieved from the register
+    retrieved: datetime | None = None
 
     def as_dict(self) -> dict[str, Any]:
         if self.skipped:
@@ -137,6 +139,7 @@ class LookupResult:
             "status": self.status,
             "error": self.error,
             "cached": self.cached,
+            **({"retrieved": self.retrieved.isoformat()} if self.cached and self.retrieved else {}),
         }
 
 
@@ -461,6 +464,7 @@ class Vehicles:
                 cached.get("error"),
                 VehicleLookup.from_dict(found) if found else None,
                 cached=True,
+                retrieved=dt_util.as_local(dt_util.utc_from_timestamp(cached["at"])),
             )
         try:
             result = await provider.async_lookup(plate)

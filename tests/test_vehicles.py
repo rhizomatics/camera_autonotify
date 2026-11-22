@@ -347,18 +347,27 @@ async def respond(hass: HomeAssistant, service: str, data: dict[str, Any]) -> di
     return cast("dict[str, Any]", response)
 
 
-async def test_classify_plate_lookup_said(hass: HomeAssistant, register: FakeRegister):
+async def test_classify_plate_lookup_said(hass: HomeAssistant, register: FakeRegister, frozen: FrozenDateTimeFactory):
     """The lookup's status and error, whether cached, skipped where the category isn't looked up, and null only
     with no register at all"""
     global_settings(hass, {"Family cars": FAMILY})
     await set_up(hass)
     found = (await respond(hass, "classify_plate", {"plate": "PX19TVD"}))["lookup"]
     assert (found["make"], found["status"], found["error"], found["cached"]) == ("MITSUBISHI", 200, None, False)
-    assert (await respond(hass, "classify_plate", {"plate": "PX19TVD"}))["lookup"]["cached"]
+    frozen.tick(timedelta(minutes=5))
+    again = (await respond(hass, "classify_plate", {"plate": "PX19TVD"}))["lookup"]
+    assert again["cached"]
+    assert dt_util.parse_datetime(again["retrieved"]) == NOW
     unknown = (await respond(hass, "classify_plate", {"plate": "AB12CDE"}))["lookup"]
     assert unknown == {"source": "dvla", "status": 404, "error": "Vehicle Not Found", "cached": False}
     cached = (await respond(hass, "classify_plate", {"plate": "AB12CDE"}))["lookup"]
-    assert cached == {"source": "dvla", "status": 404, "error": "Vehicle Not Found", "cached": True}
+    assert cached == {
+        "source": "dvla",
+        "status": 404,
+        "error": "Vehicle Not Found",
+        "cached": True,
+        "retrieved": dt_util.as_local(NOW + timedelta(minutes=5)).isoformat(),
+    }
     assert (await respond(hass, "classify_plate", {"plate": "TJ912UKL"}))["lookup"] == {"skipped": True}
     vehicles(hass).provider = None
     assert (await respond(hass, "classify_plate", {"plate": "AB12CDE"}))["lookup"] is None

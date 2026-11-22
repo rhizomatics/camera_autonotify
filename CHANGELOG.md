@@ -19,7 +19,7 @@ Features from `anpr2mqtt` are now brought directly into this plugin, so classify
   - The DVLA's API key kept as a credential, in the entry's data, never shown again or in diagnostics
   - Each DVLA call logged at info, with the plate partly redacted, the status code and any error the DVLA gives
   - *Test the key*, looking up `A123TST`, which should be answered with JSON and 200 or 404
-  - `classify_plate`'s lookup has the status, any error, and whether cached, or `skipped`
+  - `classify_plate`'s lookup has the status, any error, and whether cached, with when it was retrieved, or `skipped`
 - Frigate's plates classified, looked up and said under the headline, with their sightings
 - anpr2mqtt's sightings classified here instead of by anpr2mqtt, with *Use anpr2mqtt's own classification* off, in each anpr2mqtt source's settings
 - `classify_plate`, `add_plate`, `remove_plate`, `list_vehicle_categories` and `reset_sightings` actions

@@ -33,7 +33,7 @@ Every licence plate read, by Frigate's plate recognition (ANPR/ALPR), an image p
 - **Known vehicle**: a button on a notification of an unknown plate, with a description typed on the phone, adding it to the category set in *Category for the Known vehicle button*, *Known vehicles* to begin with
 - **OpenALPR, or another ANPR/ALPR image processing integration**: a source of its own, each plate it reads classified as any other. See [Image Processing](./image_processing.md)
 - **Actions**:
-  - `camera_autonotify.classify_plate`, for any other plate source or automation, returning the plate's category, lookup and history. The lookup has the register's `status` and any `error`, and whether it's `cached`, or is `skipped: true` for a category not looked up, and is `null` only with no register set up
+  - `camera_autonotify.classify_plate`, for any other plate source or automation, returning the plate's category, lookup and history. The lookup has the register's `status` and any `error`, and whether it's `cached`, with when it was `retrieved`, or is `skipped: true` for a category not looked up, and is `null` only with no register set up
   - `camera_autonotify.add_plate`
   - `camera_autonotify.remove_plate`
   - `camera_autonotify.list_vehicle_categories`, with each category's plates
