@@ -611,6 +611,7 @@
         "camera_up": "O Frigate tem de novo vídeo de {camera}, após {duration}.",
         "anpr_title": "{vehicle} em {where}",
         "anpr_plate": "Matrícula {plate}",
+        "anpr_unknown_vehicle": "Veículo desconhecido {plate}",
         "anpr_first": "Nunca visto antes",
         "anpr_seen": "Avistamentos anteriores: {count}, o último em {when}",
         "anpr_dvla": "DVLA: {details}",

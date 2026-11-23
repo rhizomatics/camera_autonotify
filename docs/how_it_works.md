@@ -42,7 +42,7 @@ and says so over MQTT as the object moves, which is kept and said under the head
 | A plate read | Frigate's licence plate recognition (ANPR/ALPR) | The plate, where Frigate doesn't know it. A known plate is the review's sub label already |
 | Attributes | Such as a delivery company's logo, with a Frigate+ model whose attributes the camera tracks, or object classification | "Royal Mail", named by *Object names* where given |
 | A face not recognised | Face recognition, a person whose face Frigate saw but didn't recognise, at its own `recognition_threshold` | "Face not recognised". A person whose face it never saw says nothing |
-| Not moving | The tracked object having stopped | "Not moving" |
+| Stopped | The tracked object having stopped, after its highest speed where there is one | "Stopped", such as "8 mph - Stopped" |
 | States | The camera's state classification, from Frigate 0.17 | Such as "Gate: open" |
 
 Each comes only where Frigate has it set up, so there's nothing to switch on here. They're said in each notification
@@ -114,6 +114,8 @@ since deleted, Frigate not answering, or the proxy switched off or its links exp
   a picture. From v2.19.0:
     - the animated preview is sent with the camera's still image behind it, its *Image*, or the snapshot with its box,
       tried in turn, so a preview Frigate can't make is replaced by the still image of the event
+    - each is tried at the address a phone uses, then at Home Assistant's own, for when it can't reach itself at
+      the first, such as without hairpin NAT
     - if none of them can be had, Supernotify takes a picture from the camera instead, its live view **at the time
       the notification is sent**, since the camera entity is always passed for Supernotify's camera snooze. That's
       better than nothing, but it's not the event: the person or car may be long gone, or something else in view.

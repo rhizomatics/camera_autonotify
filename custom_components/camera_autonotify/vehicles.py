@@ -14,6 +14,7 @@ from __future__ import annotations
 import logging
 import re
 import secrets
+from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta
 from types import MappingProxyType
@@ -45,7 +46,19 @@ from .const import (
 )
 from .entries import global_settings
 from .objects import KIND_PLATE, ObjectTracker, Sighting
-from .plates import KIND_IGNORED, KIND_KNOWN, Category, History, Match, PlateRegister, analyse, distance, normalised, redacted
+from .plates import (
+    KIND_IGNORED,
+    KIND_KNOWN,
+    KIND_UNKNOWN,
+    Category,
+    History,
+    Match,
+    PlateRegister,
+    analyse,
+    distance,
+    normalised,
+    redacted,
+)
 
 if TYPE_CHECKING:
     from aiohttp import ClientResponse, ClientSession
@@ -90,6 +103,10 @@ class VehicleLookup:
 
     def said(self) -> str:
         return ", ".join(str(v) for v in (self.make, self.colour, self.year, self.tax) if v)
+
+    def named(self, kind: str) -> str | None:
+        """The vehicle as its register's own fields name it, such as `Red Peugeot`, or nothing"""
+        return vehicle_named(self.source, self.raw, kind)
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -202,6 +219,40 @@ class DvlaProvider:
         if not isinstance(body, dict):
             return False, status, error or "No JSON in the response"
         return status in (200, 404), status, error
+
+
+@dataclass(frozen=True)
+class Naming:
+    """How a vehicle is named from what its register gives, by the register's own fields, in order, one set for a
+    vehicle in a category with no description and one for an unknown vehicle"""
+
+    known: tuple[str, ...]
+    unknown: tuple[str, ...]
+    # fields whose words of three letters or less are kept as given, such as a make of `BMW`, where the rest are
+    # capitalised, `PEUGEOT` and `RED` as `Peugeot` and `Red`
+    as_given: tuple[str, ...] = ()
+
+    def named(self, fields: Mapping[str, object], kind: str) -> str | None:
+        said = [self._said(key, fields.get(key)) for key in (self.unknown if kind == KIND_UNKNOWN else self.known)]
+        return " ".join(word for word in said if word) or None
+
+    def _said(self, key: str, value: object) -> str | None:
+        if value in (None, ""):
+            return None
+        words = str(value).split()
+        return " ".join(w if key in self.as_given and len(w) <= 3 else w.capitalize() for w in words) or None
+
+
+# by each register's name, one added with each register; anpr2mqtt's own lookups are the DVLA's
+NAMING: dict[str, Naming] = {
+    "dvla": Naming(known=("colour", "make"), unknown=("colour", "make"), as_given=("make",)),
+}
+
+
+def vehicle_named(source: str | None, fields: object, kind: str) -> str | None:
+    """A vehicle as its register names it, by the register's own fields, or nothing where there's no naming for it"""
+    naming = NAMING.get(source or "")
+    return naming.named(fields, kind) if naming is not None and isinstance(fields, Mapping) else None
 
 
 async def _json_body(response: ClientResponse) -> object:

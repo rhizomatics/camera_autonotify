@@ -611,6 +611,7 @@
         "camera_up": "Frigate riceve di nuovo video da {camera}, dopo {duration}.",
         "anpr_title": "{vehicle} a {where}",
         "anpr_plate": "Targa {plate}",
+        "anpr_unknown_vehicle": "Veicolo sconosciuto {plate}",
         "anpr_first": "Mai visto prima",
         "anpr_seen": "Avvistamenti precedenti: {count}, l'ultimo il {when}",
         "anpr_dvla": "DVLA: {details}",

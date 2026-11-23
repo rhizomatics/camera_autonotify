@@ -27,9 +27,12 @@ from custom_components.camera_autonotify.plates import redacted
 from custom_components.camera_autonotify.texts import async_load_texts
 from custom_components.camera_autonotify.vehicles import (
     ISSUE_LOOKUP_REFUSED,
+    NAMING,
     DvlaProvider,
     LookupResult,
+    Naming,
     VehicleLookup,
+    vehicle_named,
     vehicles,
 )
 from tests.ha_testing import MockConfigEntry, async_fire_time_changed
@@ -62,7 +65,9 @@ class FakeRegister:
         return LookupResult(self.name, 200 if found else 404, None if found else "Vehicle Not Found", found)
 
 
-PICKUP_TRUCK = VehicleLookup("dvla", "MITSUBISHI", "WHITE", 2019, "PETROL", "Taxed", "Valid", {"make": "MITSUBISHI"})
+PICKUP_TRUCK = VehicleLookup(
+    "dvla", "MITSUBISHI", "WHITE", 2019, "PETROL", "Taxed", "Valid", {"make": "MITSUBISHI", "colour": "WHITE"}
+)
 
 
 def global_settings(
@@ -325,7 +330,18 @@ async def test_anpr2mqtt_classified_here(hass: HomeAssistant, register: FakeRegi
     assert found is not None
     assert (found.plate, found.kind, found.description, priority) == ("PX19TVD", "dangerous", "Stolen van", "critical")
     assert scenarios == (["alarm"], ["alarm"])
+    assert found.category == "Watch"
     assert vehicles(hass).sightings("PX19TVD")
+
+
+async def test_anpr2mqtt_unknown_named_by_register(hass: HomeAssistant, register: FakeRegister):
+    """In no category, so by its colour and make, with the register's details as before"""
+    global_settings(hass, {"Family cars": FAMILY})
+    found = await anpr_notifier(hass, anpr_own_classification=False)
+    classified, _, _ = await found.async_classified(sighting())
+    assert classified is not None and classified.category is None
+    assert found.title(classified, None).startswith("White Mitsubishi at ")
+    assert "DVLA: MITSUBISHI, WHITE, 2019, Taxed" in found.message(classified).splitlines()
 
 
 async def test_anpr2mqtt_ignored_here(hass: HomeAssistant):
@@ -900,3 +916,16 @@ async def test_visitor_said(hass: HomeAssistant):
     await async_load_texts(hass)
     regular = Vehicle(Match("PX19TVD", "PX19TVD"), History(previous_sightings=12, visitor="daily"))
     assert notifier(hass).said_vehicle(regular) == ["PX19TVD", "Previous sightings: 12", "Daily visitor"]
+
+
+def test_named_by_each_registers_own_fields(monkeypatch: pytest.MonkeyPatch):
+    """By the register's own fields, one set for a known vehicle and one for an unknown, and nothing for a register
+    with no naming yet"""
+    dvla = {"make": "LAND ROVER", "colour": "RED"}
+    assert vehicle_named("dvla", dvla, "unknown") == "Red Land Rover"
+    assert vehicle_named("dvla", {"make": "BMW", "colour": "BLACK"}, "known") == "Black BMW"
+    assert vehicle_named("dvla", {}, "unknown") is None
+    assert vehicle_named("rdw", {"merk": "PEUGEOT"}, "unknown") is None
+    monkeypatch.setitem(NAMING, "rdw", Naming(known=("merk",), unknown=("eerste_kleur", "merk")))
+    rdw = {"merk": "PEUGEOT", "eerste_kleur": "ROOD"}
+    assert (vehicle_named("rdw", rdw, "known"), vehicle_named("rdw", rdw, "unknown")) == ("Peugeot", "Rood Peugeot")

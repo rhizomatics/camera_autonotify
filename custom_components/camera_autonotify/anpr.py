@@ -71,13 +71,14 @@ from .texts import (
     ANPR_PLATE,
     ANPR_SEEN,
     ANPR_TITLE,
+    ANPR_UNKNOWN_VEHICLE,
     ANPR_UP,
     ANPR_UP_TITLE,
     async_load_texts,
     said_day,
     text,
 )
-from .vehicles import vehicle_outcome, vehicles
+from .vehicles import vehicle_named, vehicle_outcome, vehicles
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -110,6 +111,10 @@ class Sighting:
 
     plate: str
     description: str | None = None
+    # the vehicle category the plate is in, where it's classified here
+    category: str | None = None
+    # as its register names it, such as `Red Peugeot`
+    named: str | None = None
     kind: str = KIND_UNKNOWN
     # the priority anpr2mqtt gives the vehicle's target or group
     priority: str | None = None
@@ -124,6 +129,12 @@ class Sighting:
     source: str | None = None
     frigate_event_id: str | None = None
     event_time: str | None = None
+
+    @property
+    def name(self) -> str | None:
+        """The vehicle as it's best named: its description, or its category, or as its register names it, such as
+        `Red Peugeot`, or nothing when there's none of these"""
+        return self.description or self.category or self.named
 
     @classmethod
     def from_state(cls, state: State) -> Sighting:
@@ -151,6 +162,8 @@ class Sighting:
             camera=str(attributes.get("camera") or ""),
             linked_cameras={str(k): str(v) for k, v in linked.items() if v} if isinstance(linked, dict) else {},
             reg_info=attributes.get("reg_info"),
+            # anpr2mqtt's lookups being the DVLA's
+            named=vehicle_named("dvla", attributes.get("reg_info"), kind),
             previous=previous,
             last_seen=str(history["last_seen"]) if history.get("last_seen") else None,
             new_visit=bool(history.get("is_new_visit", True)),
@@ -309,13 +322,14 @@ class AnprNotifier:
         return str(chosen)
 
     def title(self, sighting: Sighting, camera: str | None) -> str:
-        return text(self.hass, ANPR_TITLE, vehicle=sighting.description or sighting.plate, where=self.where(sighting, camera))
+        vehicle = sighting.name or text(self.hass, ANPR_UNKNOWN_VEHICLE, plate=sighting.plate)
+        return text(self.hass, ANPR_TITLE, vehicle=vehicle, where=self.where(sighting, camera))
 
     def message(self, sighting: Sighting) -> str:
         """The plate, the sightings before, and the DVLA's details, the same from either source, so that Supernotify's
         duplicate detection can tell the same plate read twice"""
         lines: list[str] = []
-        if sighting.description:
+        if sighting.name:
             lines.append(text(self.hass, ANPR_PLATE, plate=sighting.plate))
         if sighting.previous and sighting.last_seen:
             lines.append(text(self.hass, ANPR_SEEN, count=sighting.previous, when=self.said_when(sighting.last_seen)))
@@ -374,8 +388,8 @@ class AnprNotifier:
             "title": title,
             "message": self.message(sighting),
             "priority": priority,
-            # the plate only where the title is the vehicle's description, not the plate already
-            "spoken_message": f"{title}. {sighting.plate}" if sighting.description else title,
+            # the plate only where the title names the vehicle, not the plate already
+            "spoken_message": f"{title}. {sighting.plate}" if sighting.name else title,
             "extra_data": {
                 "mobile_push_notification_tag": f"anpr_{self.entry.entry_id}_{slugify(sighting.plate)}",
                 "group": f"anpr_{slugify(sighting.camera) or self.entry.entry_id}",
@@ -430,10 +444,12 @@ class AnprNotifier:
             plate=vehicle.plate,
             kind=vehicle.kind,
             description=vehicle.match.description,
+            category=vehicle.match.category.name if vehicle.match.category else None,
             priority=None,
             previous=history.previous_sightings,
             last_seen=history.last_seen,
             new_visit=history.is_new_visit,
+            named=vehicle.lookup.named(vehicle.kind) if vehicle.lookup else None,
             reg_info=vehicle.lookup.said() if vehicle.lookup else None,
         )
         every = sorted({s for names in (options.get(k) or [] for k in CONF_VEHICLE_SCENARIOS.values()) for s in names})
