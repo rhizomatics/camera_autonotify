@@ -12,7 +12,7 @@ Notifications for what your security cameras see in Home Assistant, sent through
 
 ## Integrations
 
-At present there are three supported image sources to drive notifications:
+So far there are three supported image sources to drive notifications:
 
 -  [Frigate](https://frigate.video): every camera is found and set up by itself, and each Frigate review is sent as a notification with its snapshot, tapped to play the clip.
 
