@@ -158,6 +158,10 @@ class Description:
         return cls(str(object_id), str(camera), text.strip())
 
 
+# what Frigate labels a recording started by hand, such as its own UI's on demand recording, nothing having been seen
+MANUAL_LABELS = frozenset({"on_demand"})
+
+
 @dataclass(frozen=True)
 class Review:
     """A review as Frigate reports it, in the `after` of its MQTT message"""
@@ -174,23 +178,27 @@ class Review:
     summary: Summary | None = None
     # a stand-in for an object described in no review, which Frigate has no review of
     standalone: bool = False
+    # a recording started by hand, with nothing seen in it, so never notified, nor GenAI's summary of it
+    manual: bool = False
 
     @classmethod
     def from_payload(cls, after: dict[str, Any]) -> Review:
         data = after.get("data") or {}
         # audio, such as a scream or a bark, is as much what was seen as an object is
         objects = [*data.get("objects", []), *data.get("audio", [])]
+        seen = [obj for obj in objects if obj not in MANUAL_LABELS]
         sub_labels = [label[0] if isinstance(label, list) else label for label in data.get("sub_labels") or []]
         return cls(
             id=after["id"],
             camera=after["camera"],
             severity=after.get("severity") or SEVERITY_DETECTION,
-            objects=tuple(dict.fromkeys(objects)),
+            objects=tuple(dict.fromkeys(seen)),
             sub_labels=tuple(dict.fromkeys(str(label) for label in sub_labels if label)),
             zones=tuple(dict.fromkeys(data.get("zones") or [])),
             detections=tuple(data.get("detections") or []),
             ended=after.get("end_time") is not None,
             summary=Summary.from_metadata(data.get("metadata")),
+            manual=bool(objects) and not seen,
         )
 
     @classmethod
@@ -454,7 +462,7 @@ class ReviewTracker:
 
     def _wanted(self, review: Review) -> bool:
         settings = self.settings
-        if review.severity not in settings.severities:
+        if review.manual or review.severity not in settings.severities:
             return False
         if settings.labels and not settings.labels & set(review.objects):
             return False

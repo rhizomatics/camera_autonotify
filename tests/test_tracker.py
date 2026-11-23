@@ -335,3 +335,19 @@ def test_zone_tracker_follows_any_camera():
     assert isinstance(courtyard, Decision)
     assert isinstance(driveway, Decision)
     assert driveway.review.camera == "driveway"
+
+
+def test_on_demand_recording_never_notified():
+    """Frigate's on demand recording, started by hand from its UI, is no detection, nor GenAI's summary of it, though
+    an object seen while it records still is, without it in the headline (#34)"""
+    driveway = ReviewTracker(Settings(severities=frozenset({"alert", "detection"})), camera="driveway")
+    summarised = next(r for r in REVIEWS if r["data"].get("metadata"))
+    manual = json.loads(json.dumps(summarised))
+    manual["data"]["objects"], manual["data"]["audio"] = ["on_demand"], []
+    assert Review.from_payload(manual).manual
+    assert driveway.on_message(message("new", manual | {"end_time": None}), T0) is None
+    assert driveway.on_message(message("end", manual), T0 + 75) is None
+    assert driveway.tracked == []
+    seen = review("driveway", objects=["on_demand", "car"])
+    parsed = Review.from_payload(seen)
+    assert (parsed.manual, parsed.label) == (False, "Car")
