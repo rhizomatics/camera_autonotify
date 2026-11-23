@@ -67,6 +67,7 @@ CAMERA_UP = "camera_up"
 # plate, the sightings before, and the DVLA's details, and anpr2mqtt going down and coming back
 ANPR_TITLE = "anpr_title"
 ANPR_PLATE = "anpr_plate"
+ANPR_UNKNOWN_VEHICLE = "anpr_unknown_vehicle"
 ANPR_FIRST = "anpr_first"
 ANPR_SEEN = "anpr_seen"
 ANPR_DVLA = "anpr_dvla"

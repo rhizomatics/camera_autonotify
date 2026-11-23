@@ -53,6 +53,7 @@ Every licence plate read, by Frigate's plate recognition (ANPR/ALPR), an image p
 
 - **What you need**: anpr2mqtt 1.3.0 or later, with its Home Assistant devices on (`device_creation`, as it comes). Each anpr2mqtt camera is then found and offered as *Discovered*, even with *Set up cameras automatically* on, so its setup can import from anpr2mqtt. Frigate isn't needed
 - **What's sent**: details of the vehicle as a JSON payload on an MQTT topic, and the image itself as a binary payload on a different topic. See [Home Assistant Integration](https://anpr2mqtt.rhizomatics.org.uk/homeassistant/) for the details. This can also include an area for the camera to show up as for Home Assistant, and the identity of the linked camera.
+- **Headline**: the vehicle and where, named by its description, or else its category, or else its colour and make from the DVLA, such as *Red Peugeot at Driveway*, or else *Unknown vehicle KP75YYS at Driveway*
 - **Health**: anpr2mqtt going unavailable is notified, and again when it's back, with the timing of the Frigate health checks
 
 #### Avoiding Duplicate Notifications

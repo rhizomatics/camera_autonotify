@@ -6,6 +6,12 @@ title: What's New
 
 > Camera Autonotify was first released in October 2026 with support only for Frigate notifications. Its intended to be a `1.0.0` release by the end of 2026, with [ANPR2MQTT](https://anpr2mqtt.rhizomatics.org.uk) as the second integration. Ideas, improvements and other feedback very welcome - use the [Github Issues](https://github.com/rhizomatics/camera_autonotify/issues) to add them.
 
+# 1.0.1
+## 🐞 Fixes
+- With Supernotify v2.19.0 or later, each image is also tried at Home Assistant's own address, after the one a phone uses, so e-mail and the other deliveries Supernotify fetches the image for still get it, and no repair is raised, where Home Assistant can't reach itself at its external address, such as without hairpin NAT
+- An anpr2mqtt sighting's headline names the vehicle by its category, where there's no description, or else as its vehicle register names it, by fields chosen for each register, colour and make for the DVLA, such as *Red Peugeot at Driveway*, or else as *Unknown vehicle KP75YYS at Driveway*, rather than the bare plate
+- The fact for a tracked object that has stopped says *Stopped* rather than *Not moving*, which contradicted the highest speed said before it, as in *8 mph - Not moving*
+
 # 1.0.0
 ## ✨ Enhancements
 ### Vehicle Classification and Enrichment
