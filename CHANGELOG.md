@@ -9,7 +9,7 @@ title: What's New
 # 1.0.1
 ## 🐞 Fixes
 - With Supernotify v2.19.0 or later, each image is also tried at Home Assistant's own address, after the one a phone uses, so e-mail and the other deliveries Supernotify fetches the image for still get it, and no repair is raised, where Home Assistant can't reach itself at its external address, such as without hairpin NAT
-- An anpr2mqtt sighting's headline names the vehicle by its category, where there's no description, or else as its vehicle register names it, by fields chosen for each register, colour and make for the DVLA, such as *Red Peugeot at Driveway*, or else as *Unknown vehicle KP75YYS at Driveway*, rather than the bare plate
+- An anpr2mqtt sighting's headline names the vehicle by its category, where there's no description, or else as its vehicle register names it, by fields chosen for each register, colour and make for the DVLA, such as *Red Peugeot at Driveway*, or else as *Unknown vehicle JX123YYZ at Driveway*, rather than the bare plate
 - Frigate's *on demand* recording, started by hand from its UI, is no longer notified as *On demand detected*, nor GenAI's summary of it ([#34](https://github.com/rhizomatics/camera_autonotify/issues/34))
 - The fact for a tracked object that has stopped says *Stopped* rather than *Not moving*, which contradicted the highest speed said before it, as in *8 mph - Not moving*
 
