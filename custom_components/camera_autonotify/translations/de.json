@@ -126,12 +126,14 @@
                             "vehicle_priority_unreadable": "Priorität unlesbarer Fahrzeuge",
                             "vehicle_scenarios_unreadable": "Szenarien unlesbarer Fahrzeuge",
                             "known_category": "Kategorie für die Schaltfläche Bekanntes Fahrzeug",
+                            "vehicle_events": "Fahrzeug-Events auslösen",
                             "track_visits": "Besuche verfolgen"
                         },
                         "data_description": {
                             "min_visit_gap": "Ein Kennzeichen, das innerhalb dieser Zeit erneut gesehen wird, ist derselbe Besuch und wird nicht erneut gezählt.",
                             "history_days": "Wie lange die Sichtungen jedes Kennzeichens behalten werden, ohne Home Assistant je zu verlassen.",
                             "known_category": "Benachrichtigungen zu einem unbekannten Fahrzeug haben eine Schaltfläche Bekanntes Fahrzeug. Sie fügt das Kennzeichen mit einer eingegebenen Beschreibung dieser Fahrzeugkategorie hinzu, die angelegt wird, falls sie nicht existiert.",
+                            "vehicle_events": "Für jede Sichtung ein camera_autonotify_vehicle-Event mit dem Kennzeichen auslösen, für Automationen. Standardmäßig aus, da der Recorder das Kennzeichen dann im Klartext speichert.",
                             "track_visits": "Die Sichtungen jedes Kennzeichens speichern, um in Benachrichtigungen zu sagen, wie oft und wann es üblicherweise gesehen wird. Ausschalten, um keine zu speichern. Bereits gespeicherte Sichtungen bleiben bis zum Zurücksetzen."
                         }
                     },
@@ -141,12 +143,14 @@
                         "data": {
                             "dvla_api_key": "DVLA-API-Schlüssel",
                             "lookup_cache_hours": "Abfragen zwischenspeichern für",
-                            "dvla_api_key_clear": "Schlüssel vergessen"
+                            "dvla_api_key_clear": "Schlüssel vergessen",
+                            "dvla_api_key_test": "Schlüssel testen"
                         },
                         "data_description": {
                             "dvla_api_key": "Von der DVLA für ihren Vehicle Enquiry Service ausgegeben, als Zugangsdaten gespeichert und nie angezeigt. {dvla_key}",
                             "lookup_cache_hours": "Wie lange die Daten eines Kennzeichens behalten werden, bevor erneut gefragt wird.",
-                            "dvla_api_key_clear": "Den DVLA-Schlüssel entfernen, sodass keine Kennzeichen nachgeschlagen werden."
+                            "dvla_api_key_clear": "Den DVLA-Schlüssel entfernen, sodass keine Kennzeichen nachgeschlagen werden.",
+                            "dvla_api_key_test": "Beim Absenden A123TST mit dem eingegebenen oder dem gesetzten Schlüssel abfragen, um zu prüfen, ob die DVLA antwortet, ohne etwas zu speichern."
                         }
                     },
                     "anpr2mqtt_import": {
@@ -345,6 +349,10 @@
                         }
                     }
                 }
+            },
+            "dvla_test": {
+                "title": "DVLA-Schlüsseltest",
+                "description": "{result}"
             }
         },
         "error": {
@@ -586,7 +594,7 @@
         "action_export": "Aufnahme exportieren",
         "autotracking": "**{cameras} folgt dem, was sie sieht.** Zonen sind auf das Bild der Kamera gezeichnet, also bedeuten Zonen, Jede Zone und Zonen in Reihenfolge möglicherweise nicht, was sie sagen, während sie sich bewegt.",
         "fact_face_unknown": "Gesicht nicht erkannt",
-        "fact_stationary": "Bewegt sich nicht",
+        "fact_stationary": "Angehalten",
         "fact_state": "{model}: {state}",
         "fact_sightings": "Frühere Sichtungen: {count}",
         "fact_unusual_time": "Zu ungewöhnlicher Zeit",
@@ -603,6 +611,7 @@
         "camera_up": "Frigate hat wieder Video von {camera}, nach {duration}.",
         "anpr_title": "{vehicle} bei {where}",
         "anpr_plate": "Kennzeichen {plate}",
+        "anpr_unknown_vehicle": "Unbekanntes Fahrzeug {plate}",
         "anpr_first": "Noch nie gesehen",
         "anpr_seen": "Frühere Sichtungen: {count}, zuletzt am {when}",
         "anpr_dvla": "DVLA: {details}",
@@ -677,7 +686,10 @@
         "imported_sightings": "Hinzugefügte Sichtungen: {count}",
         "imported_nothing": "Nichts Neues: alles im Archiv war bereits vorhanden",
         "dvla_key_set": "Ein Schlüssel ist gesetzt: leer lassen, um ihn zu behalten, oder einen neuen eingeben, um ihn zu ersetzen.",
-        "dvla_key_unset": "Kein Schlüssel gesetzt."
+        "dvla_key_unset": "Kein Schlüssel gesetzt.",
+        "dvla_test_passed": "Die DVLA hat für {plate} wie erwartet geantwortet: {said}.",
+        "dvla_test_failed": "Die DVLA hat für {plate} nicht wie erwartet geantwortet: {said}. Erwartet wird 200 oder 404, mit JSON.",
+        "dvla_test_no_key": "Kein Schlüssel zum Testen: zuerst einen eingeben."
     },
     "issues": {
         "lookup_refused": {

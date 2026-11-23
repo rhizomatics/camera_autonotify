@@ -126,12 +126,14 @@
                             "vehicle_priority_unreadable": "Priorità veicoli illeggibili",
                             "vehicle_scenarios_unreadable": "Scenari veicoli illeggibili",
                             "known_category": "Categoria del pulsante Veicolo noto",
+                            "vehicle_events": "Genera eventi veicolo",
                             "track_visits": "Traccia le visite"
                         },
                         "data_description": {
                             "min_visit_gap": "Una targa rivista entro questo tempo è la stessa visita, e non è contata di nuovo.",
                             "history_days": "Per quanto tempo sono conservati gli avvistamenti di ogni targa, senza mai lasciare Home Assistant.",
                             "known_category": "Le notifiche di un veicolo sconosciuto hanno un pulsante Veicolo noto. Toccandolo, la targa, con la descrizione scritta, viene aggiunta a questa categoria di veicoli, creata se non esiste.",
+                            "vehicle_events": "Genera un evento camera_autonotify_vehicle per ogni avvistamento, con la targa, per le automazioni. Disattivato per impostazione predefinita, perché il recorder conserva poi la targa in chiaro.",
                             "track_visits": "Conserva gli avvistamenti di ogni targa, per dire nelle notifiche quanto spesso e quando viene vista di solito. Disattiva per non conservarne nessuno. Gli avvistamenti già conservati restano finché non vengono azzerati."
                         }
                     },
@@ -141,12 +143,14 @@
                         "data": {
                             "dvla_api_key": "Chiave API DVLA",
                             "lookup_cache_hours": "Conserva le ricerche per",
-                            "dvla_api_key_clear": "Dimentica la chiave"
+                            "dvla_api_key_clear": "Dimentica la chiave",
+                            "dvla_api_key_test": "Prova la chiave"
                         },
                         "data_description": {
                             "dvla_api_key": "Rilasciata dalla DVLA per il suo Vehicle Enquiry Service, conservata come credenziale e mai mostrata. {dvla_key}",
                             "lookup_cache_hours": "Per quanto tempo sono conservati i dettagli di una targa prima di chiedere di nuovo.",
-                            "dvla_api_key_clear": "Rimuovi la chiave DVLA, così le targhe non vengono cercate."
+                            "dvla_api_key_clear": "Rimuovi la chiave DVLA, così le targhe non vengono cercate.",
+                            "dvla_api_key_test": "All'invio, cerca A123TST con la chiave digitata, o quella impostata, per verificare che la DVLA risponda, senza salvare nulla."
                         }
                     },
                     "anpr2mqtt_import": {
@@ -345,6 +349,10 @@
                         }
                     }
                 }
+            },
+            "dvla_test": {
+                "title": "Prova della chiave DVLA",
+                "description": "{result}"
             }
         },
         "error": {
@@ -603,6 +611,7 @@
         "camera_up": "Frigate riceve di nuovo video da {camera}, dopo {duration}.",
         "anpr_title": "{vehicle} a {where}",
         "anpr_plate": "Targa {plate}",
+        "anpr_unknown_vehicle": "Veicolo sconosciuto {plate}",
         "anpr_first": "Mai visto prima",
         "anpr_seen": "Avvistamenti precedenti: {count}, l'ultimo il {when}",
         "anpr_dvla": "DVLA: {details}",
@@ -677,7 +686,10 @@
         "imported_sightings": "Avvistamenti aggiunti: {count}",
         "imported_nothing": "Niente di nuovo: tutto ciò che è nell'archivio era già presente",
         "dvla_key_set": "Una chiave è impostata: lascia vuoto per mantenerla, o scrivine una nuova per sostituirla.",
-        "dvla_key_unset": "Nessuna chiave impostata."
+        "dvla_key_unset": "Nessuna chiave impostata.",
+        "dvla_test_passed": "La DVLA ha risposto come previsto per {plate}: {said}.",
+        "dvla_test_failed": "La DVLA non ha risposto come previsto per {plate}: {said}. Dovrebbe rispondere 200 o 404, con JSON.",
+        "dvla_test_no_key": "Nessuna chiave da provare: digitane prima una."
     },
     "issues": {
         "lookup_refused": {

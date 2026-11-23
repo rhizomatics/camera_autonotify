@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -199,9 +200,17 @@ async def test_title_and_message(hass: HomeAssistant):
         "Previous sightings: 2, last on Monday 2 November 09:10",
         "DVLA: MITSUBISHI, WHITE, Taxed",
     ]
-    # named by its plate where anpr2mqtt has no description, and never seen before
+    # named by the register's colour and make where there's no description
+    peugeot = Sighting.from_state(state(reg_info={"make": "PEUGEOT", "colour": "RED"}))
+    assert notifier.title(peugeot, None) == "Red Peugeot at Driveway"
+    assert notifier.message(peugeot).splitlines()[0] == "Plate PX19TVD"
+    assert notifier.title(Sighting.from_state(state(reg_info={"make": "BMW"})), None) == "BMW at Driveway"
+    # or by its category, classified here, before the register
+    category = replace(peugeot, category="Deliveries")
+    assert notifier.title(category, None) == "Deliveries at Driveway"
+    # an unknown vehicle by its plate, with nothing else to name it by, and never seen before
     unknown = Sighting.from_state(state(history={"previous_sightings": 0}))
-    assert notifier.title(unknown, None) == "PX19TVD at Driveway"
+    assert notifier.title(unknown, None) == "Unknown vehicle PX19TVD at Driveway"
     assert notifier.message(unknown) == "Not seen before"
 
 
@@ -244,9 +253,9 @@ async def test_supernotify_call(hass: HomeAssistant):
         },
     )
     data = AnprNotifier(hass, entry).supernotify_data(Sighting.from_state(state()), "high")
-    assert data["title"] == "PX19TVD at Driveway"
+    assert data["title"] == "Unknown vehicle PX19TVD at Driveway"
     # the plate not said twice, being the title already
-    assert data["spoken_message"] == "PX19TVD at Driveway"
+    assert data["spoken_message"] == "Unknown vehicle PX19TVD at Driveway"
     assert data["apply_scenarios"] == ["unknown_vehicle"]
     assert data["constrain_scenarios"] == ["known_vehicle", "unknown_vehicle"]
     assert data["media"] == {
@@ -390,7 +399,7 @@ async def test_notified_on_a_new_sighting(hass: HomeAssistant, frozen: FrozenDat
     hass.states.async_set(SENSOR, "unknown", {})
     hass.states.async_set(SENSOR, "AB12CDE", attributes())
     await hass.async_block_till_done(wait_background_tasks=True)
-    assert [call.data["title"] for call in calls] == ["AB12CDE at Driveway"]
+    assert [call.data["title"] for call in calls] == ["Unknown vehicle AB12CDE at Driveway"]
 
 
 async def test_plain_notification_without_supernotify(hass: HomeAssistant):
@@ -400,7 +409,7 @@ async def test_plain_notification_without_supernotify(hass: HomeAssistant):
     await notifier.async_notify(Sighting.from_state(state()))
     assert phones[0].data == {
         "entity_id": ["notify.phone"],
-        "title": "PX19TVD at Driveway",
+        "title": "Unknown vehicle PX19TVD at Driveway",
         "message": "Previous sightings: 2, last on Monday 2 November 09:10",
     }
 

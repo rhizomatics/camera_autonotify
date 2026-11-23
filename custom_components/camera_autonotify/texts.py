@@ -67,6 +67,7 @@ CAMERA_UP = "camera_up"
 # plate, the sightings before, and the DVLA's details, and anpr2mqtt going down and coming back
 ANPR_TITLE = "anpr_title"
 ANPR_PLATE = "anpr_plate"
+ANPR_UNKNOWN_VEHICLE = "anpr_unknown_vehicle"
 ANPR_FIRST = "anpr_first"
 ANPR_SEEN = "anpr_seen"
 ANPR_DVLA = "anpr_dvla"
@@ -125,6 +126,10 @@ IMPORT_NOTHING = "import_nothing"
 # whether the DVLA's key is set, it never being shown again
 DVLA_KEY_SET = "dvla_key_set"
 DVLA_KEY_UNSET = "dvla_key_unset"
+# how the test of the DVLA's key went
+DVLA_TEST_PASSED = "dvla_test_passed"
+DVLA_TEST_FAILED = "dvla_test_failed"
+DVLA_TEST_NO_KEY = "dvla_test_no_key"
 # what an import from anpr2mqtt added, once done
 IMPORTED_CATEGORIES = "imported_categories"
 IMPORTED_PLATES = "imported_plates"

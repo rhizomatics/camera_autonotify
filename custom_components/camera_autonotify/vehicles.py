@@ -2,9 +2,8 @@
 and looked up with a vehicle register, the DVLA's to begin with, so Frigate's plates, anpr2mqtt's, or any other, are
 treated the same, and anpr2mqtt needn't do it
 
-The history and the lookups are kept in Home Assistant's own storage, so a restart loses neither. The history and lookups
-are kept by a hash of each plate, salted with a secret of this installation's own, never by the plate itself, so they
-say when a plate was seen, or what it is, only to whoever already knows it, and can't be compared with another's. A lookup is cached,
+The history and the lookups are kept in Home Assistant's own storage, by the object tracker, plates being one kind of
+object it tracks, so a restart loses neither, and never by the plate itself. A lookup is cached,
 the DVLA's for a day to begin with, and a plate the register doesn't know is cached as such too. Where it doesn't
 know a plate, and it's within a character of the last plate it confirmed on the same camera, recently, it's taken as
 that plate, a misread, as anpr2mqtt does.
@@ -12,11 +11,10 @@ that plate, a misread, as anpr2mqtt does.
 
 from __future__ import annotations
 
-import hashlib
-import hmac
 import logging
 import re
 import secrets
+from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta
 from types import MappingProxyType
@@ -35,6 +33,7 @@ from .const import (
     CONF_LOOKUP_CACHE_HOURS,
     CONF_MIN_VISIT_GAP,
     CONF_TRACK_VISITS,
+    CONF_VEHICLE_EVENTS,
     CONF_VEHICLE_PRIORITIES,
     CONF_VEHICLE_SCENARIOS,
     DEFAULT_HISTORY_DAYS,
@@ -46,10 +45,23 @@ from .const import (
     VEHICLE_RULE_PRIORITIES,
 )
 from .entries import global_settings
-from .plates import KIND_IGNORED, KIND_KNOWN, Category, History, Match, PlateRegister, analyse, distance, normalised
+from .objects import KIND_PLATE, ObjectTracker, Sighting
+from .plates import (
+    KIND_IGNORED,
+    KIND_KNOWN,
+    KIND_UNKNOWN,
+    Category,
+    History,
+    Match,
+    PlateRegister,
+    analyse,
+    distance,
+    normalised,
+    redacted,
+)
 
 if TYPE_CHECKING:
-    from aiohttp import ClientSession
+    from aiohttp import ClientResponse, ClientSession
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -59,7 +71,10 @@ DATA_VEHICLES = "vehicles"
 STORE_VERSION = 1
 DVLA_URL = "https://driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1/vehicles"
 ISSUE_LOOKUP_REFUSED = "lookup_refused"
-# the key of a plate's history and lookups, a salted SHA-256 hash of the plate as compared
+# the betas' stores, by plate or by a salted hash of it, the history moved into the tracker, the lookups, only a
+# cache, dropped. Only for those betas, so to be removed in the release after 1.0.0
+BETA_HISTORY = "plate_history"
+BETA_LOOKUP = "plate_lookup"
 HASHED = re.compile(r"^[0-9a-f]{64}$")
 # the DVLA's own field for the plate, left out of what's kept of a lookup
 DVLA_PLATE = "registrationNumber"
@@ -67,8 +82,10 @@ DVLA_PLATE = "registrationNumber"
 RECORDED_FOR = 3600
 
 
-class LookupRefused(Exception):
-    """The register refused the key"""
+# a plate made up to check the DVLA's key with, either known or not, both answers meaning the key works
+DVLA_TEST_PLATE = "A123TST"
+# a register's answers to a key it refuses
+REFUSED = (401, 403)
 
 
 @dataclass(frozen=True)
@@ -86,6 +103,10 @@ class VehicleLookup:
 
     def said(self) -> str:
         return ", ".join(str(v) for v in (self.make, self.colour, self.year, self.tax) if v)
+
+    def named(self, kind: str) -> str | None:
+        """The vehicle as its register's own fields name it, such as `Red Peugeot`, or nothing"""
+        return vehicle_named(self.source, self.raw, kind)
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -113,13 +134,39 @@ class VehicleLookup:
         )
 
 
+@dataclass(frozen=True)
+class LookupResult:
+    """How a lookup went: what was found, if anything, the status the register gave and any error it said, whether
+    it came from the cache, or that it was skipped, the plate's category not being looked up"""
+
+    source: str | None = None
+    status: int | None = None
+    error: str | None = None
+    found: VehicleLookup | None = None
+    cached: bool = False
+    skipped: bool = False
+    # when a cached answer was retrieved from the register
+    retrieved: datetime | None = None
+
+    def as_dict(self) -> dict[str, Any]:
+        if self.skipped:
+            return {"skipped": True}
+        return {
+            **(self.found.as_dict() if self.found else {"source": self.source}),
+            "status": self.status,
+            "error": self.error,
+            "cached": self.cached,
+            **({"retrieved": self.retrieved.isoformat()} if self.cached and self.retrieved else {}),
+        }
+
+
 class LookupProvider(Protocol):
     """A country's or region's vehicle register"""
 
     name: str
 
-    async def async_lookup(self, plate: str) -> VehicleLookup | None:
-        """What it knows of a plate, or nothing when it doesn't know it, raising LookupRefused for a refused key"""
+    async def async_lookup(self, plate: str) -> LookupResult:
+        """What it knows of a plate, with the status it gave, raising only where it couldn't be asked at all"""
         ...
 
 
@@ -132,29 +179,99 @@ class DvlaProvider:
         self.session = session
         self.api_key = api_key
 
-    async def async_lookup(self, plate: str) -> VehicleLookup | None:
+    async def _async_post(self, plate: str) -> tuple[int, object, str | None]:
+        """The status, the JSON body, if any, and the error the DVLA said, logged, the plate redacted"""
         async with self.session.post(
             DVLA_URL,
             headers={"x-api-key": self.api_key, "Content-Type": "application/json"},
             json={"registrationNumber": plate},
         ) as response:
-            if response.status == 404:
-                return None
-            if response.status in (401, 403):
-                raise LookupRefused
-            response.raise_for_status()
-            found: dict[str, Any] = await response.json()
-        year = found.get("yearOfManufacture")
-        return VehicleLookup(
-            source=self.name,
-            make=found.get("make"),
-            colour=found.get("colour"),
-            year=int(year) if isinstance(year, int | str) and str(year).isdigit() else None,
-            fuel=found.get("fuelType"),
-            tax=found.get("taxStatus"),
-            inspection=found.get("motStatus"),
-            raw={key: value for key, value in found.items() if key != DVLA_PLATE},
+            body = await _json_body(response)
+        error = _dvla_error(body) if response.status >= 400 else None
+        _LOGGER.info(
+            "CAMERA_AUTONOTIFY DVLA lookup of %s: %s%s", redacted(plate), response.status, f" {error}" if error else ""
         )
+        return response.status, body, error
+
+    async def async_lookup(self, plate: str) -> LookupResult:
+        status, body, error = await self._async_post(plate)
+        if status != 200 or not isinstance(body, dict):
+            return LookupResult(self.name, status, error or (None if status == 200 else f"HTTP {status}"))
+        year = body.get("yearOfManufacture")
+        found = VehicleLookup(
+            source=self.name,
+            make=body.get("make"),
+            colour=body.get("colour"),
+            year=int(year) if isinstance(year, int | str) and str(year).isdigit() else None,
+            fuel=body.get("fuelType"),
+            tax=body.get("taxStatus"),
+            inspection=body.get("motStatus"),
+            raw={key: value for key, value in body.items() if key != DVLA_PLATE},
+        )
+        return LookupResult(self.name, status, found=found)
+
+    async def async_test(self) -> tuple[bool, int | None, str | None]:
+        """Whether the key works, by a made up plate answered with JSON and 200 or 404, with the status and error"""
+        try:
+            status, body, error = await self._async_post(DVLA_TEST_PLATE)
+        except Exception as failure:
+            return False, None, str(failure) or type(failure).__name__
+        if not isinstance(body, dict):
+            return False, status, error or "No JSON in the response"
+        return status in (200, 404), status, error
+
+
+@dataclass(frozen=True)
+class Naming:
+    """How a vehicle is named from what its register gives, by the register's own fields, in order, one set for a
+    vehicle in a category with no description and one for an unknown vehicle"""
+
+    known: tuple[str, ...]
+    unknown: tuple[str, ...]
+    # fields whose words of three letters or less are kept as given, such as a make of `BMW`, where the rest are
+    # capitalised, `PEUGEOT` and `RED` as `Peugeot` and `Red`
+    as_given: tuple[str, ...] = ()
+
+    def named(self, fields: Mapping[str, object], kind: str) -> str | None:
+        said = [self._said(key, fields.get(key)) for key in (self.unknown if kind == KIND_UNKNOWN else self.known)]
+        return " ".join(word for word in said if word) or None
+
+    def _said(self, key: str, value: object) -> str | None:
+        if value in (None, ""):
+            return None
+        words = str(value).split()
+        return " ".join(w if key in self.as_given and len(w) <= 3 else w.capitalize() for w in words) or None
+
+
+# by each register's name, one added with each register; anpr2mqtt's own lookups are the DVLA's
+NAMING: dict[str, Naming] = {
+    "dvla": Naming(known=("colour", "make"), unknown=("colour", "make"), as_given=("make",)),
+}
+
+
+def vehicle_named(source: str | None, fields: object, kind: str) -> str | None:
+    """A vehicle as its register names it, by the register's own fields, or nothing where there's no naming for it"""
+    naming = NAMING.get(source or "")
+    return naming.named(fields, kind) if naming is not None and isinstance(fields, Mapping) else None
+
+
+async def _json_body(response: ClientResponse) -> object:
+    """A response's JSON, or nothing where it has none, as an error from a gateway in front of the register may not"""
+    try:
+        return await response.json(content_type=None)
+    except ValueError:
+        return None
+
+
+def _dvla_error(body: object) -> str | None:
+    """The DVLA's error, from its `errors` list, or a gateway's `message`"""
+    if not isinstance(body, dict):
+        return None
+    errors = body.get("errors")
+    if isinstance(errors, list) and errors and isinstance(errors[0], dict):
+        said = [str(errors[0][key]) for key in ("title", "detail") if errors[0].get(key)]
+        return ": ".join(said) or None
+    return str(body["message"]) if body.get("message") else None
 
 
 @dataclass(frozen=True)
@@ -163,7 +280,12 @@ class Vehicle:
 
     match: Match
     history: History = field(default_factory=History)
-    lookup: VehicleLookup | None = None
+    # none where there's no register to look up with at all
+    looked_up: LookupResult | None = None
+
+    @property
+    def lookup(self) -> VehicleLookup | None:
+        return self.looked_up.found if self.looked_up else None
 
     @property
     def kind(self) -> str:
@@ -183,7 +305,7 @@ class Vehicle:
             "description": self.match.description,
             "icon": category.icon if category else None,
             "history": self.history.as_dict(),
-            "lookup": self.lookup.as_dict() if self.lookup else None,
+            "lookup": self.looked_up.as_dict() if self.looked_up else None,
         }
 
 
@@ -211,13 +333,10 @@ class Vehicles:
 
     def __init__(self, hass: HomeAssistant) -> None:
         self.hass = hass
-        self._history_store: Store[dict[str, list[str]]] = Store(hass, STORE_VERSION, f"{DOMAIN}.plate_history")
-        self._lookup_store: Store[dict[str, Any]] = Store(hass, STORE_VERSION, f"{DOMAIN}.plate_lookup")
-        # this installation's own secret, salting each plate's key
+        self._store: Store[dict[str, Any]] = Store(hass, STORE_VERSION, f"{DOMAIN}.tracker")
+        # this installation's own secret, salting each object's key
         self._salt_store: Store[dict[str, str]] = Store(hass, STORE_VERSION, f"{DOMAIN}.plate_salt")
-        self._salt: bytes | None = None
-        self._history: dict[str, list[str]] | None = None
-        self._lookups: dict[str, Any] | None = None
+        self._tracker: ObjectTracker | None = None
         # the last plate the register confirmed on each camera, and when
         self._confirmed: dict[str, tuple[str, datetime]] = {}
         # reviews whose plate is already counted, and when
@@ -248,53 +367,68 @@ class Vehicles:
         key = entry.data.get(CONF_DVLA_API_KEY) if entry else None
         return DvlaProvider(async_get_clientsession(self.hass), str(key)) if key else None
 
-    async def _async_load(self) -> None:
-        if self._salt is None:
+    async def _async_load(self) -> ObjectTracker:
+        if self._tracker is None:
             stored = await self._salt_store.async_load() or {}
             if not stored.get("salt"):
                 # saved before anything is kept by it, since without it nothing kept could be found again
                 stored = {"salt": secrets.token_hex(32)}
                 await self._salt_store.async_save(stored)
-            self._salt = bytes.fromhex(stored["salt"])
-        if self._history is None:
-            self._history = self._hashed(await self._history_store.async_load() or {})
-        if self._lookups is None:
-            self._lookups = self._hashed_lookups(await self._lookup_store.async_load() or {})
+            tracker = ObjectTracker(bytes.fromhex(stored["salt"]), await self._store.async_load())
+            await self._async_migrate_beta(tracker)
+            if self._tracker is None:
+                self._tracker = tracker
+        self._prune()
+        return self._tracker
+
+    async def _async_migrate_beta(self, tracker: ObjectTracker) -> None:
+        """The betas' visit history moved into the tracker, and their stores removed. Only for those betas, so to be
+        removed in the release after 1.0.0"""
+        history_store: Store[dict[str, list[str]]] = Store(self.hass, STORE_VERSION, f"{DOMAIN}.{BETA_HISTORY}")
+        history = await history_store.async_load()
+        if history is None:
+            return
+        zone = dt_util.get_default_time_zone()
+        moved = 0
+        for plate, times in history.items():
+            key = plate if HASHED.match(plate) else tracker.key(KIND_PLATE, normalised(plate))
+            parsed = [seen for seen in (dt_util.parse_datetime(str(t)) for t in times or []) if seen is not None]
+            # anpr2mqtt's may have no time zone, being its own local time
+            moved += tracker.merge_key(
+                key, KIND_PLATE, [Sighting(round((s if s.tzinfo else s.replace(tzinfo=zone)).timestamp())) for s in parsed]
+            )
+        await self._store.async_save(tracker.as_dict())
+        await history_store.async_remove()
+        await Store[dict[str, Any]](self.hass, STORE_VERSION, f"{DOMAIN}.{BETA_LOOKUP}").async_remove()
+        _LOGGER.info(
+            "CAMERA_AUTONOTIFY Visit history of %s plates, %s sightings, moved to the object tracker", len(history), moved
+        )
+
+    def _prune(self) -> None:
+        """Sightings no longer kept and expired lookups dropped, when first loaded and daily after"""
+        if self._tracker is None:
+            return
+        options = self.options
+        keep = float(options.get(CONF_HISTORY_DAYS, DEFAULT_HISTORY_DAYS)) * 86400
+        ttl = float(options.get(CONF_LOOKUP_CACHE_HOURS, DEFAULT_LOOKUP_CACHE_HOURS)) * 3600
+        if self._tracker.prune(dt_util.utcnow().timestamp(), keep, ttl):
+            self._save()
+
+    def _save(self) -> None:
+        self._store.async_delay_save(lambda: self._tracker.as_dict() if self._tracker else {}, 10)
 
     def plate_key(self, plate: str) -> str:
         """What a plate's history and lookups are kept by, a salted hash of it, never the plate"""
-        if self._salt is None:
+        if self._tracker is None:
             raise RuntimeError("Plate keys asked for before the salt is loaded")
-        return hmac.new(self._salt, normalised(plate).encode(), hashlib.sha256).hexdigest()
-
-    def _hashed_lookups(self, lookups: dict[str, Any]) -> dict[str, Any]:
-        """The lookups as the betas kept them, by plate, dropped, being only a cache, to be looked up again. Only for
-        those betas, so to be removed in the release after 1.0.0"""
-        kept = {key: value for key, value in lookups.items() if HASHED.match(key.partition(":")[2])}
-        if len(kept) != len(lookups):
-            self._lookup_store.async_delay_save(lambda: self._lookups or {}, 10)
-        return kept
-
-    def _hashed(self, history: dict[str, list[str]]) -> dict[str, list[str]]:
-        """The history as the betas kept it, by plate, rewritten by hash, merged with any already hashed, and saved.
-        Only for those betas, so to be removed in the release after 1.0.0"""
-        plates = [key for key in history if not HASHED.match(key)]
-        if not plates:
-            return history
-        for plate in plates:
-            key = self.plate_key(plate)
-            history[key] = sorted({*history.get(key, []), *history.pop(plate)})
-        _LOGGER.info("CAMERA_AUTONOTIFY Visit history of %s plates now kept by hash", len(plates))
-        self._history_store.async_delay_save(lambda: self._history or {}, 10)
-        return history
+        return self._tracker.key(KIND_PLATE, normalised(plate))
 
     def sightings(self, plate: str) -> list[datetime]:
-        if self._history is None:
+        if self._tracker is None:
             return []
-        found = [dt_util.parse_datetime(seen) for seen in self._history.get(self.plate_key(plate), [])]
-        zone = dt_util.get_default_time_zone()
-        # anpr2mqtt's may have no time zone, being its own local time
-        return sorted(dt_util.as_local(seen if seen.tzinfo else seen.replace(tzinfo=zone)) for seen in found if seen)
+        return [
+            dt_util.as_local(dt_util.utc_from_timestamp(s.at)) for s in self._tracker.sightings(KIND_PLATE, normalised(plate))
+        ]
 
     async def async_classify(
         self,
@@ -307,26 +441,30 @@ class Vehicles:
         confidence: float | None = None,
     ) -> Vehicle:
         """A plate read, corrected, classified, looked up where its category says, or it's in none, and its history,
-        counted as a sighting only when asked, when it's also fired as an event"""
-        await self._async_load()
+        counted as a sighting only when asked, when it's also fired as an event, where events are wanted"""
+        tracker = await self._async_load()
         now = dt_util.as_local(now or dt_util.now())
         options = self.options
         register = self.register()
         match = register.match(read)
+        provider = self._provider()
+        # a register to look up with, but not for this plate, ignored or in a category not looked up
+        lookup = LookupResult(provider.name, skipped=True) if provider else None
         if match.kind == KIND_IGNORED:
-            return Vehicle(match)
-        lookup: VehicleLookup | None = None
-        if match.category is None or match.category.lookup:
-            lookup, match = await self._async_lookup(match, register, camera, now, options)
+            return Vehicle(match, looked_up=lookup)
+        if provider is not None and (match.category is None or match.category.lookup):
+            lookup, match = await self._async_lookup(provider, match, register, camera, now, options)
         # visits not tracked, so neither counted nor said, the history kept for when they are again
         history = History()
         if options.get(CONF_TRACK_VISITS, True):
             gap = float(options.get(CONF_MIN_VISIT_GAP, DEFAULT_MIN_VISIT_GAP))
-            history = analyse(self.sightings(match.plate), now, gap)
+            keep = timedelta(days=float(options.get(CONF_HISTORY_DAYS, DEFAULT_HISTORY_DAYS)))
+            history = analyse([seen for seen in self.sightings(match.plate) if now - seen <= keep], now, gap)
             if record and history.is_new_visit:
-                self._record(match.plate, now, options)
+                tracker.record(KIND_PLATE, match.plate, Sighting(round(now.timestamp()), camera, source))
+                self._save()
         vehicle = Vehicle(match, history, lookup)
-        if record:
+        if record and options.get(CONF_VEHICLE_EVENTS, False):
             self.hass.bus.async_fire(
                 EVENT_VEHICLE,
                 {
@@ -342,32 +480,49 @@ class Vehicles:
         return vehicle
 
     async def _async_lookup(
-        self, match: Match, register: PlateRegister, camera: str | None, now: datetime, options: dict[str, Any]
-    ) -> tuple[VehicleLookup | None, Match]:
-        lookup = await self._async_cached_lookup(match.plate, now, options)
+        self,
+        provider: LookupProvider,
+        match: Match,
+        register: PlateRegister,
+        camera: str | None,
+        now: datetime,
+        options: dict[str, Any],
+    ) -> tuple[LookupResult, Match]:
+        lookup = await self._async_cached_lookup(provider, match.plate, now, options)
         ttl = timedelta(hours=float(options.get(CONF_LOOKUP_CACHE_HOURS, DEFAULT_LOOKUP_CACHE_HOURS)))
-        if lookup is None and camera and (confirmed := self._confirmed.get(camera)):
+        if lookup.found is None and camera and (confirmed := self._confirmed.get(camera)):
             good, when = confirmed
             if now - when <= ttl and good != match.plate and distance(good, match.plate) <= 1:
                 _LOGGER.debug("CAMERA_AUTONOTIFY Correcting %s to %s, last confirmed on %s", match.plate, good, camera)
                 corrected = register.match(good)
-                return await self._async_cached_lookup(good, now, options), replace(corrected, read=match.read)
-        if lookup is not None and camera:
+                return await self._async_cached_lookup(provider, good, now, options), replace(corrected, read=match.read)
+        if lookup.found is not None and camera:
             self._confirmed[camera] = (match.plate, now)
         return lookup, match
 
-    async def _async_cached_lookup(self, plate: str, now: datetime, options: dict[str, Any]) -> VehicleLookup | None:
-        provider = self._provider()
-        if provider is None or self._lookups is None:
-            return None
-        ttl = timedelta(hours=float(options.get(CONF_LOOKUP_CACHE_HOURS, DEFAULT_LOOKUP_CACHE_HOURS)))
-        key = f"{provider.name}:{self.plate_key(plate)}"
-        cached = self._lookups.get(key)
-        if cached and (when := dt_util.parse_datetime(cached.get("at", ""))) and now - when <= ttl:
-            return VehicleLookup.from_dict(cached["found"]) if cached.get("found") else None
+    async def _async_cached_lookup(
+        self, provider: LookupProvider, plate: str, now: datetime, options: dict[str, Any]
+    ) -> LookupResult:
+        """From the cache, or the register, an answer of found or not found being cached, a failure not"""
+        if self._tracker is None:
+            return LookupResult(provider.name, skipped=True)
+        ttl = float(options.get(CONF_LOOKUP_CACHE_HOURS, DEFAULT_LOOKUP_CACHE_HOURS)) * 3600
+        if (cached := self._tracker.lookup(provider.name, KIND_PLATE, plate, now.timestamp(), ttl)) is not None:
+            found = cached.get("found")
+            return LookupResult(
+                provider.name,
+                cached.get("status") or (200 if found else 404),
+                cached.get("error"),
+                VehicleLookup.from_dict(found) if found else None,
+                cached=True,
+                retrieved=dt_util.as_local(dt_util.utc_from_timestamp(cached["at"])),
+            )
         try:
-            found = await provider.async_lookup(plate)
-        except LookupRefused:
+            result = await provider.async_lookup(plate)
+        except Exception as error:
+            _LOGGER.warning("CAMERA_AUTONOTIFY %s couldn't look up %s: %s", provider.name, redacted(plate), error)
+            return LookupResult(provider.name, error=str(error) or type(error).__name__)
+        if result.status in REFUSED:
             ir.async_create_issue(
                 self.hass,
                 DOMAIN,
@@ -377,22 +532,18 @@ class Vehicles:
                 translation_key=ISSUE_LOOKUP_REFUSED,
                 translation_placeholders={"provider": provider.name.upper()},
             )
-            return None
-        except Exception as error:
-            _LOGGER.warning("CAMERA_AUTONOTIFY %s couldn't look up %s: %s", provider.name, plate, error)
-            return None
+            return result
         ir.async_delete_issue(self.hass, DOMAIN, ISSUE_LOOKUP_REFUSED)
-        self._lookups[key] = {"at": now.isoformat(), "found": found.as_dict() if found else None}
-        self._lookup_store.async_delay_save(lambda: self._lookups or {}, 10)
-        return found
-
-    def _record(self, plate: str, now: datetime, options: dict[str, Any]) -> None:
-        if self._history is None:
-            return
-        keep = timedelta(days=float(options.get(CONF_HISTORY_DAYS, DEFAULT_HISTORY_DAYS)))
-        kept = [seen for seen in self.sightings(plate) if now - seen <= keep]
-        self._history[self.plate_key(plate)] = [seen.isoformat() for seen in [*kept, now]]
-        self._history_store.async_delay_save(lambda: self._history or {}, 10)
+        if result.status in (200, 404):
+            self._tracker.remember(
+                provider.name,
+                KIND_PLATE,
+                plate,
+                round(now.timestamp()),
+                {"found": result.found.as_dict() if result.found else None, "status": result.status, "error": result.error},
+            )
+            self._save()
+        return result
 
     def first_time_for(self, key: str, now: float) -> bool:
         """Whether a review's plate is yet to be counted, so it's counted once however many notifications it has"""
@@ -478,28 +629,24 @@ class Vehicles:
 
     async def async_reset_sightings(self, plate: str | None = None) -> int:
         """A plate's visit history forgotten, or every plate's where none is given, returning how many sightings"""
-        await self._async_load()
-        if self._history is None:
-            return 0
-        keys = [self.plate_key(plate)] if plate else list(self._history)
-        removed = sum(len(self._history.pop(key, [])) for key in keys)
-        self._history_store.async_delay_save(lambda: self._history or {}, 10)
+        tracker = await self._async_load()
+        removed = tracker.forget(KIND_PLATE, normalised(plate) if plate else None)
+        self._save()
         return removed
 
     async def async_import_history(self, sightings: dict[str, list[str]]) -> int:
         """Sightings from elsewhere, such as anpr2mqtt's tracker, merged with those here, returning how many were new"""
-        await self._async_load()
-        if self._history is None:
-            return 0
+        tracker = await self._async_load()
+        zone = dt_util.get_default_time_zone()
         added = 0
         for plate, times in sightings.items():
-            key = self.plate_key(plate)
-            known = set(self._history.get(key, []))
-            new = [t for t in times if t not in known and dt_util.parse_datetime(t) is not None]
-            if new:
-                self._history[key] = sorted([*known, *new])
-                added += len(new)
-        self._history_store.async_delay_save(lambda: self._history or {}, 10)
+            # anpr2mqtt's may have no time zone, being its own local time
+            parsed = [seen for seen in (dt_util.parse_datetime(t) for t in times) if seen is not None]
+            found = [
+                Sighting(round((s if s.tzinfo else s.replace(tzinfo=zone)).timestamp()), source="anpr2mqtt") for s in parsed
+            ]
+            added += tracker.merge(KIND_PLATE, normalised(plate), found)
+        self._save()
         return added
 
 

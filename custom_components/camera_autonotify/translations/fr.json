@@ -126,12 +126,14 @@
                             "vehicle_priority_unreadable": "Priorité des véhicules illisibles",
                             "vehicle_scenarios_unreadable": "Scénarios des véhicules illisibles",
                             "known_category": "Catégorie du bouton Véhicule connu",
+                            "vehicle_events": "Déclencher des événements de véhicule",
                             "track_visits": "Suivre les visites"
                         },
                         "data_description": {
                             "min_visit_gap": "Une plaque revue dans ce délai est la même visite, et n'est pas comptée à nouveau.",
                             "history_days": "Combien de temps les passages de chaque plaque sont gardés, sans jamais quitter Home Assistant.",
                             "known_category": "Les notifications d'un véhicule inconnu ont un bouton Véhicule connu. Il ajoute la plaque, avec la description saisie, à cette catégorie de véhicules, créée si elle n'existe pas.",
+                            "vehicle_events": "Déclencher un événement camera_autonotify_vehicle pour chaque passage, avec la plaque, pour les automatisations. Désactivé par défaut, car l'enregistreur conserve alors la plaque en clair.",
                             "track_visits": "Conserver les passages de chaque plaque, pour dire dans les notifications à quelle fréquence et quand elle est vue d'habitude. Désactivez pour n'en conserver aucun. Les passages déjà conservés restent jusqu'à leur réinitialisation."
                         }
                     },
@@ -141,12 +143,14 @@
                         "data": {
                             "dvla_api_key": "Clé API DVLA",
                             "lookup_cache_hours": "Garder les recherches pendant",
-                            "dvla_api_key_clear": "Oublier la clé"
+                            "dvla_api_key_clear": "Oublier la clé",
+                            "dvla_api_key_test": "Tester la clé"
                         },
                         "data_description": {
                             "dvla_api_key": "Délivrée par la DVLA pour son Vehicle Enquiry Service, conservée comme identifiant et jamais affichée. {dvla_key}",
                             "lookup_cache_hours": "Combien de temps les détails d'une plaque sont gardés avant de redemander.",
-                            "dvla_api_key_clear": "Retirer la clé de la DVLA, pour que les plaques ne soient pas recherchées."
+                            "dvla_api_key_clear": "Retirer la clé de la DVLA, pour que les plaques ne soient pas recherchées.",
+                            "dvla_api_key_test": "À l'envoi, rechercher A123TST avec la clé saisie, ou celle déjà définie, pour vérifier que la DVLA répond, sans rien enregistrer."
                         }
                     },
                     "anpr2mqtt_import": {
@@ -345,6 +349,10 @@
                         }
                     }
                 }
+            },
+            "dvla_test": {
+                "title": "Test de la clé DVLA",
+                "description": "{result}"
             }
         },
         "error": {
@@ -586,7 +594,7 @@
         "action_export": "Exporter l'enregistrement",
         "autotracking": "**{cameras} suit ce qu'elle voit.** Les zones sont dessinées sur l'image de la caméra, donc quand elle bouge, Zones, Chaque zone et Zones dans l'ordre peuvent ne pas dire ce qu'elles disent.",
         "fact_face_unknown": "Visage non reconnu",
-        "fact_stationary": "Immobile",
+        "fact_stationary": "Arrêté",
         "fact_state": "{model} : {state}",
         "fact_sightings": "Passages précédents : {count}",
         "fact_unusual_time": "À une heure inhabituelle",
@@ -603,6 +611,7 @@
         "camera_up": "Frigate a de nouveau la vidéo de {camera}, après {duration}.",
         "anpr_title": "{vehicle} à {where}",
         "anpr_plate": "Plaque {plate}",
+        "anpr_unknown_vehicle": "Véhicule inconnu {plate}",
         "anpr_first": "Jamais vu auparavant",
         "anpr_seen": "Passages précédents : {count}, le dernier le {when}",
         "anpr_dvla": "DVLA : {details}",
@@ -677,7 +686,10 @@
         "imported_sightings": "Passages ajoutés : {count}",
         "imported_nothing": "Rien de nouveau : tout le contenu de l'archive était déjà là",
         "dvla_key_set": "Une clé est définie : laissez vide pour la garder, ou saisissez-en une nouvelle pour la remplacer.",
-        "dvla_key_unset": "Aucune clé n'est définie."
+        "dvla_key_unset": "Aucune clé n'est définie.",
+        "dvla_test_passed": "La DVLA a répondu comme prévu pour {plate} : {said}.",
+        "dvla_test_failed": "La DVLA n'a pas répondu comme prévu pour {plate} : {said}. Elle devrait répondre 200 ou 404, en JSON.",
+        "dvla_test_no_key": "Aucune clé à tester : saisissez-en une d'abord."
     },
     "issues": {
         "lookup_refused": {

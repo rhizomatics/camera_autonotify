@@ -4,6 +4,7 @@
 [![CI](https://github.com/rhizomatics/camera_autonotify/actions/workflows/ci.yml/badge.svg)](https://github.com/rhizomatics/camera_autonotify/actions/workflows/ci.yml)
 [![Github Deploy](https://github.com/rhizomatics/camera_autonotify/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/rhizomatics/camera_autonotify/actions/workflows/deploy.yml)
 
+![Logo](https://camera-autonotify.rhizomatics.org.uk/assets/images/icon.png)
 Notifications for what your security cameras see in Home Assistant, sent through
 [Supernotify](https://supernotify.rhizomatics.org.uk), with no blueprint, automations or YAML. Supports Frigate's GenAI features, has rich licence plate functionality, and can notify when cameras are down.
 
@@ -11,7 +12,7 @@ Notifications for what your security cameras see in Home Assistant, sent through
 
 ## Integrations
 
-At present there are three supported image sources to drive notifications:
+So far there are three supported image sources to drive notifications:
 
 -  [Frigate](https://frigate.video): every camera is found and set up by itself, and each Frigate review is sent as a notification with its snapshot, tapped to play the clip.
 

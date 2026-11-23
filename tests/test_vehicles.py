@@ -3,9 +3,10 @@ anpr2mqtt's, by an action, and imported from anpr2mqtt"""
 
 from __future__ import annotations
 
+import logging
 from dataclasses import replace
 from datetime import datetime, timedelta
-from typing import Any, Self, cast
+from typing import TYPE_CHECKING, Any, Self, cast
 
 import pytest
 from aiohttp import ClientSession
@@ -22,18 +23,25 @@ from custom_components.camera_autonotify.compat import vol
 from custom_components.camera_autonotify.const import DOMAIN, SUBENTRY_PLATES, TYPE_DISCOVERY
 from custom_components.camera_autonotify.facts import FactStore
 from custom_components.camera_autonotify.frigate import fact_stores
+from custom_components.camera_autonotify.plates import redacted
 from custom_components.camera_autonotify.texts import async_load_texts
 from custom_components.camera_autonotify.vehicles import (
     ISSUE_LOOKUP_REFUSED,
+    NAMING,
     DvlaProvider,
-    LookupRefused,
+    LookupResult,
+    Naming,
     VehicleLookup,
+    vehicle_named,
     vehicles,
 )
 from tests.ha_testing import MockConfigEntry, async_fire_time_changed
 
 from .conftest import add_frigate, mock_supernotify
 from .test_notifier import DETECTION, decision, notifier
+
+if TYPE_CHECKING:
+    from pytest_homeassistant.test_util.aiohttp import AiohttpClientMocker
 
 NOW = datetime(2026, 11, 19, 14, 25, tzinfo=dt_util.UTC)
 FAMILY = {"plates": [{"plate": "TJ912UKL", "description": "Joe's mini", "corrections": ["J912UKL"]}]}
@@ -49,14 +57,17 @@ class FakeRegister:
         self.refuse = refuse
         self.asked: list[str] = []
 
-    async def async_lookup(self, plate: str) -> VehicleLookup | None:
+    async def async_lookup(self, plate: str) -> LookupResult:
         self.asked.append(plate)
         if self.refuse:
-            raise LookupRefused
-        return self.known.get(plate)
+            return LookupResult(self.name, 403, "Forbidden")
+        found = self.known.get(plate)
+        return LookupResult(self.name, 200 if found else 404, None if found else "Vehicle Not Found", found)
 
 
-PICKUP_TRUCK = VehicleLookup("dvla", "MITSUBISHI", "WHITE", 2019, "PETROL", "Taxed", "Valid", {"make": "MITSUBISHI"})
+PICKUP_TRUCK = VehicleLookup(
+    "dvla", "MITSUBISHI", "WHITE", 2019, "PETROL", "Taxed", "Valid", {"make": "MITSUBISHI", "colour": "WHITE"}
+)
 
 
 def global_settings(
@@ -128,7 +139,8 @@ async def test_misread_corrected_by_last_confirmed(hass: HomeAssistant, register
 async def test_refused_key_repaired(hass: HomeAssistant):
     global_settings(hass)
     vehicles(hass).provider = FakeRegister(refuse=True)
-    assert (await vehicles(hass).async_classify("PX19TVD")).lookup is None
+    refused = await vehicles(hass).async_classify("PX19TVD")
+    assert refused.as_dict()["lookup"] == {"source": "dvla", "status": 403, "error": "Forbidden", "cached": False}
     assert ir.async_get(hass).async_get_issue(DOMAIN, ISSUE_LOOKUP_REFUSED) is not None
     vehicles(hass).provider = FakeRegister()
     await vehicles(hass).async_classify("AB12CDE")
@@ -137,13 +149,15 @@ async def test_refused_key_repaired(hass: HomeAssistant):
 
 async def test_failing_register_logged(hass: HomeAssistant, caplog: pytest.LogCaptureFixture):
     class Broken(FakeRegister):
-        async def async_lookup(self, plate: str) -> VehicleLookup | None:
+        async def async_lookup(self, plate: str) -> LookupResult:
             raise OSError("timed out")
 
     global_settings(hass)
     vehicles(hass).provider = Broken()
-    assert (await vehicles(hass).async_classify("PX19TVD")).lookup is None
-    assert "couldn't look up PX19TVD: timed out" in caplog.text
+    found = await vehicles(hass).async_classify("PX19TVD")
+    assert found.lookup is None
+    assert found.as_dict()["lookup"] == {"source": "dvla", "status": None, "error": "timed out", "cached": False}
+    assert "couldn't look up PX****D: timed out" in caplog.text
 
 
 async def test_no_lookup_without_a_key(hass: HomeAssistant):
@@ -316,7 +330,18 @@ async def test_anpr2mqtt_classified_here(hass: HomeAssistant, register: FakeRegi
     assert found is not None
     assert (found.plate, found.kind, found.description, priority) == ("PX19TVD", "dangerous", "Stolen van", "critical")
     assert scenarios == (["alarm"], ["alarm"])
+    assert found.category == "Watch"
     assert vehicles(hass).sightings("PX19TVD")
+
+
+async def test_anpr2mqtt_unknown_named_by_register(hass: HomeAssistant, register: FakeRegister):
+    """In no category, so by its colour and make, with the register's details as before"""
+    global_settings(hass, {"Family cars": FAMILY})
+    found = await anpr_notifier(hass, anpr_own_classification=False)
+    classified, _, _ = await found.async_classified(sighting())
+    assert classified is not None and classified.category is None
+    assert found.title(classified, None).startswith("White Mitsubishi at ")
+    assert "DVLA: MITSUBISHI, WHITE, 2019, Taxed" in found.message(classified).splitlines()
 
 
 async def test_anpr2mqtt_ignored_here(hass: HomeAssistant):
@@ -336,6 +361,32 @@ async def respond(hass: HomeAssistant, service: str, data: dict[str, Any]) -> di
     """An action's response, as a mapping to read from"""
     response = await hass.services.async_call(DOMAIN, service, data, blocking=True, return_response=True)
     return cast("dict[str, Any]", response)
+
+
+async def test_classify_plate_lookup_said(hass: HomeAssistant, register: FakeRegister, frozen: FrozenDateTimeFactory):
+    """The lookup's status and error, whether cached, skipped where the category isn't looked up, and null only
+    with no register at all"""
+    global_settings(hass, {"Family cars": FAMILY})
+    await set_up(hass)
+    found = (await respond(hass, "classify_plate", {"plate": "PX19TVD"}))["lookup"]
+    assert (found["make"], found["status"], found["error"], found["cached"]) == ("MITSUBISHI", 200, None, False)
+    frozen.tick(timedelta(minutes=5))
+    again = (await respond(hass, "classify_plate", {"plate": "PX19TVD"}))["lookup"]
+    assert again["cached"]
+    assert dt_util.parse_datetime(again["retrieved"]) == NOW
+    unknown = (await respond(hass, "classify_plate", {"plate": "AB12CDE"}))["lookup"]
+    assert unknown == {"source": "dvla", "status": 404, "error": "Vehicle Not Found", "cached": False}
+    cached = (await respond(hass, "classify_plate", {"plate": "AB12CDE"}))["lookup"]
+    assert cached == {
+        "source": "dvla",
+        "status": 404,
+        "error": "Vehicle Not Found",
+        "cached": True,
+        "retrieved": dt_util.as_local(NOW + timedelta(minutes=5)).isoformat(),
+    }
+    assert (await respond(hass, "classify_plate", {"plate": "TJ912UKL"}))["lookup"] == {"skipped": True}
+    vehicles(hass).provider = None
+    assert (await respond(hass, "classify_plate", {"plate": "AB12CDE"}))["lookup"] is None
 
 
 async def test_classify_plate_action(hass: HomeAssistant, register: FakeRegister):
@@ -437,9 +488,10 @@ async def test_vehicle_settings_in_global_settings(hass: HomeAssistant):
 
 
 class FakeResponse:
-    def __init__(self, status: int, body: dict[str, Any] | None = None) -> None:
+    def __init__(self, status: int, body: dict[str, Any] | None = None, no_json: bool = False) -> None:
         self.status = status
         self.body = body or {}
+        self.no_json = no_json
 
     async def __aenter__(self) -> Self:
         return self
@@ -451,7 +503,9 @@ class FakeResponse:
         if self.status >= 400:
             raise OSError(f"status {self.status}")
 
-    async def json(self) -> dict[str, Any]:
+    async def json(self, content_type: str | None = "application/json") -> dict[str, Any]:
+        if self.no_json:
+            raise ValueError("not JSON")
         return self.body
 
 
@@ -483,14 +537,52 @@ async def test_dvla_provider():
     session = FakeSession(FakeResponse(200, found))
     looked_up = await DvlaProvider(as_session(session), "key").async_lookup("PX19TVD")
     raw = {key: value for key, value in found.items() if key != "registrationNumber"}
-    assert looked_up == VehicleLookup("dvla", "MITSUBISHI", "WHITE", 2019, "PETROL", "Taxed", "Valid", raw)
+    assert looked_up == LookupResult(
+        "dvla", 200, found=VehicleLookup("dvla", "MITSUBISHI", "WHITE", 2019, "PETROL", "Taxed", "Valid", raw)
+    )
     assert session.posted[0]["headers"]["x-api-key"] == "key"
     assert session.posted[0]["json"] == {"registrationNumber": "PX19TVD"}
-    assert await DvlaProvider(as_session(FakeSession(FakeResponse(404))), "key").async_lookup("X") is None
-    with pytest.raises(LookupRefused):
-        await DvlaProvider(as_session(FakeSession(FakeResponse(403))), "key").async_lookup("X")
-    with pytest.raises(OSError, match="status 500"):
-        await DvlaProvider(as_session(FakeSession(FakeResponse(500))), "key").async_lookup("X")
+    not_found = {"errors": [{"status": "404", "title": "Vehicle Not Found", "detail": "Record for vehicle not found"}]}
+    assert await DvlaProvider(as_session(FakeSession(FakeResponse(404, not_found))), "key").async_lookup("X") == (
+        LookupResult("dvla", 404, "Vehicle Not Found: Record for vehicle not found")
+    )
+    assert await DvlaProvider(as_session(FakeSession(FakeResponse(500))), "key").async_lookup("X") == LookupResult(
+        "dvla", 500, "HTTP 500"
+    )
+
+
+@pytest.mark.parametrize(
+    ("response", "expected"),
+    [
+        (FakeResponse(404, {"errors": [{"title": "Vehicle Not Found"}]}), (True, 404, "Vehicle Not Found")),
+        (FakeResponse(200, {"make": "FORD"}), (True, 200, None)),
+        (FakeResponse(403, {"message": "Forbidden"}), (False, 403, "Forbidden")),
+        (FakeResponse(404, no_json=True), (False, 404, "No JSON in the response")),
+    ],
+)
+async def test_dvla_key_test(response: FakeResponse, expected: tuple[bool, int | None, str | None]):
+    """A made up plate, answered with JSON and 200 or 404 by a key that works"""
+    session = FakeSession(response)
+    assert await DvlaProvider(as_session(session), "key").async_test() == expected
+    assert session.posted[0]["json"] == {"registrationNumber": "A123TST"}
+
+
+async def test_dvla_lookup_logged(caplog: pytest.LogCaptureFixture):
+    """Every call logged at info, the plate partly redacted, with the status and the DVLA's error where it gives one"""
+    caplog.set_level(logging.INFO)
+    await DvlaProvider(as_session(FakeSession(FakeResponse(200, {"make": "FORD"}))), "key").async_lookup("PX19 TVD")
+    assert "DVLA lookup of PX****D: 200" in caplog.text
+    assert "PX19TVD" not in caplog.text
+    errors = {"errors": [{"status": "400", "title": "Bad Request", "detail": "Invalid format for field - vrn"}]}
+    await DvlaProvider(as_session(FakeSession(FakeResponse(400, errors))), "key").async_lookup("X1")
+    assert "DVLA lookup of X*: 400 Bad Request: Invalid format for field - vrn" in caplog.text
+    await DvlaProvider(as_session(FakeSession(FakeResponse(403, {"message": "Forbidden"}))), "key").async_lookup("AB12CDE")
+    assert "DVLA lookup of AB****E: 403 Forbidden" in caplog.text
+
+
+def test_redacted():
+    assert redacted("px19 tvd") == "PX****D"
+    assert redacted("A1") == "A*"
 
 
 async def test_dvla_provider_from_key(hass: HomeAssistant):
@@ -517,10 +609,20 @@ async def test_unreadable_vehicle(hass: HomeAssistant):
     assert found.ruled(decision(), None)[1].priority is None
 
 
+async def test_no_event_unless_asked(hass: HomeAssistant, register: FakeRegister):
+    """Off to begin with, since it carries the plate, which the recorder would keep"""
+    global_settings(hass)
+    fired: list[dict[str, Any]] = []
+    hass.bus.async_listen("camera_autonotify_vehicle", lambda event: fired.append(dict(event.data)))
+    await vehicles(hass).async_classify("PX19TVD", record=True)
+    await hass.async_block_till_done()
+    assert fired == []
+
+
 async def test_event_for_each_sighting(hass: HomeAssistant, register: FakeRegister):
     """As OpenALPR's, plate, entity and confidence first, then what's known here"""
     add_frigate(hass)
-    global_settings(hass, {"Family cars": FAMILY})
+    global_settings(hass, {"Family cars": FAMILY}, vehicle_events=True)
     fired: list[dict[str, Any]] = []
     hass.bus.async_listen("camera_autonotify_vehicle", lambda event: fired.append(dict(event.data)))
     read_plate(hass, "J912UKL")
@@ -630,11 +732,41 @@ def salted(plate: str) -> str:
     return hmac.new(bytes.fromhex(SALT), plate.encode(), hashlib.sha256).hexdigest()
 
 
-async def test_history_kept_by_salted_hash(
+async def test_kept_by_salted_hash(
     hass: HomeAssistant, hass_storage: dict[str, Any], frozen: FrozenDateTimeFactory, register: FakeRegister
 ):
-    """Never by the plate, history or lookups, the betas' history, kept by plate, rewritten by hash and merged, and
-    their lookups, by plate, dropped"""
+    """One store, objects and lookups both kept by a salted hash of the plate's kind and itself, never the plate, with
+    each sighting's camera and source"""
+    hashed = salted("PX19TVD")
+    hass_storage["camera_autonotify.plate_salt"] = stored("plate_salt", {"salt": SALT})
+    earlier = round((NOW - timedelta(days=1)).timestamp())
+    hass_storage["camera_autonotify.tracker"] = stored(
+        "tracker", {"objects": {hashed: {"kind": "plate", "sightings": [[earlier, "gate", "frigate"]]}}, "lookups": {}}
+    )
+    global_settings(hass)
+    vehicle = await vehicles(hass).async_classify("PX19TVD", "drive", record=True, source="frigate")
+    assert vehicle.history.previous_sightings == 1
+    assert vehicle.lookup == PICKUP_TRUCK
+    await vehicles(hass).async_classify("AB12CDE", record=True)
+    # once saved, after the store's delay
+    frozen.tick(11)
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    data = hass_storage["camera_autonotify.tracker"]["data"]
+    assert set(data["objects"]) == {hashed, salted("AB12CDE")}
+    assert data["objects"][hashed] == {
+        "kind": "plate",
+        "sightings": [[earlier, "gate", "frigate"], [round(NOW.timestamp()), "drive", "frigate"]],
+    }
+    assert set(data["lookups"]) == {f"dvla:{hashed}", f"dvla:{salted('AB12CDE')}"}
+    assert "PX19TVD" not in str(data) and "AB12CDE" not in str(data)
+
+
+async def test_beta_history_moved(
+    hass: HomeAssistant, hass_storage: dict[str, Any], frozen: FrozenDateTimeFactory, register: FakeRegister
+):
+    """The betas' history, by plate or by hash, moved into the tracker, merged, and their stores removed, their lookups
+    dropped and looked up again"""
     hashed = salted("PX19TVD")
     hass_storage["camera_autonotify.plate_salt"] = stored("plate_salt", {"salt": SALT})
     hass_storage["camera_autonotify.plate_history"] = stored(
@@ -644,23 +776,38 @@ async def test_history_kept_by_salted_hash(
         "plate_lookup", {"dvla:AB12CDE": {"at": NOW.isoformat(), "found": None}}
     )
     global_settings(hass)
-    assert vehicles(hass).sightings("PX19TVD") == []
     vehicle = await vehicles(hass).async_classify("PX19TVD", record=True)
-    assert vehicle.history is not None and vehicle.history.previous_sightings == 2
-    assert vehicle.lookup == PICKUP_TRUCK
-    await vehicles(hass).async_classify("AB12CDE", record=True)
-    # looked up again, the beta's cached lookup being dropped
+    assert vehicle.history.previous_sightings == 2
+    await vehicles(hass).async_classify("AB12CDE")
     assert register.asked == ["PX19TVD", "AB12CDE"]
-    # once saved, after the store's delay
+    assert "camera_autonotify.plate_history" not in hass_storage
+    assert "camera_autonotify.plate_lookup" not in hass_storage
+    objects = hass_storage["camera_autonotify.tracker"]["data"]["objects"]
+    assert set(objects) == {hashed}
+    assert "PX19TVD" not in str(objects)
+
+
+async def test_pruned_when_loaded(
+    hass: HomeAssistant, hass_storage: dict[str, Any], frozen: FrozenDateTimeFactory, register: FakeRegister
+):
+    """A plate seen once, long ago, and an expired lookup, dropped, though the plate isn't seen again"""
+    hass_storage["camera_autonotify.plate_salt"] = stored("plate_salt", {"salt": SALT})
+    old = round((NOW - timedelta(days=30)).timestamp())
+    hass_storage["camera_autonotify.tracker"] = stored(
+        "tracker",
+        {
+            "objects": {salted("AB12CDE"): {"kind": "plate", "sightings": [[old, None, None]]}},
+            "lookups": {f"dvla:{salted('AB12CDE')}": {"at": old, "found": None}},
+        },
+    )
+    global_settings(hass, history_days=7)
+    await vehicles(hass).async_classify("PX19TVD")
     frozen.tick(11)
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
-    history = hass_storage["camera_autonotify.plate_history"]["data"]
-    assert set(history) == {hashed, salted("AB12CDE")}
-    lookups = hass_storage["camera_autonotify.plate_lookup"]["data"]
-    assert set(lookups) == {f"dvla:{hashed}", f"dvla:{salted('AB12CDE')}"}
-    for data in (history, lookups):
-        assert "PX19TVD" not in str(data) and "AB12CDE" not in str(data)
+    data = hass_storage["camera_autonotify.tracker"]["data"]
+    assert salted("AB12CDE") not in data["objects"]
+    assert f"dvla:{salted('AB12CDE')}" not in data["lookups"]
 
 
 async def test_salt_made_once(hass: HomeAssistant, hass_storage: dict[str, Any]):
@@ -718,6 +865,49 @@ async def test_key_kept_as_a_credential(hass: HomeAssistant):
     assert "dvla_api_key_clear" not in entry.options
 
 
+async def test_dvla_key_tested(hass: HomeAssistant, aioclient_mock: AiohttpClientMocker):
+    """The key typed tried, the result shown, then the settings again, nothing saved, or the key set where none's
+    typed"""
+    from .test_discovery import set_up_discovery
+
+    mock_supernotify(hass)
+    add_frigate(hass)
+    await set_up_discovery(hass)
+    entry = next(e for e in hass.config_entries.async_entries(DOMAIN) if e.data.get(CONF_TYPE) == TYPE_DISCOVERY)
+    form = {"auto_discover": True, "discover_zones": False, "health": {}, "summary": {}}
+
+    async def tested(lookup: dict[str, Any]) -> str:
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {**form, "vehicle_lookup": {**lookup, "dvla_api_key_test": True}}
+        )
+        assert result["step_id"] == "dvla_test"
+        said = str((result["description_placeholders"] or {})["result"])
+        result = await hass.config_entries.options.async_configure(result["flow_id"], {})
+        assert result["step_id"] == "discovery"
+        hass.config_entries.options.async_abort(result["flow_id"])
+        return said
+
+    assert await tested({}) == "There's no key to test: type one first."
+    aioclient_mock.post(
+        "https://driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1/vehicles",
+        status=404,
+        json={"errors": [{"title": "Vehicle Not Found"}]},
+    )
+    said = await tested({"dvla_api_key": "typed"})
+    assert said == "The DVLA answered as expected for A123TST: 404 Vehicle Not Found."
+    assert aioclient_mock.mock_calls[-1][3]["x-api-key"] == "typed"
+    assert "dvla_api_key" not in entry.data
+    aioclient_mock.clear_requests()
+    aioclient_mock.post(
+        "https://driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1/vehicles", status=403, json={"message": "Forbidden"}
+    )
+    hass.config_entries.async_update_entry(entry, data={**entry.data, "dvla_api_key": "set"})
+    said = await tested({})
+    assert said.startswith("The DVLA didn't answer as expected for A123TST: 403 Forbidden.")
+    assert aioclient_mock.mock_calls[-1][3]["x-api-key"] == "set"
+
+
 async def test_visitor_said(hass: HomeAssistant):
     from custom_components.camera_autonotify.plates import History, Match
     from custom_components.camera_autonotify.vehicles import Vehicle
@@ -726,3 +916,16 @@ async def test_visitor_said(hass: HomeAssistant):
     await async_load_texts(hass)
     regular = Vehicle(Match("PX19TVD", "PX19TVD"), History(previous_sightings=12, visitor="daily"))
     assert notifier(hass).said_vehicle(regular) == ["PX19TVD", "Previous sightings: 12", "Daily visitor"]
+
+
+def test_named_by_each_registers_own_fields(monkeypatch: pytest.MonkeyPatch):
+    """By the register's own fields, one set for a known vehicle and one for an unknown, and nothing for a register
+    with no naming yet"""
+    dvla = {"make": "LAND ROVER", "colour": "RED"}
+    assert vehicle_named("dvla", dvla, "unknown") == "Red Land Rover"
+    assert vehicle_named("dvla", {"make": "BMW", "colour": "BLACK"}, "known") == "Black BMW"
+    assert vehicle_named("dvla", {}, "unknown") is None
+    assert vehicle_named("rdw", {"merk": "PEUGEOT"}, "unknown") is None
+    monkeypatch.setitem(NAMING, "rdw", Naming(known=("merk",), unknown=("eerste_kleur", "merk")))
+    rdw = {"merk": "PEUGEOT", "eerste_kleur": "ROOD"}
+    assert (vehicle_named("rdw", rdw, "known"), vehicle_named("rdw", rdw, "unknown")) == ("Peugeot", "Rood Peugeot")

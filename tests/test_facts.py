@@ -111,7 +111,7 @@ async def test_facts_from_mqtt_said_under_headline(hass: HomeAssistant, fake_mqt
     title, outcome = notifier(hass).ruled(decision())
     # rules still match the headline, the facts going under it
     assert title == "Person detected at Barn Door"
-    assert outcome.message == "48 km/h - AB12CDE - Royal Mail - Face not recognised - Not moving - Gate: open"
+    assert outcome.message == "48 km/h - AB12CDE - Royal Mail - Face not recognised - Stopped - Gate: open"
 
 
 @pytest.mark.parametrize(
@@ -205,7 +205,7 @@ async def test_delivery_van_announced(hass: HomeAssistant, fake_mqtt: FakeMQTT):
     van = type(found)(replace(found.review, objects=("dpd",)), found.reason, 0, False)
     data = notifier(hass).supernotify_data(van)
     assert data["title"] == "DPD detected at Barn Door"
-    assert data["message"] == "34 km/h - MF98VNA - Not moving"
+    assert data["message"] == "34 km/h - MF98VNA - Stopped"
     assert data["spoken_message"] == "DPD detected at Barn Door"
 
 

@@ -12,6 +12,7 @@ theme:
   highlightjs: true
   language: en
   logo: assets/images/icon.png
+  favicon: assets/images/icon.png
   icon:
     repo: fontawesome/brands/github
   features:

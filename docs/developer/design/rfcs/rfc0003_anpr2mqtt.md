@@ -311,7 +311,7 @@ what anpr2mqtt does, not a copy of it, so where Home Assistant has a way of its 
   details and its visit history, so any other plate source or automation can use them. Its `record_sighting`, `false`
   to begin with, also counts it in the visit history. `list_vehicle_categories` returns the categories with
   their plates, and `reset_sightings` forgets a plate's sightings, or every plate's
-- **An event for each sighting**, `camera_autonotify_vehicle`, with the plate, its category, the DVLA's or another
+- **An event for each sighting**, `camera_autonotify_vehicle`, opt in, since the recorder keeps the plate, with the plate, its category, the DVLA's or another
   provider's details and its visit history, for automations, such as opening the gate for a family car, rather than
   each reading a sensor's attributes
 - **Entities**: each category's sensor, of the last plate seen, with a device class, icon and translated name, and its

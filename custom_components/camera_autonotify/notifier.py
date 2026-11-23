@@ -388,6 +388,21 @@ class Notifier:
         entry = global_settings(self.hass)
         return (entry.options.get(CONF_GENAI_IMAGE) if entry else None) or DEFAULT_GENAI_IMAGE
 
+    def snapshot_sources(self, detection_id: str, notifications: str, image: str) -> list[str | dict[str, Any]]:
+        """The image as Supernotify tries it, in order: the still image behind the preview for when Frigate can't make
+        it, and each by Home Assistant's own address after the phone's, for when Home Assistant can't reach itself
+        at that, such as without hairpin NAT. The GIF isn't redrawn, which would keep only its first frame"""
+        internal = notifications_url(self.hass, self.source_entry_id, internal=True)
+        bases = [notifications] + ([internal] if internal and internal != notifications else [])
+        images = [image, self.still_image()] if image == IMAGE_PREVIEW else [image]
+        return [
+            {"url": image_url(base, detection_id, each), "reprocess": "never"}
+            if each == IMAGE_PREVIEW
+            else image_url(base, detection_id, each)
+            for each in images
+            for base in bases
+        ]
+
     def spoken(self, decision: Decision, title: str, outcome: Outcome) -> str:
         """What a voice assistant or speaker says: the headline, and GenAI's summary or description where there's
         one, being written to be read, but never the facts under the headline, which are for reading, not hearing"""
@@ -425,14 +440,11 @@ class Notifier:
         if notifications and decision.detection_id:
             # the image chosen, though the button is always for the whole snapshot
             image = self.image(decision)
-            url = image_url(notifications, decision.detection_id, image)
-            if image == IMAGE_PREVIEW and fallback:
-                # tried in order, the still image behind the preview for when Frigate can't make it, and the GIF not
-                # redrawn, which would keep only its first frame, while the still image is as usual
-                still = image_url(notifications, decision.detection_id, self.still_image())
-                media["snapshot_url"] = [{"url": url, "reprocess": "never"}, still]
+            if fallback:
+                sources = self.snapshot_sources(decision.detection_id, notifications, image)
+                media["snapshot_url"] = sources if len(sources) > 1 else sources[0]
             else:
-                media["snapshot_url"] = url
+                media["snapshot_url"] = image_url(notifications, decision.detection_id, image)
                 if image == IMAGE_PREVIEW:
                     # Supernotify otherwise redraws the image it attaches, keeping only a GIF's first frame
                     media["reprocess"] = "never"

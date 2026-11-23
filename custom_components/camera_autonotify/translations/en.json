@@ -126,12 +126,14 @@
                             "vehicle_priority_unreadable": "Unreadable vehicle priority",
                             "vehicle_scenarios_unreadable": "Unreadable vehicle scenarios",
                             "known_category": "Category for the Known vehicle button",
+                            "vehicle_events": "Fire vehicle events",
                             "track_visits": "Track visits"
                         },
                         "data_description": {
                             "min_visit_gap": "A plate seen again within this long is the same visit, and isn't counted again.",
                             "history_days": "How long each plate's sightings are kept, never leaving Home Assistant.",
                             "known_category": "Notifications of an unknown vehicle have a Known vehicle button. Tapping it adds the plate, with any description typed, to this vehicle category, which is created if it doesn't exist.",
+                            "vehicle_events": "Fire a camera_autonotify_vehicle event for each sighting, with the plate, for automations. Off by default, since the recorder then keeps the plate in the clear.",
                             "track_visits": "Keep each plate's sightings, to say in notifications how often and when it's usually seen. Switch off to keep none. Sightings already kept stay until reset."
                         }
                     },
@@ -141,12 +143,14 @@
                         "data": {
                             "dvla_api_key": "DVLA API key",
                             "lookup_cache_hours": "Cache lookups for",
-                            "dvla_api_key_clear": "Forget the key"
+                            "dvla_api_key_clear": "Forget the key",
+                            "dvla_api_key_test": "Test the key"
                         },
                         "data_description": {
                             "dvla_api_key": "Issued by the DVLA for its Vehicle Enquiry Service, kept as a credential and never shown. {dvla_key}",
                             "lookup_cache_hours": "How long a plate's details are kept before asking again.",
-                            "dvla_api_key_clear": "Take the DVLA's key away, so plates aren't looked up."
+                            "dvla_api_key_clear": "Take the DVLA's key away, so plates aren't looked up.",
+                            "dvla_api_key_test": "When submitted, look up A123TST with the key typed, or the one set, to check the DVLA answers, without saving anything."
                         }
                     },
                     "anpr2mqtt_import": {
@@ -345,6 +349,10 @@
                         }
                     }
                 }
+            },
+            "dvla_test": {
+                "title": "DVLA key test",
+                "description": "{result}"
             }
         },
         "error": {
@@ -586,7 +594,7 @@
         "action_export": "Export recording",
         "autotracking": "**{cameras} follows what it sees.** Zones are drawn on the camera's frame, so while it moves, Zones, Every zone and Zones in order may not mean what they say.",
         "fact_face_unknown": "Face not recognised",
-        "fact_stationary": "Not moving",
+        "fact_stationary": "Stopped",
         "fact_state": "{model}: {state}",
         "fact_sightings": "Previous sightings: {count}",
         "fact_unusual_time": "At an unusual time",
@@ -603,6 +611,7 @@
         "camera_up": "Frigate has video from {camera} again, after {duration}.",
         "anpr_title": "{vehicle} at {where}",
         "anpr_plate": "Plate {plate}",
+        "anpr_unknown_vehicle": "Unknown vehicle {plate}",
         "anpr_first": "Not seen before",
         "anpr_seen": "Previous sightings: {count}, last on {when}",
         "anpr_dvla": "DVLA: {details}",
@@ -677,7 +686,10 @@
         "imported_sightings": "Sightings added: {count}",
         "imported_nothing": "Nothing new: everything in the archive was already here",
         "dvla_key_set": "A key is set: leave this empty to keep it, or type a new one to replace it.",
-        "dvla_key_unset": "No key is set."
+        "dvla_key_unset": "No key is set.",
+        "dvla_test_passed": "The DVLA answered as expected for {plate}: {said}.",
+        "dvla_test_failed": "The DVLA didn't answer as expected for {plate}: {said}. It should answer 200 or 404, with JSON.",
+        "dvla_test_no_key": "There's no key to test: type one first."
     },
     "issues": {
         "lookup_refused": {

@@ -29,17 +29,17 @@ Every licence plate read, by Frigate's plate recognition (ANPR/ALPR), an image p
 - **Vehicle categories**, added under *Global Settings*: a single vehicle, every family car, or a delivery company's vans, known or dangerous, by their plates, each a plate or a regular expression, with its own description and the misreads that are really it. *Ignore* drops a category's plates altogether, such as a tanker's logo read as a plate
 - **Priority**: in the *Vehicles* section of *Global Settings*, once there's a category, each with its own Supernotify scenarios: `medium` for a known vehicle, `high` for an unknown plate or one that couldn't be read, and `critical` for a dangerous one. A misread plate can match a dangerous one, so `critical` can be a false alarm; corrections on the plate, or a lower priority, help where it happens
 - **Descriptions**: the vehicle's description and plate, such as *Joe's mini (TJ912UKL)*, the DVLA's make, colour, year and tax, its previous sightings, whether it's a daily, weekly or occasional visitor, and whether it's at an unusual time of day
-- **DVLA (UK)**: with an API key from the UK DVLA's Vehicle Enquiry Service, in *Vehicle lookup*, kept as a credential and never shown again. A plate a character off the last one confirmed on the same camera is taken as a misread of it
+- **DVLA (UK)**: with an API key from the UK DVLA's Vehicle Enquiry Service, in *Vehicle lookup*, kept as a credential and never shown again, with *Test the key* to check it, by looking up `A123TST`. A plate a character off the last one confirmed on the same camera is taken as a misread of it
 - **Known vehicle**: a button on a notification of an unknown plate, with a description typed on the phone, adding it to the category set in *Category for the Known vehicle button*, *Known vehicles* to begin with
 - **OpenALPR, or another ANPR/ALPR image processing integration**: a source of its own, each plate it reads classified as any other. See [Image Processing](./image_processing.md)
 - **Actions**:
-  - `camera_autonotify.classify_plate`, for any other plate source or automation, returning the plate's category, lookup and history
+  - `camera_autonotify.classify_plate`, for any other plate source or automation, returning the plate's category, lookup and history. The lookup has the register's `status` and any `error`, and whether it's `cached`, with when it was `retrieved`, or is `skipped: true` for a category not looked up, and is `null` only with no register set up
   - `camera_autonotify.add_plate`
   - `camera_autonotify.remove_plate`
   - `camera_autonotify.list_vehicle_categories`, with each category's plates
   - `camera_autonotify.reset_sightings`, forgetting a plate's sightings, or every plate's
 - **Import from anpr2mqtt**: upload a tarball of anpr2mqtt's `config` and `data` folders, such as made by `tar czf anpr2mqtt.tgz config data/plate`, in *Global Settings* or as an anpr2mqtt source is set up, to bring over its targets, corrections, ignores, DVLA settings and visit history. What's found is shown before anything is imported, and what was added after
-- **Event**: `camera_autonotify_vehicle` for each sighting, with `plate`, `entity_id` and `confidence` as OpenALPR's `image_processing.found_plate` has them, and the category, classification, lookup and history
+- **Event**: with *Fire vehicle events* on, in *Vehicles*, `camera_autonotify_vehicle` for each sighting, with `plate`, `entity_id` and `confidence` as OpenALPR's `image_processing.found_plate` has them, and the category, classification, lookup and history
 
 ![Plate Entry](./assets/screenshots/plate_entry.png){width=500}
 
@@ -53,6 +53,7 @@ Every licence plate read, by Frigate's plate recognition (ANPR/ALPR), an image p
 
 - **What you need**: anpr2mqtt 1.3.0 or later, with its Home Assistant devices on (`device_creation`, as it comes). Each anpr2mqtt camera is then found and offered as *Discovered*, even with *Set up cameras automatically* on, so its setup can import from anpr2mqtt. Frigate isn't needed
 - **What's sent**: details of the vehicle as a JSON payload on an MQTT topic, and the image itself as a binary payload on a different topic. See [Home Assistant Integration](https://anpr2mqtt.rhizomatics.org.uk/homeassistant/) for the details. This can also include an area for the camera to show up as for Home Assistant, and the identity of the linked camera.
+- **Headline**: the vehicle and where, named by its description, or else its category, or else its colour and make from the DVLA, such as *Red Peugeot at Driveway*, or else *Unknown vehicle KP75YYS at Driveway*
 - **Health**: anpr2mqtt going unavailable is notified, and again when it's back, with the timing of the Frigate health checks
 
 #### Avoiding Duplicate Notifications
@@ -68,7 +69,7 @@ anpr2mqtt reading the same plate from both Frigate and an ANPR/ALPR camera's ima
 
 Licence plates may be treated as personal data in your location, and it is your responsibility to know your obligations before collecting and using any data.
 
-Each plate's visit history, and its cached DVLA details, are kept by a hash of the plate salted with a secret of your installation's own, never the plate itself, and `reset_sightings` forgets a plate's history, or all of it.
+Each plate's visit history, and its cached DVLA details, are kept by a hash of the plate salted with a secret of your installation's own, never the plate itself, and `reset_sightings` forgets a plate's history, or all of it. *Fire vehicle events* is off to begin with, since Home Assistant's recorder keeps each event, plate included.
 
 This may mean that not all the features offered here are available for your use, especially if this plugin, intended for personal home use, is applied in a commercial environment.
 

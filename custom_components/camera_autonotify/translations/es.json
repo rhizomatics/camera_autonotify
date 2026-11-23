@@ -126,12 +126,14 @@
                             "vehicle_priority_unreadable": "Prioridad de vehículos ilegibles",
                             "vehicle_scenarios_unreadable": "Escenarios de vehículos ilegibles",
                             "known_category": "Categoría del botón Vehículo conocido",
+                            "vehicle_events": "Lanzar eventos de vehículos",
                             "track_visits": "Seguir visitas"
                         },
                         "data_description": {
                             "min_visit_gap": "Una matrícula vista de nuevo en este tiempo es la misma visita, y no se cuenta otra vez.",
                             "history_days": "Cuánto tiempo se guardan los avistamientos de cada matrícula, sin salir nunca de Home Assistant.",
                             "known_category": "Las notificaciones de un vehículo desconocido tienen un botón Vehículo conocido. Al pulsarlo, la matrícula, con la descripción que se escriba, se añade a esta categoría de vehículos, que se crea si no existe.",
+                            "vehicle_events": "Lanzar un evento camera_autonotify_vehicle por cada avistamiento, con la matrícula, para automatizaciones. Desactivado por defecto, ya que el registrador guarda entonces la matrícula en claro.",
                             "track_visits": "Guardar los avistamientos de cada matrícula, para decir en las notificaciones con qué frecuencia y cuándo se ve normalmente. Desactívelo para no guardar ninguno. Los avistamientos ya guardados se conservan hasta restablecerlos."
                         }
                     },
@@ -141,12 +143,14 @@
                         "data": {
                             "dvla_api_key": "Clave API de la DVLA",
                             "lookup_cache_hours": "Guardar consultas durante",
-                            "dvla_api_key_clear": "Olvidar la clave"
+                            "dvla_api_key_clear": "Olvidar la clave",
+                            "dvla_api_key_test": "Probar la clave"
                         },
                         "data_description": {
                             "dvla_api_key": "Emitida por la DVLA para su Vehicle Enquiry Service, guardada como credencial y nunca mostrada. {dvla_key}",
                             "lookup_cache_hours": "Cuánto tiempo se guardan los detalles de una matrícula antes de volver a preguntar.",
-                            "dvla_api_key_clear": "Quitar la clave de la DVLA, para que no se consulten matrículas."
+                            "dvla_api_key_clear": "Quitar la clave de la DVLA, para que no se consulten matrículas.",
+                            "dvla_api_key_test": "Al enviar, consultar A123TST con la clave escrita, o la ya configurada, para comprobar que la DVLA responde, sin guardar nada."
                         }
                     },
                     "anpr2mqtt_import": {
@@ -345,6 +349,10 @@
                         }
                     }
                 }
+            },
+            "dvla_test": {
+                "title": "Prueba de la clave de la DVLA",
+                "description": "{result}"
             }
         },
         "error": {
@@ -586,7 +594,7 @@
         "action_export": "Exportar grabación",
         "autotracking": "**{cameras} sigue lo que ve.** Las zonas están dibujadas sobre la imagen de la cámara, así que mientras se mueve, Zonas, Todas las zonas y Zonas en orden pueden no significar lo que dicen.",
         "fact_face_unknown": "Cara no reconocida",
-        "fact_stationary": "Sin moverse",
+        "fact_stationary": "Detenido",
         "fact_state": "{model}: {state}",
         "fact_sightings": "Avistamientos anteriores: {count}",
         "fact_unusual_time": "A una hora inusual",
@@ -603,6 +611,7 @@
         "camera_up": "Frigate vuelve a tener vídeo de {camera}, tras {duration}.",
         "anpr_title": "{vehicle} en {where}",
         "anpr_plate": "Matrícula {plate}",
+        "anpr_unknown_vehicle": "Vehículo desconocido {plate}",
         "anpr_first": "No visto antes",
         "anpr_seen": "Avistamientos anteriores: {count}, el último el {when}",
         "anpr_dvla": "DVLA: {details}",
@@ -677,7 +686,10 @@
         "imported_sightings": "Avistamientos añadidos: {count}",
         "imported_nothing": "Nada nuevo: todo lo del archivo ya estaba aquí",
         "dvla_key_set": "Hay una clave: déjelo vacío para conservarla o escriba una nueva para sustituirla.",
-        "dvla_key_unset": "No hay ninguna clave."
+        "dvla_key_unset": "No hay ninguna clave.",
+        "dvla_test_passed": "La DVLA respondió como se esperaba para {plate}: {said}.",
+        "dvla_test_failed": "La DVLA no respondió como se esperaba para {plate}: {said}. Debería responder 200 o 404, con JSON.",
+        "dvla_test_no_key": "No hay clave que probar: escriba una primero."
     },
     "issues": {
         "lookup_refused": {

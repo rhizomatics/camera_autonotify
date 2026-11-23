@@ -486,6 +486,23 @@ async def test_still_image_alone_with_help(hass: HomeAssistant, external_url: No
     assert data["media"]["help_url"].endswith(ENTRY_ID)
 
 
+async def test_each_image_by_home_assistants_own_address_after_the_phones(hass: HomeAssistant):
+    """For when Home Assistant can't reach itself at the address a phone uses, such as without hairpin NAT"""
+    internal = "http://10.0.0.2:8123"
+    await async_process_ha_core_config(hass, {"internal_url": internal, "external_url": BASE})
+    add_frigate(hass, record=True)
+    data = notifier(hass, options={CONF_IMAGE: "preview"}).supernotify_data(decision(Reason.NEW, 1), fallback=True)
+    path = f"/api/frigate/notifications/{DETECTION}"
+    assert data["media"]["snapshot_url"] == [
+        {"url": f"{BASE}{path}/event_preview.gif", "reprocess": "never"},
+        {"url": f"{internal}{path}/event_preview.gif", "reprocess": "never"},
+        f"{BASE}{path}/snapshot.jpg?bbox=1",
+        f"{internal}{path}/snapshot.jpg?bbox=1",
+    ]
+    # the button is for the phone, so never Home Assistant's own address
+    assert data["actions"][1]["uri"] == f"{BASE}{path}/snapshot.jpg"
+
+
 async def test_no_help_without_an_image(hass: HomeAssistant):
     """Nothing for Supernotify to fetch, without Home Assistant's address"""
     add_frigate(hass)
