@@ -23,6 +23,8 @@ silently, for days or longer, none of which anything reported:
   `detect` section on every profile change, logged as an error and nothing more
 - the Frigate integration's copy of the config stayed stale until it was reloaded, so anything reading it, Camera
   AutoNotify's settings included, saw the old config
+- cars stopping as they came into view of the doorbell camera were left out of reviews until they moved off, a
+  tyre fitter's van for 45 minutes, as [RFC 0012](rfc0012_events_first.md) found
 
 Each was found by reading the config and the logs together and asking whether they made sense, which is what a
 model is good at, given the right material.
@@ -69,6 +71,8 @@ Two layers, so the model's work is the part only a model can do.
 7. a camera without video that has no *Powered by* to say it's off on purpose
 8. GenAI on for a camera, but no review summaries seen from it since the last report
 9. the same error logged again and again, such as a config validation error on each profile change
+10. objects Frigate was slow to review, or never did, by camera, zone and label, with how late: those notified from
+    events by [RFC 0012](rfc0012_events_first.md), counted since the last report
 
 **The model's review**, given:
 
@@ -80,7 +84,9 @@ Two layers, so the model's work is the part only a model can do.
 - with *Review logs*, Home Assistant's own warnings and errors from the Frigate, MQTT and Camera AutoNotify
   integrations, from `system_log`
 - with *Review config*, Camera AutoNotify's settings for each camera and zone, with targets left out
-- the findings of the checks in code
+- the findings of the checks in code, with each camera's `detect` and `motion` config beside check 10's, so the
+  model can suggest what would get objects reviewed sooner, such as the detect area or motion masks where cars
+  stop as they come into view
 
 It's asked for, by the `structure` of `ai_task.generate_data`:
 
