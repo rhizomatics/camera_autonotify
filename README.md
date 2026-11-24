@@ -67,6 +67,8 @@ From Home Assistant 2026.8, each camera or zone gets a device of its own, sharin
 
 ## Settings
 
+![Main Camera Settings](./assets/screenshots/camera_options.png){width=400}
+
 Nothing needs changing for notifications to work. Each camera or zone on the integration's page has settings, all of them optional.
 
 | Setting        | Default     | What it does                                                                         |
@@ -85,6 +87,8 @@ Nothing needs changing for notifications to work. Each camera or zone on the int
 | Timing               | *Cooldown*, 30 seconds, is the time after a notification before another is sent for something new, though updates of one already sent aren't held back. *Initial delay*, none, holds back the first notification for a better snapshot. *Notify when over*, off, sends one more once Frigate has finished, after *Delay when over*. *Stop updates after*, 10 minutes, ends the updates however long a review goes on. *Sound only the first*, on, has updates replace the first notification silently. *Notify recognised faces and plates*, on, sends an update when Frigate recognises a face or number plate |
 | GenAI                | Shown once Frigate has review summaries or object descriptions on for the camera. *Review summaries*, on, *Object descriptions*, on, and *Descriptions without a review*, off, choose what's used. *Lowest threat level*, 0, leaves out summaries below it, and the priority of each threat level is `medium`, `high` and `critical` to begin with. *Wait for GenAI*, 2 minutes, is how long an ended review is kept for what GenAI adds. *GenAI image*, as in *Global Settings*, where it's the animated preview to begin with, is the picture shown with what GenAI adds. See [GenAI Notifications](https://camera-autonotify.rhizomatics.org.uk/genai/) |
 | Image and targets    | *Image*, the snapshot with the object's bounding box drawn on, is the picture shown in each notification: the snapshot, the snapshot with the bounding box, the snapshot cropped to the object, Frigate's smaller thumbnail, or an animated GIF preview of the first 20 seconds. The preview has no bounding box or crop, and is made from the camera's recordings, so the first notification shows the snapshot with its box until Frigate has the frames for it, and a camera that doesn't record always shows it. The *View snapshot* button always shows the whole snapshot. With Supernotify, *Targets* is the same choice of entities, devices, areas, floors and labels as any Supernotify notification, *Custom targets* is for those outside Home Assistant, such as e-mail addresses or phone numbers, and *Deliveries* limits notifications to those chosen. Leave them empty for Supernotify to choose. Without Supernotify, *Targets* is a choice of notify entities, and left empty means every phone with the Home Assistant app. *Actions as Global Settings*, on, gives the camera the *Actions* of *Global Settings*. Switch it off to choose the camera's own *Actions* instead, or none |
+
+![Camera Image Options](./assets/screenshots/camera_image_options.png){width=400}
 
 ### Frigate Health Checks
 

@@ -13,8 +13,9 @@ Frigate has two GenAI features, and both are used if Frigate has them on:
 | Review summaries | `review.genai` | A title, a short summary and a **threat level** for the whole review, once it's over |
 | Object descriptions | `objects.genai` | A description of each object tracked, written as the prompt asks |
 
-Nothing needs setting up in Home Assistant beyond Frigate itself. The *GenAI* section of a camera's or zone's
-settings appears once Frigate has either feature on for it.
+Nothing needs setting up in Home Assistant beyond Frigate itself. The *GenAI* section of a camera's or zone's settings appears once Frigate has either feature on for it.
+
+![Main GenAI Options for Camera](assets/screenshots/camera_genai_options.png){width=400}
 
 ## Review Summaries
 
