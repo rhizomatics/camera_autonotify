@@ -73,6 +73,46 @@ GenAI looked at. The preview has no bounding box or crop, and is made from the c
 Frigate doesn't record, the camera's own *Image* is shown instead. The camera's own *Image* is still used for the
 review's first notification and its other updates, the snapshot with the object's bounding box to begin with.
 
+## When GenAI Is Late
+
+A summary can only come once Frigate has ended the review, at least its `cutoff_time` after the object was last seen,
+40 seconds for alerts by default, and then GenAI takes its time, longer when its provider is busy. So it's usually a
+minute or two after what it describes, and now and then more, yet would read as though it's happening now. In each
+camera's or zone's *GenAI* settings:
+
+| Setting | Default | What it does |
+| ------- | ------- | ------------ |
+| Say how long ago after | 2 minutes | Starts the message with how long ago what it describes ended, such as "Ended 3 minutes ago: A van parks in the pend", once it's at least this late. Not said by a voice assistant. 0 never says it |
+| Late after | 5 minutes | When it counts as late, for the two below. 0 never |
+| Late priority | As it is | The priority of a late summary at normal threat level, or a late description, or *Don't notify*. Suspicious and critical summaries keep their own, a rule can still give it one, and like any update it only sounds when above the review's own |
+| Late scenarios | None | Supernotify scenarios added to a late one, with Supernotify |
+
+How late is measured from when the review, or the object described, ended, so a long review, or a van parked for an
+hour, isn't late if GenAI was quick once it was over.
+
+### Late, Unless the Alarm Is Set
+
+Whether a late one is worth hearing usually depends on who's home, which is Supernotify's to decide. A scenario given
+in *Late scenarios* is applied to a late one whatever its own conditions, so it only marks it, and scenarios of your
+own act on that mark, such as one switching every delivery off for a late low or medium priority notification while
+the alarm is disarmed, so that armed, everything is heard. With `genai_late` chosen in *Late scenarios*:
+
+```yaml
+genai_late: {}
+quiet_when_late:
+  conditions:
+    - condition: template
+      value_template: "{{ 'genai_late' in applied_scenarios and notification_priority in ['low', 'medium'] }}"
+    - condition: state
+      entity_id: alarm_control_panel.home_alarm_control
+      state: disarmed
+  delivery:
+    .*:
+      enabled: false
+```
+
+See Supernotify's [Scenarios](https://supernotify.rhizomatics.org.uk/latest/configuration/scenarios/).
+
 ## Periodic Reports
 
 Frigate's GenAI can also write a report of everything its cameras saw over a period, from the reviews in it, as the

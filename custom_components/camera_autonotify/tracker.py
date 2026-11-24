@@ -243,6 +243,8 @@ class Review:
     standalone: bool = False
     # a recording started by hand, with nothing seen in it, so never notified, nor GenAI's summary of it
     manual: bool = False
+    # when it ended, for how late what GenAI says of it is
+    end_time: float | None = None
 
     @classmethod
     def from_payload(cls, after: dict[str, Any]) -> Review:
@@ -262,6 +264,7 @@ class Review:
             ended=after.get("end_time") is not None,
             summary=Summary.from_metadata(data.get("metadata")),
             manual=bool(objects) and not seen,
+            end_time=float(after["end_time"]) if after.get("end_time") is not None else None,
         )
 
     @classmethod

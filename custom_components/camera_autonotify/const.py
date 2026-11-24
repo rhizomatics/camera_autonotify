@@ -125,8 +125,19 @@ CONF_MIN_THREAT_LEVEL: Final[str] = "min_threat_level"
 CONF_DESCRIPTIONS: Final[str] = "descriptions"
 CONF_UNREVIEWED_DESCRIPTIONS: Final[str] = "unreviewed_descriptions"
 CONF_GENAI_WAIT: Final[str] = "genai_wait"
+# what GenAI adds long after what it describes ended: from when it's said how long ago, and from when it's late, with
+# a priority of its own, or none, and Supernotify scenarios added
+CONF_LATE_SAID_AFTER: Final[str] = "late_said_after"
+CONF_LATE_AFTER: Final[str] = "late_after"
+CONF_LATE_PRIORITY: Final[str] = "late_priority"
+CONF_LATE_SCENARIOS: Final[str] = "late_scenarios"
+LATE_UNCHANGED: Final[str] = "unchanged"
+LATE_NO_DELIVERY: Final[str] = "none"
+DEFAULT_LATE_SAID_AFTER: Final[int] = 120
+DEFAULT_LATE_AFTER: Final[int] = 300
 # Supernotify's priorities, most urgent first
 PRIORITIES: Final[tuple[str, ...]] = ("critical", "high", "medium", "low", "minimum")
+LATE_PRIORITIES: Final[tuple[str, ...]] = (LATE_UNCHANGED, *PRIORITIES, LATE_NO_DELIVERY)
 # the priority of each of Frigate's threat levels, normal, suspicious and critical, by their setting
 CONF_THREAT_PRIORITIES: Final[tuple[str, ...]] = ("priority_normal", "priority_suspicious", "priority_critical")
 THREAT_PRIORITY_DEFAULTS: Final[tuple[str, ...]] = ("medium", "high", "critical")

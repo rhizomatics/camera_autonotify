@@ -82,6 +82,10 @@ from .const import (
     CONF_KNOWN_CATEGORY,
     CONF_LABELS,
     CONF_LAST_SNAPSHOT,
+    CONF_LATE_AFTER,
+    CONF_LATE_PRIORITY,
+    CONF_LATE_SAID_AFTER,
+    CONF_LATE_SCENARIOS,
     CONF_LINKED_CAMERA,
     CONF_LINKED_CAMERA_AUTO,
     CONF_LOOKUP_CACHE_HOURS,
@@ -138,6 +142,8 @@ from .const import (
     DEFAULT_IMAGE,
     DEFAULT_IMAGE_PROCESSING_CONFIDENCE,
     DEFAULT_KNOWN_CATEGORY,
+    DEFAULT_LATE_AFTER,
+    DEFAULT_LATE_SAID_AFTER,
     DEFAULT_LOOKUP_CACHE_HOURS,
     DEFAULT_MIN_VISIT_GAP,
     DEFAULT_POWER_GRACE,
@@ -152,6 +158,8 @@ from .const import (
     GENAI_IMAGES,
     IMAGES,
     KINDS,
+    LATE_PRIORITIES,
+    LATE_UNCHANGED,
     MATCH_CONTAINS,
     MATCHES,
     MAX_SUMMARY_RETRIES,
@@ -287,6 +295,9 @@ DEFAULTS: dict[str, Any] = (
         CONF_IMAGE: DEFAULT_IMAGE,
         CONF_GENAI_IMAGE: GENAI_IMAGE_GLOBAL,
         CONF_ACTIONS_GLOBAL: True,
+        CONF_LATE_SAID_AFTER: DEFAULT_LATE_SAID_AFTER,
+        CONF_LATE_AFTER: DEFAULT_LATE_AFTER,
+        CONF_LATE_PRIORITY: LATE_UNCHANGED,
     }
 )
 SUMMARY_OPTIONS = (
@@ -632,8 +643,11 @@ def _priority() -> Selector:
     )
 
 
-def genai_schema(summaries: bool, descriptions: bool, camera: bool) -> dict[vol.Marker, Any]:
-    """What Frigate's generative AI adds, as far as Frigate makes it for the camera, or zone"""
+def genai_schema(
+    summaries: bool, descriptions: bool, camera: bool, scenarios: list[str] | None = None
+) -> dict[vol.Marker, Any]:
+    """What Frigate's generative AI adds, as far as Frigate makes it for the camera, or zone, and what's done with it
+    when it comes long after what it describes, with Supernotify scenarios where there's Supernotify"""
     genai: dict[vol.Marker, Any] = {}
     if summaries:
         genai[vol.Required(CONF_SUMMARIES, default=DEFAULTS[CONF_SUMMARIES])] = BooleanSelector()
@@ -655,6 +669,17 @@ def genai_schema(summaries: bool, descriptions: bool, camera: bool) -> dict[vol.
         genai[vol.Required(CONF_GENAI_IMAGE, default=DEFAULTS[CONF_GENAI_IMAGE])] = SelectSelector(
             SelectSelectorConfig(options=list(GENAI_IMAGES), mode=SelectSelectorMode.DROPDOWN, translation_key=CONF_GENAI_IMAGE)
         )
+        genai[vol.Required(CONF_LATE_SAID_AFTER, default=DEFAULTS[CONF_LATE_SAID_AFTER])] = _seconds(3600)
+        genai[vol.Required(CONF_LATE_AFTER, default=DEFAULTS[CONF_LATE_AFTER])] = _seconds(3600)
+        genai[vol.Required(CONF_LATE_PRIORITY, default=DEFAULTS[CONF_LATE_PRIORITY])] = SelectSelector(
+            SelectSelectorConfig(
+                options=list(LATE_PRIORITIES), mode=SelectSelectorMode.DROPDOWN, translation_key=CONF_LATE_PRIORITY
+            )
+        )
+        if scenarios is not None:
+            genai[vol.Optional(CONF_LATE_SCENARIOS)] = SelectSelector(
+                SelectSelectorConfig(options=scenarios, multiple=True, custom_value=True, mode=SelectSelectorMode.DROPDOWN)
+            )
     return genai
 
 
@@ -1124,7 +1149,8 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
         else:
             labels, zones = camera_choices(config, data[CONF_SOURCE_NAME])
             summaries, descriptions = genai_features(config, camera=data[CONF_SOURCE_NAME])
-        genai = genai_schema(summaries, descriptions, camera=not is_zone)
+        scenarios = await scenario_names(self.hass) if supernotify_available(self.hass) else None
+        genai = genai_schema(summaries, descriptions, camera=not is_zone, scenarios=scenarios)
         name = data[CONF_SOURCE_NAME]
         cameras = zone_cameras(config, name) if is_zone else [name]
         actions = offered([config], cameras)

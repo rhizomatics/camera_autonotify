@@ -223,7 +223,11 @@
                             "descriptions": "Object descriptions",
                             "unreviewed_descriptions": "Descriptions without a review",
                             "genai_wait": "Wait for GenAI",
-                            "genai_image": "GenAI image"
+                            "genai_image": "GenAI image",
+                            "late_said_after": "Say how long ago after",
+                            "late_after": "Late after",
+                            "late_priority": "Late priority",
+                            "late_scenarios": "Late scenarios"
                         },
                         "data_description": {
                             "summaries": "Update the notification with Frigate's title and summary once the review is over, when Frigate's GenAI makes one.",
@@ -234,7 +238,11 @@
                             "descriptions": "Update the notification with Frigate's description of each object in the review.",
                             "unreviewed_descriptions": "Also notify descriptions of objects Frigate didn't make a review of, such as those outside the zones an alert needs.",
                             "genai_wait": "How long after a review ends to keep it for what GenAI adds, and a description for its review.",
-                            "genai_image": "The image of what GenAI adds for this camera or zone, instead of the one in Global Settings."
+                            "genai_image": "The image of what GenAI adds for this camera or zone, instead of the one in Global Settings.",
+                            "late_said_after": "Start the message of what GenAI adds with how long ago what it describes ended, once it's at least this late. 0 never says it.",
+                            "late_after": "When what GenAI adds counts as late, for the priority and scenarios below. 0 never.",
+                            "late_priority": "The priority of a late summary at normal threat level, or a late description, or Don't notify. Suspicious and critical summaries keep their own, and a rule can still give it one.",
+                            "late_scenarios": "Supernotify scenarios added to a late one, for scenarios of your own to act on, such as only while the alarm is set."
                         }
                     },
                     "notify": {
@@ -395,6 +403,17 @@
                 "medium": "Medium",
                 "low": "Low",
                 "minimum": "Minimum"
+            }
+        },
+        "late_priority": {
+            "options": {
+                "unchanged": "As it is",
+                "critical": "Critical",
+                "high": "High",
+                "medium": "Medium",
+                "low": "Low",
+                "minimum": "Minimum",
+                "none": "Don't notify"
             }
         },
         "match": {
@@ -707,7 +726,8 @@
         "dvla_key_unset": "No key is set.",
         "dvla_test_passed": "The DVLA answered as expected for {plate}: {said}.",
         "dvla_test_failed": "The DVLA didn't answer as expected for {plate}: {said}. It should answer 200 or 404, with JSON.",
-        "dvla_test_no_key": "There's no key to test: type one first."
+        "dvla_test_no_key": "There's no key to test: type one first.",
+        "ended_ago": "Ended {ago} ago"
     },
     "issues": {
         "lookup_refused": {

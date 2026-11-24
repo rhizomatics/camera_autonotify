@@ -27,6 +27,8 @@ PREFIX = f"component.{DOMAIN}.{CATEGORY}."
 # what a notification says, the title being the camera's or zone's name
 HEADLINE = "headline"
 HEADLINE_ENDED = "headline_ended"
+# what GenAI adds long after what it describes ended, before its message
+ENDED_AGO = "ended_ago"
 # the objects of a review, as said in its headline, and when it has none
 OBJECTS_JOINED = "objects_joined"
 OBJECTS_NONE = "objects_none"

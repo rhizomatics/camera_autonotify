@@ -223,7 +223,11 @@
                             "descriptions": "Descriptions des objets",
                             "unreviewed_descriptions": "Descriptions sans revue",
                             "genai_wait": "Attendre la GenAI",
-                            "genai_image": "Image GenAI"
+                            "genai_image": "Image GenAI",
+                            "late_said_after": "Dire il y a combien de temps après",
+                            "late_after": "En retard après",
+                            "late_priority": "Priorité en retard",
+                            "late_scenarios": "Scénarios en retard"
                         },
                         "data_description": {
                             "summaries": "Met à jour la notification avec le titre et le résumé de Frigate une fois la revue terminée, quand la GenAI de Frigate en produit un.",
@@ -234,7 +238,11 @@
                             "descriptions": "Met à jour la notification avec la description par Frigate de chaque objet de la revue.",
                             "unreviewed_descriptions": "Notifier aussi les descriptions d'objets pour lesquels Frigate n'a pas fait de revue, comme ceux hors des zones nécessaires à une alerte.",
                             "genai_wait": "Combien de temps garder une revue terminée pour ce qu'ajoute la GenAI, et une description pour sa revue.",
-                            "genai_image": "L'image de ce qu'ajoute la GenAI pour cette caméra ou zone, au lieu de celle des Paramètres globaux."
+                            "genai_image": "L'image de ce qu'ajoute la GenAI pour cette caméra ou zone, au lieu de celle des Paramètres globaux.",
+                            "late_said_after": "Commencer le message de GenAI par le temps écoulé depuis la fin de ce qu'il décrit, dès qu'il a au moins ce retard. 0 jamais.",
+                            "late_after": "Quand ce qu'ajoute GenAI compte comme en retard, pour la priorité et les scénarios ci-dessous. 0 jamais.",
+                            "late_priority": "La priorité d'un résumé en retard au niveau de menace normal, ou d'une description en retard, ou Ne pas notifier. Les suspects et critiques gardent la leur, et une règle peut toujours lui en donner une.",
+                            "late_scenarios": "Scénarios Supernotify ajoutés à une notification en retard, pour que vos propres scénarios agissent, par exemple seulement quand l'alarme est armée."
                         }
                     },
                     "notify": {
@@ -395,6 +403,17 @@
                 "medium": "Moyenne",
                 "low": "Basse",
                 "minimum": "Minimale"
+            }
+        },
+        "late_priority": {
+            "options": {
+                "unchanged": "Inchangée",
+                "critical": "Critique",
+                "high": "Haute",
+                "medium": "Moyenne",
+                "low": "Basse",
+                "minimum": "Minimale",
+                "none": "Ne pas notifier"
             }
         },
         "match": {
@@ -707,7 +726,8 @@
         "dvla_key_unset": "Aucune clé n'est définie.",
         "dvla_test_passed": "La DVLA a répondu comme prévu pour {plate} : {said}.",
         "dvla_test_failed": "La DVLA n'a pas répondu comme prévu pour {plate} : {said}. Elle devrait répondre 200 ou 404, en JSON.",
-        "dvla_test_no_key": "Aucune clé à tester : saisissez-en une d'abord."
+        "dvla_test_no_key": "Aucune clé à tester : saisissez-en une d'abord.",
+        "ended_ago": "Terminé il y a {ago}"
     },
     "issues": {
         "lookup_refused": {

@@ -1,7 +1,7 @@
 # RFC 0013 - Late GenAI Notifications
 
-**Status**: Draft
-2026-11-24
+**Status**: Implemented
+2026-11-24, in 1.1.0
 
 ## Summary
 
@@ -86,10 +86,10 @@ Armed, `quiet_when_late` doesn't apply, and every late one is heard. The recipe 
 
 ### Where it goes
 
-- `tracker.py`: `Decision.lateness`, from the summary's `end_time`, or a description's object end, given to the
-  tracker by the watcher from the `FactStore`
+- `tracker.py`: a review's `end_time`
 - `facts.py`: each object's `end_time`
-- `notifier.py`: the text before the message, the priority, and the scenarios added after the rules'
+- `notifier.py`: how late, from either, the text before the message, the priority, and the scenarios added after
+  the rules'
 - `texts.py`: "Ended {ago} ago", by `said_duration`, as other notifications say how long
 
 ## Open questions
