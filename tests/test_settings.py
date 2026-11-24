@@ -105,6 +105,7 @@ async def test_settings_stored_flat_without_defaults(hass: HomeAssistant):
                 "update_sub_label": True,
             },
             "notify": {CONF_TARGETS: []},
+            "advanced": {"notify_from": "events", "review_wait": 2},
         },
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
@@ -212,6 +213,7 @@ async def test_genai_settings_stored(hass: HomeAssistant):
         {
             "timing": {},
             "notify": {},
+            "advanced": {},
             "genai": {
                 "summaries": True,
                 "min_threat_level": 1.0,
@@ -295,7 +297,7 @@ async def test_actions_switched_off_for_a_camera(hass: HomeAssistant):
     entry = entry_titled(hass, "Courtyard")
     form = await open_settings(hass)
     await hass.config_entries.options.async_configure(
-        form["flow_id"], {"severities": ["alert"], "timing": {}, "notify": {CONF_ACTIONS_GLOBAL: False}}
+        form["flow_id"], {"severities": ["alert"], "timing": {}, "notify": {CONF_ACTIONS_GLOBAL: False}, "advanced": {}}
     )
     await hass.async_block_till_done()
     assert dict(entry.options) == {CONF_ACTIONS_GLOBAL: False}

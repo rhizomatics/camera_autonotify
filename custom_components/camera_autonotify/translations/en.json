@@ -260,6 +260,18 @@
                             "actions": "The buttons on this camera's or zone's notifications, when not as Global Settings. Leave empty for none.",
                             "last_snapshot": "A camera entity showing the snapshot of the last notification, for a dashboard."
                         }
+                    },
+                    "advanced": {
+                        "name": "Advanced",
+                        "description": "What starts a notification. Frigate leaves an object out of reviews until it has moved, so a car that stops as it comes into view can wait minutes for one.",
+                        "data": {
+                            "notify_from": "Notify from",
+                            "review_wait": "Wait for a review"
+                        },
+                        "data_description": {
+                            "notify_from": "Reviews only, as the Frigate blueprint does, or also objects Frigate hasn't reviewed yet, as soon as they're in a zone, with the review taking over the notification when it comes.",
+                            "review_wait": "How long an object waits for its review before it's notified by itself. Nearly all reviews come within 2 seconds."
+                        }
                     }
                 }
             },
@@ -368,6 +380,12 @@
             "options": {
                 "alert": "Alerts",
                 "detection": "Detections"
+            }
+        },
+        "notify_from": {
+            "options": {
+                "events": "Reviews, and objects not yet reviewed",
+                "reviews": "Reviews only"
             }
         },
         "priority": {

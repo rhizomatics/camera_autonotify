@@ -6,6 +6,10 @@ title: What's New
 
 > Camera Autonotify was first released in October 2026 with support only for Frigate notifications. Its intended to be a `1.0.0` release by the end of 2026, with [ANPR2MQTT](https://anpr2mqtt.rhizomatics.org.uk) as the second integration. Ideas, improvements and other feedback very welcome - use the [Github Issues](https://github.com/rhizomatics/camera_autonotify/issues) to add them.
 
+# 1.1.0
+## ✨ Enhancements
+- An object Frigate hasn't reviewed yet is notified as soon as it's in a zone, such as a car that stops as it comes into view, which Frigate leaves out of reviews until it moves, and the review takes over the notification when it comes. *Notify from*, in a camera's or zone's new *Advanced* settings, can be set to *Reviews only*, as the Frigate blueprint does. See [Objects Not Yet Reviewed](how_it_works.md#objects-not-yet-reviewed)
+
 # 1.0.1
 ## 🐞 Fixes
 - With Supernotify v2.19.0 or later, each image is also tried at Home Assistant's own address, after the one a phone uses, so e-mail and the other deliveries Supernotify fetches the image for still get it, and no repair is raised, where Home Assistant can't reach itself at its external address, such as without hairpin NAT

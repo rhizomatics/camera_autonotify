@@ -71,6 +71,9 @@ CONF_FINAL_DELAY: Final[str] = "final_delay"
 CONF_TIMEOUT: Final[str] = "timeout"
 CONF_ALERT_ONCE: Final[str] = "alert_once"
 CONF_UPDATE_SUB_LABEL: Final[str] = "update_sub_label"
+# what starts a notification, reviews only or objects no review has yet too, and how long to wait for a review first
+CONF_NOTIFY_FROM: Final[str] = "notify_from"
+CONF_REVIEW_WAIT: Final[str] = "review_wait"
 # the image of each notification, served by Frigate through the Frigate integration's notification proxy, the snapshot
 # with the object's box drawn on by Frigate to begin with, or the whole snapshot, or cropped to the object, or else the
 # smaller thumbnail, or an animated preview made from the recordings

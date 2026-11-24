@@ -1,4 +1,4 @@
-"""Reviews and object descriptions from Frigate over MQTT, one subscription to each for each topic prefix, shared by
+"""Reviews, tracked objects and object descriptions from Frigate over MQTT, one subscription to each for each topic prefix, shared by
 the entries that need them, and each entry's watcher, which times what its tracker holds back and sends what it
 decides"""
 
@@ -15,9 +15,9 @@ from homeassistant.const import CONF_TYPE
 from homeassistant.core import CALLBACK_TYPE, Context, HomeAssistant, callback
 from homeassistant.helpers.event import async_call_later
 
-from .const import CONF_SOURCE_NAME, DOMAIN, TYPE_ZONE
+from .const import CONF_SOURCE_ENTRY_ID, CONF_SOURCE_NAME, DOMAIN, TYPE_ZONE
 from .facts import FactStore
-from .frigate import fact_stores, genai_reviews_seen
+from .frigate import fact_stores, frigate_config, genai_reviews_seen, review_severity
 from .notifier import Notifier
 from .tracker import TYPE_GENAI, Decision, ReviewTracker, Settings, Wait
 
@@ -47,10 +47,16 @@ class ReviewWatcher:
         self.entry = entry
         settings = Settings.from_options(entry.options)
         name = entry.data[CONF_SOURCE_NAME]
+        source_entry_id = entry.data.get(CONF_SOURCE_ENTRY_ID)
+
+        def severity(camera: str, label: str, zones: tuple[str, ...]) -> str | None:
+            # by Frigate's config as it now is
+            return review_severity(frigate_config(hass, source_entry_id), camera, label, zones) if source_entry_id else None
+
         if entry.data.get(CONF_TYPE) == TYPE_ZONE:
-            self.tracker = ReviewTracker(settings, zone=name)
+            self.tracker = ReviewTracker(settings, zone=name, severity=severity)
         else:
-            self.tracker = ReviewTracker(settings, camera=name)
+            self.tracker = ReviewTracker(settings, camera=name, severity=severity)
         self.notifier = Notifier(hass, entry)
         # each review's notifications tied together, the later ones as children of the first
         self._contexts: dict[str, Context] = {}
@@ -71,6 +77,15 @@ class ReviewWatcher:
             outcome = self.tracker.on_description(payload, time.time())
         except ValueError, KeyError, TypeError:
             _LOGGER.warning("CAMERA_AUTONOTIFY Object update not understood: %s", payload)
+            return
+        self._act(outcome)
+
+    @callback
+    def async_event(self, payload: dict[str, Any]) -> None:
+        try:
+            outcome = self.tracker.on_event(payload, time.time())
+        except ValueError, KeyError, TypeError:
+            _LOGGER.warning("CAMERA_AUTONOTIFY Event not understood: %s", payload)
             return
         self._act(outcome)
 
@@ -134,10 +149,10 @@ def _is_summary(payload: str | bytes | bytearray) -> bool:
     return isinstance(message, dict) and message.get("type") == TYPE_GENAI
 
 
-def _safely(handle: Callable[[str | bytes | bytearray, float], None], message: ReceiveMessage) -> None:
+def _safely(handle: Callable[[Any, float], None], message: ReceiveMessage, parsed: dict[str, Any] | None = None) -> None:
     """A message kept as facts, one not understood logged, and not passed on"""
     try:
-        handle(message.payload, time.time())
+        handle(parsed if parsed is not None else message.payload, time.time())
     except ValueError, KeyError, TypeError, AttributeError:
         _LOGGER.debug("CAMERA_AUTONOTIFY %s not understood: %s", message.topic, message.payload)
 
@@ -171,7 +186,17 @@ async def async_watch(hass: HomeAssistant, prefix: str, watcher: ReviewWatcher) 
 
         @callback
         def event(message: ReceiveMessage) -> None:
-            _safely(facts.on_event, message)
+            # read once, for the facts and every watcher, there being many of these
+            try:
+                parsed = json.loads(message.payload)
+            except ValueError:
+                _LOGGER.debug("CAMERA_AUTONOTIFY %s not understood: %s", message.topic, message.payload)
+                return
+            if not isinstance(parsed, dict):
+                return
+            _safely(facts.on_event, message, parsed)
+            for each in list(hubs[prefix].watchers):
+                each.async_event(parsed)
 
         @callback
         def state(message: ReceiveMessage) -> None:

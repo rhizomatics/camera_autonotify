@@ -15,6 +15,8 @@ What a voice assistant or speaker says, by Supernotify's spoken message, is the 
 | ---------------------------------------- | ------------------------------------------------------------------ | ---------------------- |
 | A review starts that matches the settings | A notification with the snapshot, `high` priority for an alert and `medium` for a detection | A plain text notification |
 | A review that didn't match, then does, such as a detection raised to an alert | The same, as a first notification | The same |
+| An object that matches enters a zone, and Frigate has no review of it after *Wait for a review* | The same, as a first notification. See [Objects Not Yet Reviewed](#objects-not-yet-reviewed) | The same |
+| The review of that object comes | An update, taking the place of the object's notification, with the review's clip | Nothing |
 | Something new is seen in the review, or a new zone entered, or a face or plate recognised | An update, taking the place of the last notification for that review, silently unless *Sound only the first* is off | Nothing |
 | The review ends, with *Notify when over* on | A last update, its title ending "now ended" | Nothing |
 | Frigate describes an object in the review | An update with the description, after [rules](https://camera-autonotify.rhizomatics.org.uk/genai/#rules) | Nothing |
@@ -30,6 +32,18 @@ With Supernotify, each notification:
 Rules, added under *Global Settings*, can change the priority of any notification by what it says, silence it, or apply Supernotify scenarios. See [GenAI Notifications](https://camera-autonotify.rhizomatics.org.uk/genai/#rules).
 
 Priority, critical alerts, sounds, who is told, snoozing, the archive and scenarios are all Supernotify's, so set them up there once rather than per camera.
+
+### Objects Not Yet Reviewed
+
+Frigate leaves an object out of reviews until it has moved, by its own measure, and while it's stationary. A car
+that stops as it comes into view, at the edge of the frame, may not count as having moved, so it's reviewed only
+when it moves off, minutes later, or for a van parked while its driver works, most of an hour later. Frigate still
+reports the object over MQTT from the start, so its notification is sent from that, once it's in a zone and not
+stationary, as the review would be, and once only. The review takes it over when it comes.
+
+Its image is the object's snapshot, but there's no clip to open until the review comes, and *View snapshot* finds
+nothing once Frigate has dropped an object that never moved. Set *Notify from* to *Reviews only*, in the camera's
+*Advanced* settings, to wait for reviews.
 
 ### What Frigate Knows
 

@@ -260,6 +260,18 @@
                             "actions": "I pulsanti delle notifiche di questa telecamera o zona, quando non come le Impostazioni globali. Lascia vuoto per nessuno.",
                             "last_snapshot": "Un'entità telecamera che mostra l'istantanea dell'ultima notifica, per una dashboard."
                         }
+                    },
+                    "advanced": {
+                        "name": "Avanzate",
+                        "description": "Cosa avvia una notifica. Frigate esclude un oggetto dalle revisioni finché non si è mosso, quindi un'auto che si ferma appena entra nell'inquadratura può attenderne una per minuti.",
+                        "data": {
+                            "notify_from": "Notifica da",
+                            "review_wait": "Attesa di una revisione"
+                        },
+                        "data_description": {
+                            "notify_from": "Solo revisioni, come il blueprint di Frigate, o anche oggetti che Frigate non ha ancora revisionato, appena sono in una zona, con la revisione che riprende la notifica quando arriva.",
+                            "review_wait": "Quanto un oggetto attende la sua revisione prima di essere notificato da solo. Quasi tutte le revisioni arrivano entro 2 secondi."
+                        }
                     }
                 }
             },
@@ -368,6 +380,12 @@
             "options": {
                 "alert": "Avvisi",
                 "detection": "Rilevamenti"
+            }
+        },
+        "notify_from": {
+            "options": {
+                "events": "Revisioni, e oggetti non ancora revisionati",
+                "reviews": "Solo revisioni"
             }
         },
         "priority": {
