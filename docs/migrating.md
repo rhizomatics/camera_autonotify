@@ -108,6 +108,8 @@ Things AutoNotify does that the blueprint doesn't:
 
 - **Cameras set up by themselves**, including any added to Frigate later, with no automation per camera
 - **Zones of their own**, each notifying for reviews from any camera it's on. See [Zones](index.md#zones)
+- **Nothing late for want of a review**: a car that stops as it comes into view, which Frigate doesn't review until
+  it moves, is notified as soon as it's in a zone. See [Objects Not Yet Reviewed](how_it_works.md#objects-not-yet-reviewed)
 - **GenAI review summaries and object descriptions**, each updating the review's notification, with the priority set by the threat level Frigate's GenAI gives. See [GenAI Notifications](genai.md)
 - **Rules** on what any notification says, to raise its priority, silence it, or apply Supernotify scenarios
 - **LPR** for vehicle recognition, and prioritizing notifications based on known vehicles

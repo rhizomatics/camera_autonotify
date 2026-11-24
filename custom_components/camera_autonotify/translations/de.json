@@ -260,6 +260,18 @@
                             "actions": "Die Schaltflächen der Benachrichtigungen dieser Kamera oder Zone, wenn nicht wie globale Einstellungen. Leer lassen für keine.",
                             "last_snapshot": "Eine Kamera-Entität, die den Schnappschuss der letzten Benachrichtigung zeigt, für ein Dashboard."
                         }
+                    },
+                    "advanced": {
+                        "name": "Erweitert",
+                        "description": "Was eine Benachrichtigung auslöst. Frigate lässt ein Objekt aus Reviews heraus, bis es sich bewegt hat, daher kann ein Auto, das beim Erscheinen anhält, minutenlang auf eines warten.",
+                        "data": {
+                            "notify_from": "Benachrichtigen aus",
+                            "review_wait": "Auf ein Review warten"
+                        },
+                        "data_description": {
+                            "notify_from": "Nur Reviews, wie der Frigate-Blueprint, oder auch Objekte, die Frigate noch nicht reviewt hat, sobald sie in einer Zone sind; das Review übernimmt die Benachrichtigung, wenn es kommt.",
+                            "review_wait": "Wie lange ein Objekt auf sein Review wartet, bevor es allein gemeldet wird. Fast alle Reviews kommen innerhalb von 2 Sekunden."
+                        }
                     }
                 }
             },
@@ -368,6 +380,12 @@
             "options": {
                 "alert": "Alarme",
                 "detection": "Erkennungen"
+            }
+        },
+        "notify_from": {
+            "options": {
+                "events": "Reviews und noch nicht reviewte Objekte",
+                "reviews": "Nur Reviews"
             }
         },
         "priority": {

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Iterable
 from typing import Any, Protocol
 
 from aiohttp import ClientError
@@ -30,6 +31,7 @@ from .const import (
     SPEED_MPH,
 )
 from .facts import FactStore
+from .tracker import SEVERITY_ALERT, SEVERITY_DETECTION
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -147,6 +149,28 @@ def camera_records(config: dict[str, Any] | None, camera: str) -> bool:
 def camera_enabled(config: dict[str, Any] | None, camera: str) -> bool:
     """Whether a camera is enabled in Frigate's config, as the Frigate integration last read it"""
     return bool((((config or {}).get("cameras") or {}).get(camera) or {}).get("enabled", True))
+
+
+def review_severity(config: dict[str, Any] | None, camera: str, label: str, zones: Iterable[str]) -> str | None:
+    """The severity of the review an object in these zones would be in, by the camera's `review` config, as Frigate's
+    `get_review_severity` gives it, but for having moved, or nothing where it would be in none, or the camera isn't
+    known"""
+    review = _camera(config, camera).get("review")
+    if not isinstance(review, dict):
+        return None
+    zones = set(zones)
+    for severity, key in ((SEVERITY_ALERT, "alerts"), (SEVERITY_DETECTION, "detections")):
+        found = review.get(key) or {}
+        labels = found.get("labels")
+        required = found.get("required_zones") or []
+        if (
+            found.get("enabled", True)
+            # an alert's labels are always given, a detection's being any where they aren't
+            and (label in labels if labels is not None else key == "detections")
+            and (not required or zones & set(required))
+        ):
+            return severity
+    return None
 
 
 def topic_prefix(config: dict[str, Any] | None) -> str:

@@ -303,7 +303,8 @@ class Notifier:
         return await found.async_classify(
             plate,
             review.camera,
-            record=found.first_time_for(f"{review.id}:{plate}", time.time()),
+            # once for the notification, which the review takes over from an object notified from its event
+            record=found.first_time_for(f"{decision.key}:{plate}", time.time()),
             source="frigate",
             entity_id=camera_entity_id(self.hass, self.source_entry_id, review.camera),
             confidence=score,

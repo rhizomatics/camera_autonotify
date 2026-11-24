@@ -1,7 +1,7 @@
 # RFC 0012 - Notify From Events Before Reviews
 
-**Status**: Draft
-2026-11-24
+**Status**: Implemented, but for RFC 0006's count
+2026-11-24, in 1.1.0
 
 ## Summary
 
@@ -87,7 +87,7 @@ In a new *Advanced* section of a camera's or zone's settings, collapsed:
 
 | Setting | Options | Default |
 |---------|---------|---------|
-| *Notify from* | *Reviews, and events not yet reviewed*; *Reviews only* | *Reviews, and events not yet reviewed* |
+| *Notify from* | *Reviews, and objects not yet reviewed*; *Reviews only* | *Reviews, and objects not yet reviewed* |
 | *Wait for a review* | Seconds, 0 to 10 | 2 |
 
 *Reviews only* behaves as now, and as the blueprint does.

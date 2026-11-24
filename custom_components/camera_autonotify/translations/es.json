@@ -260,6 +260,18 @@
                             "actions": "Los botones de las notificaciones de esta cámara o zona, cuando no son como los Ajustes globales. Déjalo vacío para ninguno.",
                             "last_snapshot": "Una entidad de cámara que muestra la instantánea de la última notificación, para un panel."
                         }
+                    },
+                    "advanced": {
+                        "name": "Avanzado",
+                        "description": "Qué inicia una notificación. Frigate deja un objeto fuera de las revisiones hasta que se ha movido, así que un coche que se detiene al entrar en el encuadre puede esperar minutos.",
+                        "data": {
+                            "notify_from": "Notificar desde",
+                            "review_wait": "Esperar una revisión"
+                        },
+                        "data_description": {
+                            "notify_from": "Solo revisiones, como el blueprint de Frigate, o también objetos que Frigate aún no ha revisado, en cuanto están en una zona, y la revisión toma la notificación cuando llega.",
+                            "review_wait": "Cuánto espera un objeto su revisión antes de notificarse por sí solo. Casi todas las revisiones llegan en 2 segundos."
+                        }
                     }
                 }
             },
@@ -368,6 +380,12 @@
             "options": {
                 "alert": "Alertas",
                 "detection": "Detecciones"
+            }
+        },
+        "notify_from": {
+            "options": {
+                "events": "Revisiones, y objetos aún sin revisar",
+                "reviews": "Solo revisiones"
             }
         },
         "priority": {

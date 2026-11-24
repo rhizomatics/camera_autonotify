@@ -149,7 +149,7 @@ async def test_image_offered_and_stored(hass: HomeAssistant):
     image = fields_of(form)["notify.image"]
     assert image.config["options"] == ["snapshot", "snapshot_box", "snapshot_crop", "thumbnail", "preview"]
     result = await hass.config_entries.options.async_configure(
-        form["flow_id"], {"severities": ["alert"], "timing": {}, "notify": {CONF_IMAGE: "thumbnail"}}
+        form["flow_id"], {"severities": ["alert"], "timing": {}, "notify": {CONF_IMAGE: "thumbnail"}, "advanced": {}}
     )
     assert result["type"] == "create_entry"
     await hass.async_block_till_done()

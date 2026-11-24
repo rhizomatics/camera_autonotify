@@ -7,8 +7,8 @@ a `Wait` for the caller to time, and then call `on_timer` for.
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
-from dataclasses import dataclass, field, fields
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass, field, fields, replace
 from enum import StrEnum
 from functools import reduce
 from typing import Any
@@ -26,6 +26,11 @@ TYPE_GENAI = "genai"
 TYPE_DESCRIPTION = "description"
 # a review that never ends, from a lost MQTT message or a restart of Frigate, is forgotten after this long
 STALE_AFTER = 3600
+# what starts a notification: a review, or a tracked object on `{topic_prefix}/events` that no review has yet, such
+# as a car that stops as it comes into view, which Frigate leaves out of reviews until it moves
+NOTIFY_FROM_EVENTS = "events"
+NOTIFY_FROM_REVIEWS = "reviews"
+NOTIFY_FROM = (NOTIFY_FROM_EVENTS, NOTIFY_FROM_REVIEWS)
 
 
 def _slugs(zones: tuple[str, ...] | set[str]) -> set[str]:
@@ -43,6 +48,8 @@ class Reason(StrEnum):
     FINAL = "final"
     SUMMARY = "summary"
     DESCRIPTION = "description"
+    # the review of an object notified from its event, taking over the notification
+    REVIEWED = "reviewed"
 
 
 @dataclass(frozen=True)
@@ -78,6 +85,9 @@ class Settings:
     unreviewed_descriptions: bool = False
     # seconds an ended review, or a description of an object in no review yet, is kept, for what GenAI adds later
     genai_wait: float = 120
+    # reviews only, or objects no review has yet too, after waiting this many seconds for one
+    notify_from: str = NOTIFY_FROM_EVENTS
+    review_wait: float = 2
 
     @classmethod
     def from_options(cls, options: Mapping[str, Any]) -> Settings:
@@ -156,6 +166,59 @@ class Description:
         if not object_id or not camera or not isinstance(text, str) or not text.strip():
             return None
         return cls(str(object_id), str(camera), text.strip())
+
+
+@dataclass(frozen=True)
+class Event:
+    """A tracked object as Frigate reports it, in the `after` of its message on `{topic_prefix}/events`"""
+
+    id: str
+    camera: str
+    label: str
+    sub_label: str | None
+    current_zones: tuple[str, ...]
+    # in the order entered
+    entered_zones: tuple[str, ...]
+    stationary: bool
+    false_positive: bool
+    ended: bool
+
+    @classmethod
+    def from_payload(cls, message: dict[str, Any]) -> Event | None:
+        after = message.get("after")
+        if not isinstance(after, dict) or not after.get("id") or not after.get("camera") or not after.get("label"):
+            return None
+        sub_label = after.get("sub_label")
+        sub_label = sub_label[0] if isinstance(sub_label, list) and sub_label else sub_label
+        return cls(
+            str(after["id"]),
+            str(after["camera"]),
+            str(after["label"]),
+            str(sub_label) if sub_label else None,
+            tuple(after.get("current_zones") or ()),
+            tuple(dict.fromkeys(after.get("entered_zones") or ())),
+            bool(after.get("stationary")),
+            bool(after.get("false_positive")),
+            message.get("type") == TYPE_END,
+        )
+
+    def review(self, severity: str) -> Review:
+        """A stand-in for the review the object isn't in yet, so it can be notified by itself"""
+        return Review(
+            self.id,
+            self.camera,
+            severity,
+            (self.label,),
+            (self.sub_label,) if self.sub_label else (),
+            self.entered_zones,
+            (self.id,),
+            ended=self.ended,
+            standalone=True,
+        )
+
+
+# the severity of the review an object on a camera, in the zones given, would be in, by Frigate's config, if any
+Severity = Callable[[str, str, tuple[str, ...]], str | None]
 
 
 # what Frigate labels a recording started by hand, such as its own UI's on demand recording, nothing having been seen
@@ -265,10 +328,12 @@ class Decision:
 
     @property
     def detection_id(self) -> str | None:
-        """The detection whose snapshot shows the review, the first, which is what set it off, or the object
-        described"""
+        """The detection whose snapshot shows the review: the object described, or else the one notified first, by
+        itself, or else the first, which is what set it off"""
         if self.described_id:
             return self.described_id
+        if self.tag_id and self.tag_id in self.review.detections:
+            return self.tag_id
         return self.review.detections[0] if self.review.detections else None
 
 
@@ -297,8 +362,11 @@ class _Tracked:
     waiting: Reason | None = None
     # passed over for the cooldown, so none of its updates are sent either
     skipped: bool = False
-    # an object's description notified by itself before the review was known, so the review takes its place
+    # an object notified by itself, by its description or its event, before the review was known, so the review
+    # takes its place
     tag_id: str | None = None
+    # an object from its event, no review having it yet
+    event: bool = False
 
 
 @dataclass
@@ -314,9 +382,13 @@ class _Described:
 class ReviewTracker:
     """The reviews of a camera, or of a zone on any camera, and the notifications each should give"""
 
-    def __init__(self, settings: Settings, camera: str | None = None, zone: str | None = None) -> None:
+    def __init__(
+        self, settings: Settings, camera: str | None = None, zone: str | None = None, severity: Severity | None = None
+    ) -> None:
         self.settings = settings
         self.camera = camera
+        # without Frigate's config, which says what a review would be, objects aren't notified from their events
+        self._severity = severity
         # a zone is matched by its slug, as its device has it, since reviews give it as written in the Frigate config
         self.zone = slugify(zone) if zone else None
         self._reviews: dict[str, _Tracked] = {}
@@ -324,6 +396,8 @@ class ReviewTracker:
         self._ended: dict[str, tuple[_Tracked, float]] = {}
         # by object id
         self._described: dict[str, _Described] = {}
+        # each object considered from its event, once only, until it's forgotten
+        self._considered: dict[str, float] = {}
         self._last_new: float | None = None
 
     def on_message(self, payload: str | bytes | bytearray | dict[str, Any], now: float) -> Decision | Wait | None:
@@ -342,6 +416,8 @@ class ReviewTracker:
             # all there is to know once it's over is what GenAI makes of it
             return None
         tracked = self._reviews.get(review.id)
+        if tracked is None and (taken := self._take_over(review, now)) is not None:
+            return taken
         if tracked is None:
             if message.get("type") == TYPE_END and not self._wanted(review):
                 return None
@@ -394,11 +470,37 @@ class ReviewTracker:
             )
         return None
 
+    def on_event(self, payload: str | bytes | bytearray | dict[str, Any], now: float) -> Decision | Wait | None:
+        """A message from `{topic_prefix}/events`, of an object that may be in no review yet: held back for one on
+        its first message in a wanted zone, not stationary, and notified by itself if none comes"""
+        if self.settings.notify_from != NOTIFY_FROM_EVENTS or self._severity is None:
+            return None
+        message = json.loads(payload) if isinstance(payload, (str, bytes, bytearray)) else payload
+        event = Event.from_payload(message) if isinstance(message, dict) else None
+        if event is None or not self._ours_event(event):
+            return None
+        self._forget_stale(now)
+        tracked = self._find(event.id)
+        if tracked is not None:
+            return self._event_changed(tracked, event, now) if tracked.event else None
+        if event.id in self._considered or not self._may_notify(event):
+            return None
+        severity = self._severity(event.camera, event.label, event.current_zones)
+        review = event.review(severity) if severity is not None else None
+        if review is None or not self._wanted(review) or self._in_review(event.id):
+            return None
+        self._considered[event.id] = now + STALE_AFTER
+        self._reviews[event.id] = _Tracked(review, first_seen=now, waiting=Reason.NEW, event=True)
+        # no sooner than a review would be, with its initial delay
+        return Wait(event.id, now + max(self.settings.review_wait, self.settings.initial_delay), Reason.NEW)
+
     def on_timer(self, review_id: str, now: float) -> Decision | Wait | None:
         """A notification held back is due"""
         tracked = self._reviews.get(review_id)
         if tracked is None or tracked.waiting is None:
             return None
+        if tracked.event and tracked.notified_at is None:
+            return self._event_due(tracked, now)
         reason, tracked.waiting = tracked.waiting, None
         if reason is Reason.FINAL:
             self._retire(tracked, now)
@@ -459,6 +561,69 @@ class ReviewTracker:
         if self.zone is not None:
             return self.zone in {slugify(zone) for zone in review.zones}
         return review.camera == self.camera
+
+    def _ours_event(self, event: Event) -> bool:
+        if self.zone is not None:
+            return self.zone in _slugs(event.current_zones) or self.zone in _slugs(event.entered_zones)
+        return event.camera == self.camera
+
+    def _may_notify(self, event: Event) -> bool:
+        """An object as Frigate would review it but for having moved: in a zone, a chosen one where there are any, the
+        zone's own for a zone, and not stationary, so a parked car seen again isn't"""
+        if event.ended or event.false_positive or event.stationary or not event.current_zones:
+            return False
+        if self.zone is not None and self.zone not in _slugs(event.current_zones):
+            return False
+        return not self.settings.zones or bool(_slugs(event.current_zones) & _slugs(self.settings.zones))
+
+    def _in_review(self, object_id: str) -> bool:
+        return any(
+            object_id in tracked.review.detections
+            for tracked in [*self._reviews.values(), *(ended for ended, _ in self._ended.values())]
+            if not tracked.event
+        )
+
+    def _event_due(self, tracked: _Tracked, now: float) -> Decision | None:
+        """No review has come for the object, so it's notified by itself, unless passed over for the cooldown"""
+        tracked.waiting = None
+        if self._last_new is not None and now - self._last_new < self.settings.cooldown:
+            del self._reviews[tracked.review.id]
+            return None
+        self._last_new = tracked.notified_at = now
+        return self._first_decision(tracked, now)
+
+    def _event_changed(self, tracked: _Tracked, event: Event, now: float) -> Decision | Wait | None:
+        """Kept up to date for the review that takes it over, or its last notification, and nothing sent for it
+        alone until it ends"""
+        if tracked.review.id not in self._reviews:
+            # ended, and kept for what GenAI adds
+            return None
+        tracked.review = event.review(tracked.review.severity)
+        if not event.ended:
+            return None
+        if tracked.notified_at is None:
+            # gone before it was due, with no snapshot left to show
+            del self._reviews[event.id]
+            return None
+        return self._ending(tracked, now)
+
+    def _take_over(self, review: Review, now: float) -> Decision | None:
+        """A review of an object notified from its event takes over its notification, bringing the review's clip, or
+        the review is notified itself where the object was still waiting for it"""
+        for object_id in review.detections:
+            found = self._find(object_id)
+            if found is None or not found.event:
+                continue
+            self._reviews.pop(object_id, None)
+            self._ended.pop(object_id, None)
+            if found.notified_at is None:
+                continue
+            tracked = self._reviews[review.id] = replace(found, review=review, event=False, waiting=None, tag_id=object_id)
+            decision = self._decide(tracked, Reason.REVIEWED)
+            if review.ended:
+                self._retire(tracked, now)
+            return decision
+        return None
 
     def _wanted(self, review: Review) -> bool:
         settings = self.settings
@@ -561,3 +726,5 @@ class ReviewTracker:
             del self._ended[review_id]
         for object_id in [o for o, described in self._described.items() if now > described.until]:
             del self._described[object_id]
+        for object_id in [o for o, until in self._considered.items() if now > until]:
+            del self._considered[object_id]

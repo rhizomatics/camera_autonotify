@@ -88,6 +88,7 @@ from .const import (
     CONF_MATCH,
     CONF_MIN_THREAT_LEVEL,
     CONF_MIN_VISIT_GAP,
+    CONF_NOTIFY_FROM,
     CONF_OBJECT,
     CONF_OBJECT_NAMES,
     CONF_PATTERN,
@@ -102,6 +103,7 @@ from .const import (
     CONF_PRIORITY,
     CONF_QUIET_PERIOD,
     CONF_REMOVE,
+    CONF_REVIEW_WAIT,
     CONF_SCENARIOS,
     CONF_SEVERITIES,
     CONF_SILENCE,
@@ -233,7 +235,7 @@ from .texts import (
     async_load_texts,
     text,
 )
-from .tracker import Settings
+from .tracker import NOTIFY_FROM, Settings
 from .vehicles import DVLA_TEST_PLATE, DvlaProvider
 
 _LOGGER = logging.getLogger(__name__)
@@ -251,6 +253,7 @@ SECTION_VEHICLE_LOOKUP = "vehicle_lookup"
 SECTION_TIMING = "timing"
 SECTION_GENAI = "genai"
 SECTION_NOTIFY = "notify"
+SECTION_ADVANCED = "advanced"
 SECTION_HEALTH = "health"
 SECTION_SUMMARY = "summary"
 SECTION_IMPORT = "anpr2mqtt_import"
@@ -260,6 +263,7 @@ SECTIONS = (
     SECTION_TIMING,
     SECTION_GENAI,
     SECTION_NOTIFY,
+    SECTION_ADVANCED,
     SECTION_HEALTH,
     SECTION_SUMMARY,
     SECTION_SUMMARY_UNAVAILABLE,
@@ -701,6 +705,13 @@ async def settings_schema(
     if genai:
         fields_[vol.Required(SECTION_GENAI)] = section(vol.Schema(genai), {"collapsed": True})
     fields_[vol.Required(SECTION_NOTIFY)] = section(vol.Schema(notify), {"collapsed": True})
+    advanced: dict[vol.Marker, Any] = {
+        vol.Required(CONF_NOTIFY_FROM, default=DEFAULTS[CONF_NOTIFY_FROM]): SelectSelector(
+            SelectSelectorConfig(options=list(NOTIFY_FROM), mode=SelectSelectorMode.DROPDOWN, translation_key=CONF_NOTIFY_FROM)
+        ),
+        vol.Required(CONF_REVIEW_WAIT, default=DEFAULTS[CONF_REVIEW_WAIT]): _seconds(10),
+    }
+    fields_[vol.Required(SECTION_ADVANCED)] = section(vol.Schema(advanced), {"collapsed": True})
     return vol.Schema(fields_)
 
 
