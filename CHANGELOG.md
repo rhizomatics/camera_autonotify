@@ -8,7 +8,13 @@ title: What's New
 
 # 1.1.0
 ## ✨ Enhancements
-- An object Frigate hasn't reviewed yet is notified as soon as it's in a zone, such as a car that stops as it comes into view, which Frigate leaves out of reviews until it moves, and the review takes over the notification when it comes. *Notify from*, in a camera's or zone's new *Advanced* settings, can be set to *Reviews only*, as the Frigate blueprint does. See [Objects Not Yet Reviewed](how_it_works.md#objects-not-yet-reviewed)
+- **Slow Frigate Reviews**
+  - Occasionally Frigate may delay the `review` message for 10s of seconds after the initial `event` is posted. AutoNotify can now use both, and will use the event if there's more than a configurable delay for the review
+  - An object Frigate hasn't reviewed yet is notified as soon as it's in a zone, such as a car that stops as it comes into view, which Frigate leaves out of reviews until it moves, and the review takes over the notification when it comes. - *Notify from*, in a camera's or zone's new *Advanced* settings, can be set to *Reviews only*, as the Frigate blueprint does, to switch off this behaviour.
+  - See [Objects Not Yet Reviewed](how_it_works.md#objects-not-yet-reviewed)
+- **Late GenAI**
+  - Frigate's GenAI summaries and descriptions come a minute or two after what they describe has ended, and now and then more, which can read as though it's happening now. Once they're late enough, they start with how long ago, such as *Ended 3 minutes ago*
+  - Late ones can be given a priority of their own, or not sent, and Supernotify scenarios, so whether a late one is heard can depend on who's home or the alarm. See [When GenAI Is Late](genai.md#when-genai-is-late)
 
 # 1.0.1
 ## 🐞 Fixes
