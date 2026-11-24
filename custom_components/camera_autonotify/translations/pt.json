@@ -223,7 +223,11 @@
                             "descriptions": "Descrições de objetos",
                             "unreviewed_descriptions": "Descrições sem revisão",
                             "genai_wait": "Esperar pela GenAI",
-                            "genai_image": "Imagem da GenAI"
+                            "genai_image": "Imagem da GenAI",
+                            "late_said_after": "Dizer há quanto tempo a partir de",
+                            "late_after": "Atrasado a partir de",
+                            "late_priority": "Prioridade se atrasado",
+                            "late_scenarios": "Cenários se atrasado"
                         },
                         "data_description": {
                             "summaries": "Atualizar a notificação com o título e o resumo do Frigate quando a revisão terminar, se a GenAI do Frigate fizer um.",
@@ -234,7 +238,11 @@
                             "descriptions": "Atualizar a notificação com a descrição do Frigate de cada objeto da revisão.",
                             "unreviewed_descriptions": "Notificar também as descrições de objetos dos quais o Frigate não fez revisão, como os que estão fora das zonas de que um alerta precisa.",
                             "genai_wait": "Quanto tempo após o fim de uma revisão ela é guardada pelo que a GenAI acrescentar, e uma descrição pela sua revisão.",
-                            "genai_image": "A imagem do que a GenAI acrescenta para esta câmara ou zona, em vez da das Definições globais."
+                            "genai_image": "A imagem do que a GenAI acrescenta para esta câmara ou zona, em vez da das Definições globais.",
+                            "late_said_after": "Começar a mensagem do GenAI com há quanto tempo terminou o que descreve, quando chega com pelo menos este atraso. 0 nunca.",
+                            "late_after": "Quando o que o GenAI acrescenta conta como atrasado, para a prioridade e os cenários abaixo. 0 nunca.",
+                            "late_priority": "A prioridade de um resumo atrasado com nível de ameaça normal, ou de uma descrição atrasada, ou Não notificar. Os suspeitos e críticos mantêm a sua, e uma regra ainda lhe pode dar uma.",
+                            "late_scenarios": "Cenários do Supernotify acrescentados a uma notificação atrasada, para os seus próprios cenários atuarem, por exemplo só com o alarme ligado."
                         }
                     },
                     "notify": {
@@ -395,6 +403,17 @@
                 "medium": "Média",
                 "low": "Baixa",
                 "minimum": "Mínima"
+            }
+        },
+        "late_priority": {
+            "options": {
+                "unchanged": "Inalterada",
+                "critical": "Crítica",
+                "high": "Alta",
+                "medium": "Média",
+                "low": "Baixa",
+                "minimum": "Mínima",
+                "none": "Não notificar"
             }
         },
         "match": {
@@ -707,7 +726,8 @@
         "dvla_key_unset": "Nenhuma chave definida.",
         "dvla_test_passed": "A DVLA respondeu como esperado para {plate}: {said}.",
         "dvla_test_failed": "A DVLA não respondeu como esperado para {plate}: {said}. Devia responder 200 ou 404, com JSON.",
-        "dvla_test_no_key": "Não há chave para testar: escreva uma primeiro."
+        "dvla_test_no_key": "Não há chave para testar: escreva uma primeiro.",
+        "ended_ago": "Terminou há {ago}"
     },
     "issues": {
         "lookup_refused": {

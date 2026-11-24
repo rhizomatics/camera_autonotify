@@ -18,6 +18,10 @@ from .const import (
     CONF_DELIVERIES,
     CONF_GENAI_IMAGE,
     CONF_IMAGE,
+    CONF_LATE_AFTER,
+    CONF_LATE_PRIORITY,
+    CONF_LATE_SAID_AFTER,
+    CONF_LATE_SCENARIOS,
     CONF_OBJECT,
     CONF_OBJECT_NAMES,
     CONF_SOURCE_ENTRY_ID,
@@ -27,9 +31,13 @@ from .const import (
     CONF_THREAT_PRIORITIES,
     DEFAULT_GENAI_IMAGE,
     DEFAULT_IMAGE,
+    DEFAULT_LATE_AFTER,
+    DEFAULT_LATE_SAID_AFTER,
     DOMAIN,
     GENAI_IMAGE_GLOBAL,
     IMAGE_PREVIEW,
+    LATE_NO_DELIVERY,
+    PRIORITIES,
     SUBENTRY_RULE,
     SUPERNOTIFY_DOMAIN,
     THREAT_PRIORITY_DEFAULTS,
@@ -55,6 +63,7 @@ from .rules import Outcome, Rule, apply_rules, rank
 from .supernotify_api import fallback_urls, supernotify_available
 from .texts import (
     ACTION_VIEW_SNAPSHOT,
+    ENDED_AGO,
     FACT_FACE_UNKNOWN,
     FACT_SIGHTINGS,
     FACT_STATE,
@@ -66,6 +75,7 @@ from .texts import (
     OBJECTS_JOINED,
     OBJECTS_NONE,
     async_load_texts,
+    said_duration,
     text,
 )
 from .tracker import Reason
@@ -352,12 +362,52 @@ class Notifier:
             level = min(max(summary.threat_level, 0), len(CONF_THREAT_PRIORITIES) - 1)
             priority = self.entry.options.get(CONF_THREAT_PRIORITIES[level]) or THREAT_PRIORITY_DEFAULTS[level]
             raised = summary.threat_level > 0
+        if (late := self.late_priority(decision)) in PRIORITIES:
+            priority = late
         if rank(outcome.priority) > rank(priority) or (outcome.priority and summary is None):
             priority = outcome.priority or priority
         raised = raised or rank(priority) > rank(own)
         if decision.silent and not raised:
-            return PRIORITY_SILENT
+            # a late priority chosen lower than that kept
+            return priority if late in PRIORITIES and rank(priority) < rank(PRIORITY_SILENT) else PRIORITY_SILENT
         return priority
+
+    def lateness(self, decision: Decision) -> float:
+        """How long after what GenAI describes ended it's notified: a review, by its summary's `end_time`, or the
+        object described, by its own, or 0 for anything else, or what hasn't ended"""
+        if decision.reason is Reason.SUMMARY:
+            ended = decision.review.end_time
+        elif decision.reason is Reason.DESCRIPTION and decision.described_id:
+            store = fact_store(self.hass, self.source_entry_id)
+            ended = store.ended(decision.described_id) if store is not None else None
+        else:
+            return 0.0
+        return max(0.0, time.time() - ended) if ended else 0.0
+
+    def _after(self, key: str, default: int) -> float | None:
+        seconds = self.entry.options.get(key, default)
+        return float(seconds) if seconds else None
+
+    def late(self, decision: Decision) -> bool:
+        after = self._after(CONF_LATE_AFTER, DEFAULT_LATE_AFTER)
+        return after is not None and self.lateness(decision) >= after
+
+    def late_priority(self, decision: Decision) -> str | None:
+        """The priority chosen for what GenAI adds late, or for not sending it, but never for a summary above normal
+        threat level, which keeps its own"""
+        chosen: str | None = self.entry.options.get(CONF_LATE_PRIORITY)
+        summary = decision.summary
+        if not chosen or (summary is not None and summary.threat_level > 0) or not self.late(decision):
+            return None
+        return chosen
+
+    def said_late(self, decision: Decision, message: str) -> str:
+        """The message, starting with how long ago what GenAI describes ended, once that's long enough to matter"""
+        after = self._after(CONF_LATE_SAID_AFTER, DEFAULT_LATE_SAID_AFTER)
+        if after is None or (lateness := self.lateness(decision)) < after:
+            return message
+        ago = text(self.hass, ENDED_AGO, ago=said_duration(self.hass, lateness))
+        return f"{ago}: {message}" if message else ago
 
     def image(self, decision: Decision) -> str:
         """The image chosen, the GenAI image for what GenAI adds, except the animated preview falls back to the
@@ -424,7 +474,8 @@ class Notifier:
         title, outcome = ruled or self.ruled(decision, vehicle)
         data: dict[str, Any] = {
             "title": title,
-            "message": outcome.message,
+            "message": self.said_late(decision, outcome.message),
+            # how long ago is for reading, not hearing
             "spoken_message": self.spoken(decision, title, outcome),
             "priority": self.priority(decision, outcome),
             "extra_data": {
@@ -470,8 +521,11 @@ class Notifier:
         for key in (CONF_TARGET, CONF_CUSTOM_TARGET):
             if value := self.entry.options.get(key):
                 data[key] = value
-        if outcome.scenarios:
-            data["apply_scenarios"] = list(outcome.scenarios)
+        scenarios = list(outcome.scenarios)
+        if self.late(decision):
+            scenarios.extend(s for s in self.entry.options.get(CONF_LATE_SCENARIOS) or [] if s not in scenarios)
+        if scenarios:
+            data["apply_scenarios"] = scenarios
         return data
 
     async def async_notify(self, decision: Decision, context: Context) -> None:
@@ -481,9 +535,13 @@ class Notifier:
         if outcome.silence:
             _LOGGER.debug("CAMERA_AUTONOTIFY Silenced for %s by %s", self.name, ", ".join(outcome.matched) or "vehicle")
             return
+        if self.late_priority(decision) == LATE_NO_DELIVERY and not outcome.priority:
+            # unless a rule gives it a priority of its own
+            _LOGGER.debug("CAMERA_AUTONOTIFY Late GenAI not sent for %s", self.name)
+            return
         self.last_snapshot = decision.detection_id
         if not supernotify_available(self.hass):
-            await self._send_message(decision, title, outcome.message, context)
+            await self._send_message(decision, title, self.said_late(decision, outcome.message), context)
             return
         try:
             data = self.supernotify_data(decision, (title, outcome), fallback=fallback_urls(self.hass), vehicle=vehicle)

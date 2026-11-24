@@ -56,6 +56,8 @@ class ObjectFacts:
     attributes: dict[str, float] = field(default_factory=dict)
     stationary: bool = False
     has_snapshot: bool | None = None
+    # when Frigate stopped tracking it
+    end_time: float | None = None
     heard: float = 0.0
 
 
@@ -122,6 +124,13 @@ class FactStore:
         facts.stationary = bool(after.get("stationary"))
         if "has_snapshot" in after:
             facts.has_snapshot = bool(after["has_snapshot"])
+        if after.get("end_time") is not None:
+            facts.end_time = _score(after["end_time"]) or None
+
+    def ended(self, object_id: str) -> float | None:
+        """When Frigate stopped tracking an object, if it has, and it's still known"""
+        facts = self._objects.get(object_id)
+        return facts.end_time if facts is not None else None
 
     def on_update(self, payload: str | bytes | bytearray | dict[str, Any], now: float) -> None:
         """A message from `{prefix}/tracked_object_update`: a face, a plate, or object classification"""

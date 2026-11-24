@@ -223,7 +223,11 @@
                             "descriptions": "Objektbeschreibungen",
                             "unreviewed_descriptions": "Beschreibungen ohne Review",
                             "genai_wait": "Auf GenAI warten",
-                            "genai_image": "GenAI-Bild"
+                            "genai_image": "GenAI-Bild",
+                            "late_said_after": "Sagen, wie lange her, ab",
+                            "late_after": "Verspätet ab",
+                            "late_priority": "Priorität wenn verspätet",
+                            "late_scenarios": "Szenarien wenn verspätet"
                         },
                         "data_description": {
                             "summaries": "Die Benachrichtigung mit Frigates Titel und Zusammenfassung aktualisieren, sobald das Review vorbei ist, wenn Frigates GenAI eine erstellt.",
@@ -234,7 +238,11 @@
                             "descriptions": "Die Benachrichtigung mit Frigates Beschreibung jedes Objekts im Review aktualisieren.",
                             "unreviewed_descriptions": "Auch Beschreibungen von Objekten melden, zu denen Frigate kein Review erstellt hat, etwa außerhalb der Zonen, die ein Alarm braucht.",
                             "genai_wait": "Wie lange ein beendetes Review für die Ergänzungen von GenAI aufbewahrt wird, und eine Beschreibung für ihr Review.",
-                            "genai_image": "Das Bild zu dem, was GenAI für diese Kamera oder Zone hinzufügt, statt des Bildes aus den globalen Einstellungen."
+                            "genai_image": "Das Bild zu dem, was GenAI für diese Kamera oder Zone hinzufügt, statt des Bildes aus den globalen Einstellungen.",
+                            "late_said_after": "Die Nachricht von GenAI mit der Zeit seit dem Ende des Beschriebenen beginnen, sobald sie mindestens so spät kommt. 0 nie.",
+                            "late_after": "Ab wann GenAI als verspätet gilt, für Priorität und Szenarien unten. 0 nie.",
+                            "late_priority": "Die Priorität einer verspäteten Zusammenfassung mit normaler Bedrohungsstufe oder einer verspäteten Beschreibung, oder Nicht benachrichtigen. Verdächtige und kritische behalten ihre eigene, und eine Regel kann ihr weiterhin eine geben.",
+                            "late_scenarios": "Supernotify-Szenarien, die einer verspäteten hinzugefügt werden, damit eigene Szenarien darauf reagieren, etwa nur bei scharfer Alarmanlage."
                         }
                     },
                     "notify": {
@@ -395,6 +403,17 @@
                 "medium": "Mittel",
                 "low": "Niedrig",
                 "minimum": "Minimal"
+            }
+        },
+        "late_priority": {
+            "options": {
+                "unchanged": "Unverändert",
+                "critical": "Kritisch",
+                "high": "Hoch",
+                "medium": "Mittel",
+                "low": "Niedrig",
+                "minimum": "Minimum",
+                "none": "Nicht benachrichtigen"
             }
         },
         "match": {
@@ -707,7 +726,8 @@
         "dvla_key_unset": "Kein Schlüssel gesetzt.",
         "dvla_test_passed": "Die DVLA hat für {plate} wie erwartet geantwortet: {said}.",
         "dvla_test_failed": "Die DVLA hat für {plate} nicht wie erwartet geantwortet: {said}. Erwartet wird 200 oder 404, mit JSON.",
-        "dvla_test_no_key": "Kein Schlüssel zum Testen: zuerst einen eingeben."
+        "dvla_test_no_key": "Kein Schlüssel zum Testen: zuerst einen eingeben.",
+        "ended_ago": "Vor {ago} beendet"
     },
     "issues": {
         "lookup_refused": {

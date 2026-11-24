@@ -73,6 +73,9 @@ Two layers, so the model's work is the part only a model can do.
 9. the same error logged again and again, such as a config validation error on each profile change
 10. objects Frigate was slow to review, or never did, by camera, zone and label, with how late: those notified from
     events by [RFC 0012](rfc0012_events_first.md), counted since the last report
+11. GenAI summaries lost: reviews with GenAI on for their camera that got no summary, counted against Frigate's
+    GenAI provider errors in its logs, such as Gemini's `503 UNAVAILABLE` on a free tier. The fix may be a paid
+    API key, or another provider
 
 **The model's review**, given:
 
