@@ -277,7 +277,7 @@
                             "review_wait": "Attesa di una revisione"
                         },
                         "data_description": {
-                            "notify_from": "Solo revisioni, come il blueprint di Frigate, o anche oggetti che Frigate non ha ancora revisionato, appena sono in una zona, con la revisione che riprende la notifica quando arriva.",
+                            "notify_from": "Solo le revisioni di Frigate, dal suo topic MQTT `reviews`, come il blueprint di Frigate, o anche i suoi eventi, dal topic `events`, gli oggetti che traccia, così un oggetto non ancora in una revisione è notificato appena è in una zona, e la revisione riprende la notifica quando arriva.",
                             "review_wait": "Quanto un oggetto attende la sua revisione prima di essere notificato da solo. Quasi tutte le revisioni arrivano entro 2 secondi."
                         }
                     }
@@ -392,7 +392,7 @@
         },
         "notify_from": {
             "options": {
-                "events": "Revisioni, e oggetti non ancora revisionati",
+                "events": "Revisioni ed eventi",
                 "reviews": "Solo revisioni"
             }
         },

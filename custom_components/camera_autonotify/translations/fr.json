@@ -277,7 +277,7 @@
                             "review_wait": "Attente d'une revue"
                         },
                         "data_description": {
-                            "notify_from": "Les revues seulement, comme le blueprint Frigate, ou aussi les objets que Frigate n'a pas encore revus, dès qu'ils sont dans une zone, la revue reprenant la notification quand elle arrive.",
+                            "notify_from": "Les revues de Frigate seulement, depuis son topic MQTT `reviews`, comme le blueprint Frigate, ou aussi ses événements, depuis son topic `events`, les objets qu'il suit, pour qu'un objet pas encore dans une revue soit notifié dès qu'il est dans une zone, la revue reprenant la notification quand elle arrive.",
                             "review_wait": "Combien de temps un objet attend sa revue avant d'être notifié seul. Presque toutes les revues arrivent en 2 secondes."
                         }
                     }
@@ -392,7 +392,7 @@
         },
         "notify_from": {
             "options": {
-                "events": "Revues, et objets pas encore revus",
+                "events": "Revues et événements",
                 "reviews": "Revues seulement"
             }
         },

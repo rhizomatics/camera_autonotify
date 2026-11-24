@@ -87,7 +87,7 @@ In a new *Advanced* section of a camera's or zone's settings, collapsed:
 
 | Setting | Options | Default |
 |---------|---------|---------|
-| *Notify from* | *Reviews, and objects not yet reviewed*; *Reviews only* | *Reviews, and objects not yet reviewed* |
+| *Notify from* | *Reviews and events*; *Reviews only* | *Reviews and events* |
 | *Wait for a review* | Seconds, 0 to 10 | 2 |
 
 *Reviews only* behaves as now, and as the blueprint does.
