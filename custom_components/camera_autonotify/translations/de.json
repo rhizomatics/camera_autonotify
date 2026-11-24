@@ -277,7 +277,7 @@
                             "review_wait": "Auf ein Review warten"
                         },
                         "data_description": {
-                            "notify_from": "Nur Reviews, wie der Frigate-Blueprint, oder auch Objekte, die Frigate noch nicht reviewt hat, sobald sie in einer Zone sind; das Review übernimmt die Benachrichtigung, wenn es kommt.",
+                            "notify_from": "Nur Frigates Reviews, aus dem MQTT-Topic `reviews`, wie der Frigate-Blueprint, oder auch seine Events, aus dem Topic `events`, die verfolgten Objekte, sodass ein Objekt ohne Review gemeldet wird, sobald es in einer Zone ist; das Review übernimmt die Benachrichtigung, wenn es kommt.",
                             "review_wait": "Wie lange ein Objekt auf sein Review wartet, bevor es allein gemeldet wird. Fast alle Reviews kommen innerhalb von 2 Sekunden."
                         }
                     }
@@ -392,7 +392,7 @@
         },
         "notify_from": {
             "options": {
-                "events": "Reviews und noch nicht reviewte Objekte",
+                "events": "Reviews und Events",
                 "reviews": "Nur Reviews"
             }
         },
