@@ -1,6 +1,7 @@
 # RFC 0014 - Plate Image for Doubtful Reads
 
 **Status**: Draft, needing Supernotify's `extra_images`
+([supernotify#348](https://github.com/rhizomatics/supernotify/issues/348))
 2026-11-26
 
 ## Summary
