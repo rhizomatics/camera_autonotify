@@ -37,7 +37,7 @@ from custom_components.camera_autonotify.vehicles import (
 )
 from tests.ha_testing import MockConfigEntry, async_fire_time_changed
 
-from .conftest import add_frigate, mock_supernotify
+from .conftest import add_frigate, global_form, mock_supernotify
 from .test_notifier import DETECTION, decision, notifier
 
 if TYPE_CHECKING:
@@ -847,7 +847,7 @@ async def test_key_kept_as_a_credential(hass: HomeAssistant):
         result = await hass.config_entries.options.async_init(entry.entry_id)
         await hass.config_entries.options.async_configure(
             result["flow_id"],
-            {"auto_discover": True, "discover_zones": False, "health": {}, "summary": {}, "vehicle_lookup": lookup},
+            global_form(vehicle_lookup=lookup),
         )
         await hass.async_block_till_done()
 
@@ -874,7 +874,7 @@ async def test_dvla_key_tested(hass: HomeAssistant, aioclient_mock: AiohttpClien
     add_frigate(hass)
     await set_up_discovery(hass)
     entry = next(e for e in hass.config_entries.async_entries(DOMAIN) if e.data.get(CONF_TYPE) == TYPE_DISCOVERY)
-    form = {"auto_discover": True, "discover_zones": False, "health": {}, "summary": {}}
+    form = global_form()
 
     async def tested(lookup: dict[str, Any]) -> str:
         result = await hass.config_entries.options.async_init(entry.entry_id)

@@ -9,15 +9,7 @@
         "step": {
             "user": {
                 "title": "Notificações do Frigate",
-                "description": "Notificações das revisões das câmaras do Frigate, enviadas através do Supernotify.\n\n{supernotify}{proxy}\n\n{found}",
-                "data": {
-                    "auto_discover": "Configurar as câmaras automaticamente",
-                    "discover_zones": "Procurar também as zonas"
-                },
-                "data_description": {
-                    "auto_discover": "Adicionar cada câmara do Frigate assim que for encontrada. Desligue para que cada uma seja oferecida em vez disso",
-                    "discover_zones": "Oferecer cada zona do Frigate como uma câmara, para notificações apenas dessa zona"
-                }
+                "description": "Notificações das revisões das câmaras do Frigate, enviadas através do Supernotify.\n\n{supernotify}{proxy}\n\n{found}"
             },
             "confirm": {
                 "title": "Notificações de {name}",
@@ -59,20 +51,10 @@
                 "title": "Definições globais",
                 "description": "As câmaras e zonas já configuradas ficam como estão.",
                 "data": {
-                    "auto_discover": "Configurar as câmaras automaticamente",
-                    "discover_zones": "Procurar também as zonas",
-                    "object_names": "Nomes dos objetos",
-                    "genai_image": "Imagem da GenAI",
-                    "actions": "Ações",
-                    "speed_unit": "Unidade de velocidade"
+                    "actions": "Ações"
                 },
                 "data_description": {
-                    "auto_discover": "Adicionar cada câmara do Frigate assim que for encontrada. Desligue para que cada uma seja oferecida em vez disso",
-                    "discover_zones": "Oferecer cada zona do Frigate como uma câmara, para notificações apenas dessa zona",
-                    "object_names": "Como chamar cada objeto do Frigate em todas as notificações, como car como Veículo, ou uma tradução. Os objetos sem nome aqui são chamados como o Frigate os nomeia.",
-                    "genai_image": "A imagem do que a GenAI do Frigate acrescenta, um resumo de revisão ou uma descrição de objeto, para cada câmara e zona que não escolha a sua. A pré-visualização animada mostra o que a GenAI viu, onde a câmara grava, e caso contrário a imagem da própria câmara.",
-                    "actions": "Os botões de cada notificação no telemóvel, do que o Frigate consegue fazer: guardar o clip da retenção do Frigate, marcar a revisão como vista no Frigate, enviar a captura para o Frigate+, ou exportar a gravação à volta. Ainda não no e-mail.",
-                    "speed_unit": "A unidade em que as velocidades são ditas. Automática é milhas por hora onde as estradas são sinalizadas assim, pelo país do Home Assistant, como o Reino Unido e os EUA, ou onde o seu sistema de unidades não é métrico, e quilómetros por hora caso contrário."
+                    "actions": "Os botões de cada notificação no telemóvel, do que o Frigate consegue fazer: guardar o clip da retenção do Frigate, marcar a revisão como vista no Frigate, enviar a captura para o Frigate+, ou exportar a gravação à volta. Ainda não no e-mail."
                 },
                 "sections": {
                     "health": {
@@ -91,10 +73,11 @@
                             "health_backoff": "Quanto tempo esperar antes de repetir uma verificação falhada, duplicando a cada nova tentativa seguinte."
                         }
                     },
-                    "summary": {
-                        "name": "Relatório periódico de GenAI do Frigate",
-                        "description": "Um relatório da atividade de várias câmaras nas horas anteriores, escrito pela GenAI do Frigate a partir das revisões, a cada poucas horas ou uma vez por dia. É enviado por e-mail, por ser demasiado longo para uma notificação do telemóvel ou um assistente de voz. Cada relatório é escrito pelo fornecedor de GenAI do Frigate, pelo que está sujeito aos seus custos e limites.",
+                    "frigate_genai": {
+                        "name": "Frigate GenAI",
+                        "description": "A imagem do que a GenAI do Frigate acrescenta, e o seu relatório periódico. Um relatório da atividade de várias câmaras nas horas anteriores, escrito pela GenAI do Frigate a partir das revisões, a cada poucas horas ou uma vez por dia. É enviado por e-mail, por ser demasiado longo para uma notificação do telemóvel ou um assistente de voz. Cada relatório é escrito pelo fornecedor de GenAI do Frigate, pelo que está sujeito aos seus custos e limites.",
                         "data": {
+                            "genai_image": "Imagem da GenAI",
                             "summary_mode": "Enviar um relatório",
                             "summary_interval": "Com que frequência",
                             "summary_time": "A começar às",
@@ -103,6 +86,7 @@
                             "summary_retries": "Novas tentativas"
                         },
                         "data_description": {
+                            "genai_image": "A imagem do que a GenAI do Frigate acrescenta, um resumo de revisão ou uma descrição de objeto, para cada câmara e zona que não escolha a sua. A pré-visualização animada mostra o que a GenAI viu, onde a câmara grava, e caso contrário a imagem da própria câmara.",
                             "summary_mode": "Automático envia-o quando o Frigate faz resumos de revisões com GenAI para alguma câmara.",
                             "summary_interval": "Cada relatório cobre as horas desde o anterior, até à hora em que é enviado.",
                             "summary_time": "Quando é enviado o primeiro do dia, e os outros a cada tantas horas a partir dele.",
@@ -157,14 +141,48 @@
                             "dvla_api_key_test": "Ao submeter, consultar A123TST com a chave escrita, ou a já definida, para verificar que a DVLA responde, sem guardar nada."
                         }
                     },
-                    "anpr2mqtt_import": {
-                        "name": "Importar do anpr2mqtt",
-                        "description": "Traz os grupos de matrículas do anpr2mqtt como categorias de veículos, com as suas correções e ignorados, as suas definições do DVLA e o seu histórico de visitas. Verá o que foi encontrado antes de qualquer importação.",
+                    "advanced_frigate": {
+                        "name": "Avançado - Frigate",
+                        "description": "Que câmaras e zonas do Frigate são encontradas, e como cada objeto é nomeado e as velocidades ditas.",
                         "data": {
+                            "frigate_discover": "Encontrar automaticamente",
+                            "frigate_silent": "Configurar sem perguntar",
+                            "discover_zones": "Procurar também as zonas",
+                            "object_names": "Nomes dos objetos",
+                            "speed_unit": "Unidade de velocidade"
+                        },
+                        "data_description": {
+                            "frigate_discover": "Encontrar as câmaras do Frigate, e as zonas onde escolhido abaixo, cada uma oferecida como descoberta, para adicionar ou ignorar.",
+                            "frigate_silent": "Configurar cada um encontrado de imediato, em vez de o oferecer como descoberto.",
+                            "discover_zones": "Oferecer cada zona do Frigate como uma câmara, para notificações apenas dessa zona",
+                            "object_names": "Como chamar cada objeto do Frigate em todas as notificações, como car como Veículo, ou uma tradução. Os objetos sem nome aqui são chamados como o Frigate os nomeia.",
+                            "speed_unit": "A unidade em que as velocidades são ditas. Automática é milhas por hora onde as estradas são sinalizadas assim, pelo país do Home Assistant, como o Reino Unido e os EUA, ou onde o seu sistema de unidades não é métrico, e quilómetros por hora caso contrário."
+                        }
+                    },
+                    "advanced_anpr2mqtt": {
+                        "name": "Avançado - anpr2mqtt",
+                        "description": "Que câmaras e eventos do anpr2mqtt são encontrados, e a importação do próprio anpr2mqtt. Traz os grupos de matrículas do anpr2mqtt como categorias de veículos, com as suas correções e ignorados, as suas definições do DVLA e o seu histórico de visitas. Verá o que foi encontrado antes de qualquer importação.",
+                        "data": {
+                            "anpr2mqtt_discover": "Encontrar automaticamente",
+                            "anpr2mqtt_silent": "Configurar sem perguntar",
                             "anpr2mqtt_archive": "Arquivo do anpr2mqtt"
                         },
                         "data_description": {
+                            "anpr2mqtt_discover": "Encontrar as câmaras e eventos do anpr2mqtt, cada um oferecido como descoberto, para adicionar ou ignorar.",
+                            "anpr2mqtt_silent": "Configurar cada um encontrado de imediato, em vez de o oferecer como descoberto.",
                             "anpr2mqtt_archive": "Um .tar ou .tar.gz das pastas config e data do anpr2mqtt, feito por exemplo com: tar czf anpr2mqtt.tgz config data/plate"
+                        }
+                    },
+                    "advanced_image_processing": {
+                        "name": "Avançado - Processamento de imagem",
+                        "description": "Que entidades de processamento de imagem do Home Assistant, que leem matrículas ou rostos, são encontradas.",
+                        "data": {
+                            "image_processing_discover": "Encontrar automaticamente",
+                            "image_processing_silent": "Configurar sem perguntar"
+                        },
+                        "data_description": {
+                            "image_processing_discover": "Encontrar as entidades de processamento de imagem que leem matrículas ou rostos, cada uma oferecida como descoberta, para adicionar ou ignorar.",
+                            "image_processing_silent": "Configurar cada um encontrado de imediato, em vez de o oferecer como descoberto."
                         }
                     }
                 }

@@ -44,7 +44,7 @@ from custom_components.camera_autonotify.notifier import async_notify_message
 from custom_components.camera_autonotify.texts import async_load_texts, said_duration
 from tests.ha_testing import MockConfigEntry, async_fire_time_changed, async_mock_service
 
-from .conftest import FakeFrigate, FakeMQTT, add_frigate, english, mock_supernotify
+from .conftest import FakeFrigate, FakeMQTT, add_frigate, english, global_form, mock_supernotify
 
 HEALTH_DOWN_TITLE = english("health_down_title")
 HEALTH_UP_TITLE = english("health_up_title")
@@ -483,17 +483,20 @@ async def test_settings_in_global_options(hass: HomeAssistant):
     assert result["step_id"] == "discovery"
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
-        {
-            CONF_AUTO_DISCOVER: True,
-            CONF_DISCOVER_ZONES: False,
-            "health": {CONF_HEALTH_CHECK: True, CONF_HEALTH_INTERVAL: 120, CONF_HEALTH_RETRIES: 2, CONF_HEALTH_BACKOFF: 15},
-        },
+        global_form(
+            health={CONF_HEALTH_CHECK: True, CONF_HEALTH_INTERVAL: 120, CONF_HEALTH_RETRIES: 2, CONF_HEALTH_BACKOFF: 15},
+        ),
     )
     await hass.async_block_till_done()
     # stored flat, the section only for display
     assert dict(entry.options) == {
-        CONF_AUTO_DISCOVER: True,
+        "frigate_discover": True,
+        "frigate_silent": False,
         CONF_DISCOVER_ZONES: False,
+        "anpr2mqtt_discover": True,
+        "anpr2mqtt_silent": False,
+        "image_processing_discover": True,
+        "image_processing_silent": False,
         CONF_HEALTH_CHECK: True,
         CONF_HEALTH_INTERVAL: 120,
         CONF_HEALTH_RETRIES: 2,

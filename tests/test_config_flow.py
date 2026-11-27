@@ -11,8 +11,6 @@ from custom_components.camera_autonotify.config_flow import (
     RuleSubentryFlow,
 )
 from custom_components.camera_autonotify.const import (
-    CONF_AUTO_DISCOVER,
-    CONF_DISCOVER_ZONES,
     DOMAIN,
     SUBENTRY_RULE,
     TYPE_DISCOVERY,
@@ -36,8 +34,8 @@ async def test_discovery_entry_created(hass: HomeAssistant):
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"] == {CONF_TYPE: TYPE_DISCOVERY}
-    # cameras offered as discovered, as Home Assistant does, and not zones
-    assert result["options"] == {CONF_AUTO_DISCOVER: False, CONF_DISCOVER_ZONES: False}
+    # everything as it comes: each source's finds offered as discovered, as Home Assistant does, and not zones
+    assert result["options"] == {}
 
 
 async def test_cameras_offered_by_default(hass: HomeAssistant):
@@ -64,7 +62,7 @@ async def test_cameras_found_listed(hass: HomeAssistant):
 
 async def test_only_one_discovery_entry(hass: HomeAssistant):
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
-    await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_AUTO_DISCOVER: True})
+    await hass.config_entries.flow.async_configure(result["flow_id"], {})
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"

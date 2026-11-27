@@ -66,7 +66,7 @@ behavior, and potential intent of the {label}, rather than just describing its a
 
 ## The Image
 
-What GenAI adds, a review summary or an object description, has its own image, the *GenAI image* in *Global
+What GenAI adds, a review summary or an object description, has its own image, the *GenAI image* in the *Frigate GenAI* section of *Global
 Settings*, which each camera or zone can change in its *GenAI* settings. It's Frigate's animated GIF preview to begin
 with, of the first 20 seconds of the event, the same GIF Frigate's own review shows, so the notification shows what
 GenAI looked at. The preview has no bounding box or crop, and is made from the camera's recordings, so for a camera
@@ -125,7 +125,7 @@ A report is too long for a phone's notification or a voice assistant, so it need
 [Supernotify](https://supernotify.rhizomatics.org.uk), and goes by e-mail unless you choose otherwise. Without
 Supernotify it isn't sent, and its section of *Global Settings* only says Supernotify is needed to switch it on.
 
-It's in the *Frigate GenAI Periodic Report* section of *Global Settings*:
+It's in the *Frigate GenAI* section of *Global Settings*:
 
 | Setting | Default | What it does |
 |---------|---------|--------------|

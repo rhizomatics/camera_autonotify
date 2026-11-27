@@ -38,7 +38,7 @@ Every licence plate read, by Frigate's plate recognition (ANPR/ALPR), an image p
   - `camera_autonotify.remove_plate`
   - `camera_autonotify.list_vehicle_categories`, with each category's plates
   - `camera_autonotify.reset_sightings`, forgetting a plate's sightings, or every plate's
-- **Import from anpr2mqtt**: upload a tarball of anpr2mqtt's `config` and `data` folders, such as made by `tar czf anpr2mqtt.tgz config data/plate`, in *Global Settings* or as an anpr2mqtt source is set up, to bring over its targets, corrections, ignores, DVLA settings and visit history. What's found is shown before anything is imported, and what was added after
+- **Import from anpr2mqtt**: upload a tarball of anpr2mqtt's `config` and `data` folders, such as made by `tar czf anpr2mqtt.tgz config data/plate`, in *Advanced - anpr2mqtt* in *Global Settings* or as an anpr2mqtt source is set up, to bring over its targets, corrections, ignores, DVLA settings and visit history. What's found is shown before anything is imported, and what was added after
 - **Event**: with *Fire vehicle events* on, in *Vehicles*, `camera_autonotify_vehicle` for each sighting, with `plate`, `entity_id` and `confidence` as OpenALPR's `image_processing.found_plate` has them, and the category, classification, lookup and history
 
 ![Plate Entry](./assets/screenshots/plate_entry.png){width=500}
@@ -51,7 +51,7 @@ Every licence plate read, by Frigate's plate recognition (ANPR/ALPR), an image p
 2. **Frigate's plates, enhanced**: it can listen for Frigate plate messages, and enrich them. Not needed when using Camera AutoNotify
 3. **Any other detection** a camera can make that results in an image sent by FTP or to a NAS, such as a face, or a line crossed
 
-- **What you need**: anpr2mqtt 1.3.0 or later, 1.4.0 for other events, with its Home Assistant devices on (`device_creation`, as it comes). Each anpr2mqtt camera is then found and offered as *Discovered*, even with *Set up cameras automatically* on, so its setup can import from anpr2mqtt. Frigate isn't needed
+- **What you need**: anpr2mqtt 1.3.0 or later, 1.4.0 for other events, with its Home Assistant devices on (`device_creation`, as it comes). Each anpr2mqtt camera is then found and offered as *Discovered*, so its setup can import from anpr2mqtt, unless *Set up without asking* is on in *Advanced - anpr2mqtt*. Frigate isn't needed
 - **What's sent**: details of the vehicle as a JSON payload on an MQTT topic, and the image itself as a binary payload on a different topic. See [Home Assistant Integration](https://anpr2mqtt.rhizomatics.org.uk/homeassistant/) for the details. This can also include an area for the camera to show up as for Home Assistant, and the identity of the linked camera.
 - **Headline**: the vehicle and where, named by its description, or else its category, or else its colour and make from the DVLA, such as *Red Peugeot at Driveway*, or else *Unknown vehicle JX123YYZ at Driveway*
 - **Health**: anpr2mqtt going unavailable is notified, and again when it's back, with the timing of the Frigate health checks

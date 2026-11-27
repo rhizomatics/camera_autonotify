@@ -55,14 +55,16 @@ To stop the notifications for a camera, disable it rather than delete it, since 
 
 It adds no automations, scripts or YAML of its own, and changes nothing in Frigate, so there is nothing else to clear up. If you moved from the Frigate blueprint, re-enable its automations to go back to it.
 
-### Setting Up Every Camera Automatically
+### Setting Up Without Asking
 
-Turn *Set up cameras automatically* on, on the first screen or later from *Global Settings*, and every camera found
-is set up straight away, without being offered first.
+Each source has its own *Advanced* section in *Global Settings*, *Advanced - Frigate*, *Advanced - anpr2mqtt* and
+*Advanced - Image Processing*, with two choices: *Find automatically*, on, which offers what's found as
+*Discovered*, and *Set up without asking*, off. Turn that on and everything of that source found is set up straight
+away, without being offered first. Turn *Find automatically* off and nothing of it is found at all.
 
 ### Zones
 
-Frigate gives each of its zones a device too. Turn on *Find zones too* in *Global Settings* and each zone is found like a camera, for notifications about that zone alone. A zone in the view of more than one camera, such as a drive seen from the gate and from the house, notifies for reviews from any of them. It's off by default, since a zone is mostly covered by its camera's own notifications, and a camera's settings can already limit it to some of its zones.
+Frigate gives each of its zones a device too. Turn on *Find zones too* in *Advanced - Frigate* in *Global Settings* and each zone is found like a camera, for notifications about that zone alone. A zone in the view of more than one camera, such as a drive seen from the gate and from the house, notifies for reviews from any of them. It's off by default, since a zone is mostly covered by its camera's own notifications, and a camera's settings can already limit it to some of its zones.
 
 ### The Camera's Device
 
@@ -100,7 +102,7 @@ The integration also notifies when a Frigate server stops responding, and when a
 
 ### Object Names
 
-*Object names*, in *Global Settings*, gives any of Frigate's objects a name of its own in every notification, such as `car` as "Vehicle", or a translation into your own language. Objects given the same name are said once, and objects not named keep Frigate's name. See [Object Names](https://camera-autonotify.rhizomatics.org.uk/migrating/#object-names).
+*Object names*, in *Advanced - Frigate* in *Global Settings*, gives any of Frigate's objects a name of its own in every notification, such as `car` as "Vehicle", or a translation into your own language. Objects given the same name are said once, and objects not named keep Frigate's name. See [Object Names](https://camera-autonotify.rhizomatics.org.uk/migrating/#object-names).
 
 ### Actions
 

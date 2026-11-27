@@ -3,8 +3,9 @@ set each up or offer it as a discovered config entry"""
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.config_entries import SOURCE_IMPORT, SOURCE_INTEGRATION_DISCOVERY
 from homeassistant.const import CONF_DEVICE_ID, CONF_NAME, CONF_TYPE
@@ -15,9 +16,15 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.start import async_at_started
 
 from .const import (
+    CONF_ANPR2MQTT_DISCOVER,
+    CONF_ANPR2MQTT_SILENT,
     CONF_AUTO_DISCOVER,
     CONF_DISCOVER_ZONES,
+    CONF_FRIGATE_DISCOVER,
+    CONF_FRIGATE_SILENT,
+    CONF_IMAGE_PROCESSING_DISCOVER,
     CONF_IMAGE_PROCESSING_EVENTS,
+    CONF_IMAGE_PROCESSING_SILENT,
     CONF_SOURCE,
     CONF_SOURCE_ENTRY_ID,
     CONF_SOURCE_NAME,
@@ -139,28 +146,63 @@ def find_image_processing(hass: HomeAssistant) -> list[Found]:
     return found
 
 
+@dataclass(frozen=True)
+class SourceDiscovery:
+    """Whether a source's cameras and the like are found, and if so, set up without asking rather than offered as
+    discovered, as Home Assistant offers any device found"""
+
+    find: bool = True
+    silent: bool = False
+
+
+# each kind of entry by the source whose settings it follows
+FRIGATE = "frigate"
+ANPR2MQTT = "anpr2mqtt"
+IMAGE_PROCESSING = "image_processing"
+SOURCE_OF = {TYPE_ANPR: ANPR2MQTT, TYPE_ANPR_EVENT: ANPR2MQTT, TYPE_IMAGE_PROCESSING: IMAGE_PROCESSING}
+
+
+def discovery_settings(options: Mapping[str, Any]) -> dict[str, SourceDiscovery]:
+    """Each source's choices in Global Settings, Frigate's and image processing's set up without asking where the one
+    choice of earlier versions was on, until saved again"""
+    legacy = bool(options.get(CONF_AUTO_DISCOVER, False))
+    return {
+        FRIGATE: SourceDiscovery(
+            bool(options.get(CONF_FRIGATE_DISCOVER, True)), bool(options.get(CONF_FRIGATE_SILENT, legacy))
+        ),
+        ANPR2MQTT: SourceDiscovery(
+            bool(options.get(CONF_ANPR2MQTT_DISCOVER, True)), bool(options.get(CONF_ANPR2MQTT_SILENT, False))
+        ),
+        IMAGE_PROCESSING: SourceDiscovery(
+            bool(options.get(CONF_IMAGE_PROCESSING_DISCOVER, True)), bool(options.get(CONF_IMAGE_PROCESSING_SILENT, legacy))
+        ),
+    }
+
+
 @callback
-def _discovery_options(hass: HomeAssistant) -> dict[str, bool]:
-    """The choices of the discovery entry, nothing found while it's disabled or deleted"""
+def _global_options(hass: HomeAssistant) -> Mapping[str, Any] | None:
+    """Global Settings' choices, nothing found while it's disabled or deleted"""
     for entry in hass.config_entries.async_entries(DOMAIN, include_disabled=False):
         if entry.data.get(CONF_TYPE) == TYPE_DISCOVERY:
-            return {
-                CONF_AUTO_DISCOVER: bool(entry.options.get(CONF_AUTO_DISCOVER, False)),
-                CONF_DISCOVER_ZONES: bool(entry.options.get(CONF_DISCOVER_ZONES, False)),
-            }
-    return {}
+            return entry.options
+    return None
 
 
 @callback
 def async_discover(hass: HomeAssistant) -> None:
-    """Set up every camera found, or with automatic discovery off, offer each to be added, and zones only if wanted.
-    An anpr2mqtt source is always offered, so its setup can import from anpr2mqtt"""
-    options = _discovery_options(hass)
-    if not options:
+    """Offer each camera, zone and source found as discovered, or set it up without asking, by its source's choices,
+    and zones only if wanted"""
+    options = _global_options(hass)
+    if options is None:
         return
-    automatic = SOURCE_IMPORT if options[CONF_AUTO_DISCOVER] else SOURCE_INTEGRATION_DISCOVERY
-    found = find_cameras(hass) + (find_zones(hass) if options[CONF_DISCOVER_ZONES] else []) + find_anpr(hass)
-    found += find_image_processing(hass)
+    settings = discovery_settings(options)
+    found: list[Found] = []
+    if settings[FRIGATE].find:
+        found += find_cameras(hass) + (find_zones(hass) if options.get(CONF_DISCOVER_ZONES) else [])
+    if settings[ANPR2MQTT].find:
+        found += find_anpr(hass)
+    if settings[IMAGE_PROCESSING].find:
+        found += find_image_processing(hass)
     for item in found:
         data: dict[str, object] = {
             CONF_DEVICE_ID: item.device_id,
@@ -170,10 +212,8 @@ def async_discover(hass: HomeAssistant) -> None:
             CONF_SOURCE_ENTRY_ID: item.source_entry_id,
             CONF_SOURCE_NAME: item.source_name,
         }
-        source = automatic
-        if item.type == TYPE_ANPR:
-            source = SOURCE_INTEGRATION_DISCOVERY
-        elif item.type == TYPE_IMAGE_PROCESSING:
+        source = SOURCE_IMPORT if settings[SOURCE_OF.get(item.type, FRIGATE)].silent else SOURCE_INTEGRATION_DISCOVERY
+        if item.type == TYPE_IMAGE_PROCESSING:
             # what it finds, by its device class
             data[CONF_IMAGE_PROCESSING_EVENTS] = list(item.events)
         # those already configured, ignored or in progress are dropped by the flow's unique id

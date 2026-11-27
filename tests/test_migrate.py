@@ -28,7 +28,7 @@ from custom_components.camera_autonotify.const import (
 from custom_components.camera_autonotify.migrate import ArchiveUnreadable, from_anpr2mqtt, read_archive
 from custom_components.camera_autonotify.vehicles import vehicles
 
-from .conftest import add_frigate
+from .conftest import add_frigate, global_form
 from .test_discovery import set_up_discovery
 from .test_vehicles import ANPR2MQTT_CONFIG, global_settings
 
@@ -178,13 +178,7 @@ async def global_settings_form(hass: HomeAssistant, archive_id: str) -> dict[str
     return dict(
         await hass.config_entries.options.async_configure(
             result["flow_id"],
-            {
-                "auto_discover": True,
-                "discover_zones": False,
-                "health": {},
-                "vehicles": {"min_visit_gap": 300},
-                "anpr2mqtt_import": {"anpr2mqtt_archive": archive_id},
-            },
+            global_form(vehicles={"min_visit_gap": 300}, advanced_anpr2mqtt={"anpr2mqtt_archive": archive_id}),
         )
     )
 
@@ -213,7 +207,7 @@ async def test_import_in_global_settings(hass: HomeAssistant, tmp_path: Path):
     assert sorted(s.title for s in entry.subentries.values()) == ["Amazon Prime", "Ignored reads", "dangerous", "known"]
     # the anpr2mqtt gap, over the form's own, and its key a credential
     assert entry.options["min_visit_gap"] == 60
-    assert entry.options["auto_discover"] is True
+    assert entry.options["frigate_discover"] is True
     assert entry.data["dvla_api_key"] == "placeholder"
     assert "dvla_api_key" not in entry.options
     assert len(vehicles(hass).sightings("PX19TVD")) == 2
@@ -246,7 +240,7 @@ async def test_unreadable_archive_in_global_settings(hass: HomeAssistant, tmp_pa
     with uploaded({}):
         result = await hass.config_entries.options.async_configure(
             shown["flow_id"],
-            {"auto_discover": True, "discover_zones": False, "health": {}, "anpr2mqtt_import": {"anpr2mqtt_archive": GONE}},
+            global_form(advanced_anpr2mqtt={"anpr2mqtt_archive": GONE}),
         )
     assert result["errors"] == {"base": "archive_unreadable"}
 

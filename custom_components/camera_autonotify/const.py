@@ -6,8 +6,17 @@ DOMAIN: Final[str] = "camera_autonotify"
 SUPERNOTIFY_DOMAIN: Final[str] = "supernotify"
 FRIGATE_DOMAIN: Final[str] = "frigate"
 
-# the one entry that isn't a camera, holding whether cameras found are set up without asking
+# the one entry that isn't a camera, Global Settings, holding what's found of each source, and whether it's set up
+# without asking rather than offered as discovered
 TYPE_DISCOVERY: Final[str] = "discovery"
+CONF_FRIGATE_DISCOVER: Final[str] = "frigate_discover"
+CONF_FRIGATE_SILENT: Final[str] = "frigate_silent"
+CONF_ANPR2MQTT_DISCOVER: Final[str] = "anpr2mqtt_discover"
+CONF_ANPR2MQTT_SILENT: Final[str] = "anpr2mqtt_silent"
+CONF_IMAGE_PROCESSING_DISCOVER: Final[str] = "image_processing_discover"
+CONF_IMAGE_PROCESSING_SILENT: Final[str] = "image_processing_silent"
+# of earlier versions, one choice for Frigate's cameras and image processing entities alike, set up without asking
+# when on, still followed until Global Settings are saved again
 CONF_AUTO_DISCOVER: Final[str] = "auto_discover"
 # whether Frigate zones are offered too, each with a device of its own like a camera's, but off to begin with, since
 # a zone is part of a camera's view and so mostly covered by the camera's own notifications

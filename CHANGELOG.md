@@ -3,8 +3,9 @@ title: What's New
 ---
 
 # 1.2.1
-## 🐞 Fixes
-- Cameras, zones and anpr2mqtt's other events found are offered as *Discovered*, to add or ignore, as Home Assistant does for any device found, rather than set up without asking. *Set up cameras automatically* is now off to begin with. An install that already has it on keeps it, and can switch it off in *Global Settings*
+## 📝 Other changes
+- Everything found, Frigate's cameras and zones, anpr2mqtt's cameras and events, and image processing entities, is offered as *Discovered*, to add or ignore, as Home Assistant does for any device found, rather than set up without asking. Each source has *Find automatically* and *Set up without asking* in its own *Advanced* section of Global Settings. An install that had *Set up cameras automatically* on keeps setting up Frigate's cameras and image processing entities without asking until Global Settings is next saved
+- Global Settings simplified: *Advanced - Frigate* with finding cameras and zones, *Object names* and *Speed unit*, *Frigate GenAI* with the *GenAI image* and the periodic report, *Advanced - anpr2mqtt* in place of *Import from anpr2mqtt*, and *Advanced - Image Processing*. The first setup screen only says what's found
 
 # 1.2.0
 ## ✨ Enhancements
