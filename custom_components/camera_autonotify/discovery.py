@@ -27,6 +27,7 @@ from .const import (
     SOURCE_FRIGATE,
     SOURCE_IMAGE_PROCESSING,
     TYPE_ANPR,
+    TYPE_ANPR_EVENT,
     TYPE_CAMERA,
     TYPE_DISCOVERY,
     TYPE_IMAGE_PROCESSING,
@@ -39,7 +40,7 @@ if TYPE_CHECKING:
 
 CAMERA_DOMAIN = "camera"
 # where each kind of entry is from, a Frigate camera or zone otherwise
-SOURCES = {TYPE_ANPR: SOURCE_ANPR2MQTT, TYPE_IMAGE_PROCESSING: SOURCE_IMAGE_PROCESSING}
+SOURCES = {TYPE_ANPR: SOURCE_ANPR2MQTT, TYPE_ANPR_EVENT: SOURCE_ANPR2MQTT, TYPE_IMAGE_PROCESSING: SOURCE_IMAGE_PROCESSING}
 # the unique id the Frigate integration gives a camera's entity, `{entry_id}:camera:{name}`, the name as in Frigate
 CAMERA_UNIQUE_ID = ":camera:"
 
@@ -105,22 +106,25 @@ def find_zones(hass: HomeAssistant) -> list[Found]:
 
 MQTT_DOMAIN = "mqtt"
 SENSOR_DOMAIN = "sensor"
+EVENT_DOMAIN = "event"
+# each of anpr2mqtt's entities by its domain: a plate sensor, or another event, such as a face, from anpr2mqtt 1.4.0
+ANPR_TYPES = {SENSOR_DOMAIN: TYPE_ANPR, EVENT_DOMAIN: TYPE_ANPR_EVENT}
 
 
 @callback
 def find_anpr(hass: HomeAssistant) -> list[Found]:
-    """Each sensor of anpr2mqtt's, one per camera and event, known by its device's manufacturer and model, so the
-    sensors of its targets, which have no device, and anything else of MQTT's are left out"""
+    """Each plate sensor or event entity of anpr2mqtt's, one per camera and event, known by its device's manufacturer
+    and model, so the sensors of its targets, which have no device, and anything else of MQTT's are left out"""
     device_registry = dr.async_get(hass)
     found: list[Found] = []
     for entity in er.async_get(hass).entities.values():
-        if entity.platform != MQTT_DOMAIN or entity.domain != SENSOR_DOMAIN or entity.disabled or not entity.device_id:
+        if entity.platform != MQTT_DOMAIN or entity.domain not in ANPR_TYPES or entity.disabled or not entity.device_id:
             continue
         device = device_registry.async_get(entity.device_id)
         if not isinstance(device, dr.DeviceEntry) or device.manufacturer != "Rhizomatics" or device.model != "anpr2mqtt":
             continue
         name = entity.name or entity.original_name or entity.entity_id
-        found.append(Found(device.id, str(name), TYPE_ANPR, entity.config_entry_id or "", entity.unique_id))
+        found.append(Found(device.id, str(name), ANPR_TYPES[entity.domain], entity.config_entry_id or "", entity.unique_id))
     return found
 
 

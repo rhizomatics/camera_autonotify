@@ -40,6 +40,10 @@
             "confirm_image_processing": {
                 "title": "Notificaciones para {name}",
                 "description": "¿Recibir notificaciones de las matrículas o caras que {name} encuentra en las imágenes de su propia cámara, cuando Home Assistant las escanea?\n\n{supernotify}"
+            },
+            "confirm_anpr_event": {
+                "title": "Notificaciones para {name}",
+                "description": "¿Recibir notificaciones cuando anpr2mqtt informe de {name}, como una cara o un cambio de escena, según las imágenes de la cámara?\n\n{supernotify}"
             }
         },
         "error": {
@@ -373,6 +377,42 @@
             "dvla_test": {
                 "title": "Prueba de la clave de la DVLA",
                 "description": "{result}"
+            },
+            "anpr_event": {
+                "title": "Notificaciones para {name}",
+                "description": "Lo que anpr2mqtt informa como {name}, como una cara o un cambio de escena, según las imágenes de la cámara.",
+                "data": {
+                    "linked_camera_auto": "Elegir la cámara vinculada automáticamente",
+                    "linked_camera": "Cámara vinculada",
+                    "quiet_period": "Periodo de silencio",
+                    "priority": "Prioridad",
+                    "scenarios": "Escenarios de Supernotify"
+                },
+                "data_description": {
+                    "linked_camera_auto": "Encontrar la misma cámara en Frigate, o UniFi Protect, Viseron o Blue Iris, por lo que anpr2mqtt dice de ella, su área o su nombre, nunca la propia de anpr2mqtt ni una por ONVIF. Desactívalo para elegirla abajo, o déjalo vacío para ninguna.",
+                    "linked_camera": "Elige la misma cámara en Frigate, o UniFi Protect, Viseron o Blue Iris, para que las notificaciones usen su nombre y la pausa de cámaras de Supernotify la cubra. Solo se ofrecen sus cámaras, no la propia de anpr2mqtt ni la misma cámara por ONVIF. Solo se usa si no se elige automáticamente.",
+                    "quiet_period": "No notificar de nuevo dentro de este tiempo, ya que uno no se distingue del siguiente. No hace falta donde min_event_gap_seconds de anpr2mqtt está definido para el evento.",
+                    "priority": "O No notificar.",
+                    "scenarios": "Aplicar estos escenarios de Supernotify a la notificación."
+                },
+                "sections": {
+                    "notify": {
+                        "name": "Destinatarios",
+                        "description": "A quién y qué se notifica. Déjalo vacío para la elección habitual.",
+                        "data": {
+                            "targets": "Destinatarios",
+                            "target": "Destinatarios",
+                            "custom_target": "Destinatarios personalizados",
+                            "deliveries": "Entregas"
+                        },
+                        "data_description": {
+                            "targets": "Entidades de notificación a las que enviar. Déjalo vacío para todos los móviles con la app de Home Assistant.",
+                            "target": "A quién o qué notificar, como en cualquier notificación de Supernotify. Déjalo vacío para que elija Supernotify.",
+                            "custom_target": "Destinatarios fuera de Home Assistant, como direcciones de correo o números de teléfono.",
+                            "deliveries": "Limitar las notificaciones a estas entregas de Supernotify. Déjalo vacío para que elija Supernotify."
+                        }
+                    }
+                }
             }
         },
         "error": {

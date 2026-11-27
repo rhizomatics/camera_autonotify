@@ -11,12 +11,14 @@ from homeassistant.helpers import config_validation as cv
 
 from .actions import async_listen
 from .anpr import AnprWatcher
+from .anpr_events import AnprEventWatcher
 from .const import (
     CONF_SOURCE_ENTRY_ID,
     DISCOVERY_TITLE,
     DISCOVERY_TITLE_BEFORE,
     DOMAIN,
     TYPE_ANPR,
+    TYPE_ANPR_EVENT,
     TYPE_DISCOVERY,
     TYPE_IMAGE_PROCESSING,
 )
@@ -42,7 +44,9 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 PLATFORMS: list[Platform] = [Platform.CAMERA]
 
 # a camera's or zone's reviews, or the health checks of the discovery entry, unless switched off
-type CameraAutoNotifyConfigEntry = ConfigEntry[ReviewWatcher | AnprWatcher | ImageSourceWatcher | HealthMonitor | None]
+type CameraAutoNotifyConfigEntry = ConfigEntry[
+    ReviewWatcher | AnprWatcher | AnprEventWatcher | ImageSourceWatcher | HealthMonitor | None
+]
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -76,6 +80,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: CameraAutoNotifyConfigEn
         anpr = AnprWatcher(hass, entry)
         entry.async_on_unload(anpr.async_start())
         entry.runtime_data = anpr
+        async_register_device(hass, entry, entry.title)
+        return True
+    if entry.data.get(CONF_TYPE) == TYPE_ANPR_EVENT:
+        # another of anpr2mqtt's events, such as a face, from its event entity
+        events = AnprEventWatcher(hass, entry)
+        entry.async_on_unload(events.async_start())
+        entry.runtime_data = events
         async_register_device(hass, entry, entry.title)
         return True
     config = frigate_config(hass, entry.data[CONF_SOURCE_ENTRY_ID])

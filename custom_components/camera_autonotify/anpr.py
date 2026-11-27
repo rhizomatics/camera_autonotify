@@ -224,6 +224,15 @@ def image_entity(hass: HomeAssistant, sensor: er.RegistryEntry) -> str | None:
     return er.async_get(hass).async_get_entity_id(IMAGE_DOMAIN, MQTT_DOMAIN, sensor.unique_id)
 
 
+@callback
+def image_proxy_url(hass: HomeAssistant, image: str) -> str | None:
+    """An image entity's picture, by Home Assistant's image proxy at the address a phone uses, never a LAN address"""
+    state = hass.states.get(image)
+    token = state.attributes.get("access_token") if state is not None else None
+    base = base_url(hass)
+    return f"{base}/api/image_proxy/{image}?token={token}" if token and base else None
+
+
 def _area(hass: HomeAssistant, entity: er.RegistryEntry) -> str | None:
     if entity.area_id:
         return entity.area_id
@@ -369,11 +378,8 @@ class AnprNotifier:
                     "level": "notification",
                     "uri": hls_url(notifications, sighting.frigate_event_id, frigate[1]),
                 })
-        elif image is not None and (state := self.hass.states.get(image)) is not None:
-            token = state.attributes.get("access_token")
-            base = base_url(self.hass)
-            if token and base:
-                media["snapshot_url"] = f"{base}/api/image_proxy/{image}?token={token}"
+        elif image is not None and (url := image_proxy_url(self.hass, image)):
+            media["snapshot_url"] = url
         if camera or image:
             # the same camera as its reviews, so Supernotify's camera snooze covers both
             media["camera_entity_id"] = camera or image
