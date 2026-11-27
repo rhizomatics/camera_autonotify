@@ -2,6 +2,10 @@
 title: What's New
 ---
 
+# 1.2.1
+## 🐞 Fixes
+- Cameras, zones and anpr2mqtt's other events found are offered as *Discovered*, to add or ignore, as Home Assistant does for any device found, rather than set up without asking. *Set up cameras automatically* is now off to begin with. An install that already has it on keeps it, and can switch it off in *Global Settings*
+
 # 1.2.0
 ## ✨ Enhancements
 - **Home Assistant quality scale: Platinum** (self-assessed). An entry whose Frigate server, or anpr2mqtt entity, has been removed is now a repair rather than retrying forever, the plate actions say when Global Settings are missing, the Last notification snapshot camera is unavailable while Frigate is, with a [Troubleshooting](index.md#troubleshooting) section, icons for the actions, and strict typing

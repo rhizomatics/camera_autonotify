@@ -356,7 +356,7 @@ async def proxy_status(hass: HomeAssistant, source_entry_id: str | None = None) 
 
 
 def discovery_schema(
-    auto_discover: bool = True,
+    auto_discover: bool = False,
     discover_zones: bool = False,
     health: bool = False,
     deliveries: list[str] | None = None,
@@ -1158,7 +1158,7 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
         servers = self.hass.config_entries.async_entries(FRIGATE_DOMAIN)
         actions = offered([frigate_config(self.hass, server.entry_id) for server in servers])
         schema = discovery_schema(
-            shown.get(CONF_AUTO_DISCOVER, True),
+            shown.get(CONF_AUTO_DISCOVER, False),
             shown.get(CONF_DISCOVER_ZONES, False),
             health=True,
             deliveries=await supernotify_deliveries(self.hass),

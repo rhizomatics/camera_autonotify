@@ -145,7 +145,7 @@ def _discovery_options(hass: HomeAssistant) -> dict[str, bool]:
     for entry in hass.config_entries.async_entries(DOMAIN, include_disabled=False):
         if entry.data.get(CONF_TYPE) == TYPE_DISCOVERY:
             return {
-                CONF_AUTO_DISCOVER: bool(entry.options.get(CONF_AUTO_DISCOVER, True)),
+                CONF_AUTO_DISCOVER: bool(entry.options.get(CONF_AUTO_DISCOVER, False)),
                 CONF_DISCOVER_ZONES: bool(entry.options.get(CONF_DISCOVER_ZONES, False)),
             }
     return {}
