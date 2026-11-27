@@ -159,7 +159,8 @@ def _safely(handle: Callable[[Any, float], None], message: ReceiveMessage, parse
 
 def _hubs(hass: HomeAssistant) -> dict[str, _Hub]:
     data: dict[str, Any] = hass.data.setdefault(DOMAIN, {})
-    return data.setdefault(DATA_HUBS, {})
+    hubs: dict[str, _Hub] = data.setdefault(DATA_HUBS, {})
+    return hubs
 
 
 async def async_watch(hass: HomeAssistant, prefix: str, watcher: ReviewWatcher) -> CALLBACK_TYPE:

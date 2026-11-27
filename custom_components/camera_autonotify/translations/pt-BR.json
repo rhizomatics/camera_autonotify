@@ -657,6 +657,12 @@
         },
         "mqtt_not_ready": {
             "message": "O MQTT não está disponível, por isso as revisões do Frigate não podem ser seguidas até que esteja"
+        },
+        "global_settings_missing": {
+            "message": "Configure primeiro as Configurações globais do Camera AutoNotify"
+        },
+        "source_gone": {
+            "message": "A origem de {name} sumiu"
         }
     },
     "common": {
@@ -773,6 +779,10 @@
         "lookup_refused": {
             "title": "Consulta de veículo recusada",
             "description": "{provider} recusou a chave de API, então as placas não estão sendo consultadas. Verifique a chave na seção Consulta de veículo das Configurações globais do Camera AutoNotify."
+        },
+        "source_gone": {
+            "title": "A origem de {name} sumiu",
+            "description": "O servidor Frigate dela, ou a entidade do anpr2mqtt para ela, foi removido, então {name} não pode notificar nada. Remova {name} das entradas do Camera AutoNotify, ou configure a origem de novo."
         }
     },
     "services": {

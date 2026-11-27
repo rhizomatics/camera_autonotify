@@ -7,12 +7,14 @@ import logging
 from typing import cast
 
 from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, SupportsResponse, callback
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 
 from .compat import vol
 from .const import (
     DOMAIN,
 )
+from .entries import global_settings
 from .vehicles import vehicles
 
 _LOGGER = logging.getLogger(__name__)
@@ -48,6 +50,13 @@ RESET_SIGHTINGS_SCHEMA = vol.All(
 
 
 @callback
+def _needs_global_settings(hass: HomeAssistant) -> None:
+    """Vehicle categories are kept in Global Settings, so a plate can't be added or removed without them"""
+    if global_settings(hass) is None:
+        raise ServiceValidationError(translation_domain=DOMAIN, translation_key="global_settings_missing")
+
+
+@callback
 def async_register_services(hass: HomeAssistant) -> None:
     async def classify(call: ServiceCall) -> ServiceResponse:
         vehicle = await vehicles(hass).async_classify(
@@ -57,6 +66,7 @@ def async_register_services(hass: HomeAssistant) -> None:
 
     @callback
     def add_plate(call: ServiceCall) -> ServiceResponse:
+        _needs_global_settings(hass)
         added = vehicles(hass).add_plate(
             call.data["category"], call.data["plate"], call.data.get("description"), call.data.get("corrections")
         )
@@ -64,6 +74,7 @@ def async_register_services(hass: HomeAssistant) -> None:
 
     @callback
     def remove_plate(call: ServiceCall) -> ServiceResponse:
+        _needs_global_settings(hass)
         return {"categories": vehicles(hass).remove_plate(call.data["plate"], call.data.get("category"))}
 
     @callback

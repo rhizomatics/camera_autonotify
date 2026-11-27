@@ -1,0 +1,26 @@
+{
+    "entity": {
+        "camera": {
+            "last_snapshot": {
+                "default": "mdi:image-marker"
+            }
+        }
+    },
+    "services": {
+        "classify_plate": {
+            "service": "mdi:car-search"
+        },
+        "add_plate": {
+            "service": "mdi:car-cog"
+        },
+        "remove_plate": {
+            "service": "mdi:car-off"
+        },
+        "list_vehicle_categories": {
+            "service": "mdi:format-list-bulleted-type"
+        },
+        "reset_sightings": {
+            "service": "mdi:history"
+        }
+    }
+}

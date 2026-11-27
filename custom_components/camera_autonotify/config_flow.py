@@ -566,7 +566,7 @@ class PlateCategorySubentryFlow(ConfigSubentryFlow):
         )
 
 
-def object_names_selector(labels: list[str]) -> Selector:
+def object_names_selector(labels: list[str]) -> Selector[Any]:
     """A list of Frigate's objects, each with what to call it, the object chosen from those Frigate has, or typed"""
     return ObjectSelector(
         ObjectSelectorConfig(
@@ -629,7 +629,7 @@ async def supernotify_deliveries(hass: HomeAssistant) -> list[str] | None:
 
 
 # as the base class, since type checkers can't all take one registered by a decorator as a type
-def _seconds(maximum: int, minimum: int = 0) -> Selector:
+def _seconds(maximum: int, minimum: int = 0) -> Selector[Any]:
     return NumberSelector(
         NumberSelectorConfig(
             min=minimum, max=maximum, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement=UnitOfTime.SECONDS
@@ -637,7 +637,7 @@ def _seconds(maximum: int, minimum: int = 0) -> Selector:
     )
 
 
-def _choose(options: list[str], translation_key: str | None = None) -> Selector:
+def _choose(options: list[str], translation_key: str | None = None) -> Selector[Any]:
     config = SelectSelectorConfig(options=options, multiple=True, mode=SelectSelectorMode.DROPDOWN)
     if translation_key:
         config["translation_key"] = translation_key
@@ -647,7 +647,7 @@ def _choose(options: list[str], translation_key: str | None = None) -> Selector:
     return SelectSelector(config)
 
 
-def _priority() -> Selector:
+def _priority() -> Selector[Any]:
     return SelectSelector(
         SelectSelectorConfig(options=list(PRIORITIES), mode=SelectSelectorMode.DROPDOWN, translation_key=CONF_PRIORITY)
     )

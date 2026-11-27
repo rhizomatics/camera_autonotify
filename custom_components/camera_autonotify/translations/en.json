@@ -657,6 +657,12 @@
         },
         "mqtt_not_ready": {
             "message": "MQTT isn't available, so Frigate's reviews can't be followed until it is"
+        },
+        "global_settings_missing": {
+            "message": "Set up Camera AutoNotify's Global Settings first"
+        },
+        "source_gone": {
+            "message": "The source of {name} has gone"
         }
     },
     "common": {
@@ -773,6 +779,10 @@
         "lookup_refused": {
             "title": "Vehicle lookup refused",
             "description": "{provider} refused the API key, so plates aren't being looked up. Check the key in the Vehicle lookup section of Camera AutoNotify's Global Settings."
+        },
+        "source_gone": {
+            "title": "The source of {name} has gone",
+            "description": "Its Frigate server, or anpr2mqtt's entity for it, has been removed, so {name} can't notify anything. Remove {name} from Camera AutoNotify's entries, or set the source up again."
         }
     },
     "services": {

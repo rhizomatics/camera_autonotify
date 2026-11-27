@@ -655,4 +655,5 @@ def vehicles(hass: HomeAssistant) -> Vehicles:
     data: dict[str, Any] = hass.data.setdefault(DOMAIN, {})
     if DATA_VEHICLES not in data:
         data[DATA_VEHICLES] = Vehicles(hass)
-    return data[DATA_VEHICLES]
+    found: Vehicles = data[DATA_VEHICLES]
+    return found

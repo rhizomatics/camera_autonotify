@@ -1,6 +1,6 @@
 # Camera AutoNotify
 
-[![Rhizomatics Open Source](https://img.shields.io/badge/rhizomatics%20open%20source-lightseagreen)](https://github.com/rhizomatics) [![managed by hq](https://raw.githubusercontent.com/rhizomatics/hq/main/assets/badge-managed-by-hq.svg)](https://hq.rhizomatics.org.uk/) [![Home Assistant Marketplace][marketplacebadge]][marketplace] [![Quality scale: Silver (self-assessed)](https://img.shields.io/badge/quality%20scale-silver%20(self--assessed)-a8a9ad)](https://github.com/rhizomatics/camera_autonotify/blob/main/custom_components/camera_autonotify/quality_scale.yaml)
+[![Rhizomatics Open Source](https://img.shields.io/badge/rhizomatics%20open%20source-lightseagreen)](https://github.com/rhizomatics) [![managed by hq](https://raw.githubusercontent.com/rhizomatics/hq/main/assets/badge-managed-by-hq.svg)](https://hq.rhizomatics.org.uk/) [![Home Assistant Marketplace][marketplacebadge]][marketplace] [![Quality scale: Platinum (self-assessed)](https://img.shields.io/badge/quality%20scale-platinum%20(self--assessed)-8fa3ad)](https://github.com/rhizomatics/camera_autonotify/blob/main/custom_components/camera_autonotify/quality_scale.yaml)
 [![CI](https://github.com/rhizomatics/camera_autonotify/actions/workflows/ci.yml/badge.svg)](https://github.com/rhizomatics/camera_autonotify/actions/workflows/ci.yml)
 [![Github Deploy](https://github.com/rhizomatics/camera_autonotify/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/rhizomatics/camera_autonotify/actions/workflows/deploy.yml)
 
@@ -114,6 +114,19 @@ Camera AutoNotify can replace the
 [Frigate Notifications blueprint](https://github.com/SgtBatten/HA_blueprints/tree/main/Frigate_Camera_Notifications) for review notifications. Every camera is set up for you, so there's nothing to copy across camera by camera, though any filters changed from the blueprint's defaults need setting again, and some of its defaults differ here. Disable the blueprint's automations once the cameras are set up, or you'll be told twice.
 
 See [Migrating from Frigate Blueprint](https://camera-autonotify.rhizomatics.org.uk/migrating/) for the steps, where each blueprint input is now, the defaults that differ, what isn't offered yet, and what's new.
+
+## Troubleshooting
+
+| What you see | What to check |
+| ------------ | ------------- |
+| Nothing is notified | Frigate's MQTT on the same broker as Home Assistant's. The camera's *Severity*, *Objects* and *Zones*, which only alerts pass to begin with. Without Supernotify, a warning in the log, *Nothing to notify*, means there are no targets and no phones with the app |
+| A camera stays *Retrying setup* | Frigate's integration not set up yet, or MQTT not connected, each said in its status |
+| A repair, *The source of … has gone* | Its Frigate server, or anpr2mqtt's entity for it, has been removed. Remove the entry, or set the source up again |
+| A notification with no picture | The Frigate integration's *notification proxy* switched off or expired, warned of in Global Settings, or Home Assistant's external URL not set. See [When the Image Can't Be Fetched](https://camera-autonotify.rhizomatics.org.uk/how_it_works/#when-the-image-cant-be-fetched) |
+| Frigate's own entities unavailable | Frigate's retained `online` on `frigate/available` missing from the MQTT broker, such as after it restarts with retained messages kept only in memory. Restart Frigate to publish it again |
+| Late, or no, GenAI summaries | See [When GenAI Is Late](https://camera-autonotify.rhizomatics.org.uk/genai/#when-genai-is-late) |
+
+To report a problem, download the entry's diagnostics from its menu on the integration's page, and attach them to a [GitHub issue](https://github.com/rhizomatics/camera_autonotify/issues).
 
 ## Known Limits
 

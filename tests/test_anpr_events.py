@@ -7,12 +7,13 @@ from typing import Any
 
 import pytest
 from freezegun.api import FrozenDateTimeFactory
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import CONF_TYPE
 from homeassistant.core import HomeAssistant, State
 from homeassistant.core_config import async_process_ha_core_config
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.util import dt as dt_util
 
 from custom_components.camera_autonotify.anpr import STALE_AFTER, STARTUP_GRACE
@@ -200,14 +201,16 @@ async def test_not_notified_when_chosen(hass: HomeAssistant, freezer: FrozenDate
     assert calls == []
 
 
-async def test_event_entity_gone(hass: HomeAssistant, caplog: pytest.LogCaptureFixture):
+async def test_event_entity_gone(hass: HomeAssistant):
+    """Removed from anpr2mqtt, so a repair rather than retrying"""
     add_events(hass)
     await set_up_discovery(hass)
     entry = event_entries(hass)[0]
     registry = er.async_get(hass)
     registry.async_remove(registry.async_get_entity_id("event", "mqtt", "face_front") or "")
     await hass.config_entries.async_reload(entry.entry_id)
-    assert "No anpr2mqtt event entity" in caplog.text
+    assert entry.state is ConfigEntryState.SETUP_ERROR
+    assert ir.async_get(hass).async_get_issue(DOMAIN, f"source_gone_{entry.entry_id}") is not None
 
 
 async def test_settings_form(hass: HomeAssistant):

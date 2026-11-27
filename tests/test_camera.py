@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 from aiohttp import ClientError
@@ -13,7 +15,7 @@ from homeassistant.helpers import entity_registry as er
 from custom_components.camera_autonotify.camera import LastSnapshotCamera
 from custom_components.camera_autonotify.const import DOMAIN
 
-from .conftest import FakeMQTT, add_frigate
+from .conftest import FRIGATE_ENTRY_ID, FakeMQTT, add_frigate
 from .test_discovery import set_up_discovery
 from .test_notifier import DETECTION, ENTRY_ID, notifier
 from .test_settings import entry_titled
@@ -85,3 +87,29 @@ async def test_never_a_zones(hass: HomeAssistant, fake_mqtt: FakeMQTT):
     await set_up_discovery(hass, discover_zones=True)
     assert "notify.last_snapshot" in fields_of(await open_settings(hass))
     assert "notify.last_snapshot" not in fields_of(await open_settings(hass, "Pend"))
+
+
+async def test_unavailable_with_frigate(hass: HomeAssistant, fake_mqtt: FakeMQTT):
+    """As the Frigate integration finds the server, told by its coordinator"""
+    listeners: list[Callable[[], None]] = []
+
+    def add_listener(update: Callable[[], None], context: object = None) -> Callable[[], None]:
+        listeners.append(update)
+        return lambda: None
+
+    coordinator = SimpleNamespace(last_update_success=True, data={}, async_add_listener=add_listener)
+    add_frigate(hass)
+    hass.data["frigate"][FRIGATE_ENTRY_ID]["coordinator"] = coordinator
+    await set_up_discovery(hass)
+    entry = entry_titled(hass, "Courtyard")
+    hass.config_entries.async_update_entry(entry, options={"last_snapshot": True})
+    await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    entity_id = er.async_get(hass).async_get_entity_id(Platform.CAMERA, DOMAIN, f"{entry.entry_id}_last_snapshot")
+    assert entity_id is not None
+    assert (state := hass.states.get(entity_id)) is not None
+    assert state.state != "unavailable"
+    coordinator.last_update_success = False
+    listeners[-1]()
+    assert (state := hass.states.get(entity_id)) is not None
+    assert state.state == "unavailable"
