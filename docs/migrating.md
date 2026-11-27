@@ -43,7 +43,7 @@ and deliveries in Supernotify itself, once, for every camera.
 | `cooldown`, `initial_delay`, `final_update`, `final_delay`, `alert_once` | The *Timing* section, as *Cooldown*, *Initial delay*, *Notify when over*, *Delay when over* and *Sound only the first* |
 | `timeout` | *Stop updates after*, in the *Timing* section, in seconds rather than minutes |
 | `update_sub_label` | *Notify recognised faces and plates*, in *Timing* |
-| `label_names` | *Object names* in *Global Settings*, for every camera at once. See [Object Names](#object-names) |
+| `label_names` | *Object names* in *Advanced - Frigate* in *Global Settings*, for every camera at once. See [Object Names](#object-names) |
 | `notify_device`, `notify_group` | *Targets*, or Supernotify's recipients and mobile push delivery |
 | `critical`, `interruption_level`, `sound`, `volume` | Supernotify, from the priority of the notification |
 | `tts`, `tts_helper` | A Supernotify TTS delivery |
@@ -77,7 +77,7 @@ Where your blueprint automation left one of these inputs as it came, the camera'
 
 ## Object Names
 
-The blueprint's `label_names` is now *Object names*, in *Global Settings*, and applies to every camera and zone. Each object Frigate tracks or hears can be given a name of its own, chosen from those in Frigate's config, or typed in. Use it to translate the objects into your own language, or just to say what they are in your home:
+The blueprint's `label_names` is now *Object names*, in *Advanced - Frigate* in *Global Settings*, and applies to every camera and zone. Each object Frigate tracks or hears can be given a name of its own, chosen from those in Frigate's config, or typed in. Use it to translate the objects into your own language, or just to say what they are in your home:
 
 | Object | Name |
 | ------ | ---- |

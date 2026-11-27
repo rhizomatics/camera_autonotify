@@ -206,3 +206,14 @@ EN_JSON = Path(__file__).parent.parent / "custom_components" / "camera_autonotif
 def english(key: str, **placeholders: object) -> str:
     """A text of the `common` translations in English, as a notification or a setup screen says it"""
     return json.loads(EN_JSON.read_text())["common"][key].format(**placeholders)
+
+
+def global_form(**given: dict[str, Any]) -> dict[str, Any]:
+    """Global Settings as submitted, every section as it comes, but those given"""
+    return {
+        "health": {},
+        "frigate_genai": {},
+        "advanced_frigate": {},
+        "advanced_anpr2mqtt": {},
+        "advanced_image_processing": {},
+    } | given

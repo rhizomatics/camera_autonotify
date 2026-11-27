@@ -10,6 +10,8 @@ from custom_components.camera_autonotify.compat import LINKED_DEVICES
 from custom_components.camera_autonotify.const import (
     CONF_AUTO_DISCOVER,
     CONF_DISCOVER_ZONES,
+    CONF_FRIGATE_SILENT,
+    CONF_IMAGE_PROCESSING_SILENT,
     CONF_SOURCE,
     CONF_SOURCE_ENTRY_ID,
     CONF_SOURCE_NAME,
@@ -19,18 +21,37 @@ from custom_components.camera_autonotify.const import (
     TYPE_DISCOVERY,
     TYPE_ZONE,
 )
-from custom_components.camera_autonotify.discovery import find_cameras, find_zones
+from custom_components.camera_autonotify.discovery import (
+    ANPR2MQTT,
+    FRIGATE,
+    IMAGE_PROCESSING,
+    SourceDiscovery,
+    async_discover,
+    discovery_settings,
+    find_cameras,
+    find_zones,
+)
 from custom_components.camera_autonotify.entries import entry_name
+from tests.ha_testing import MockConfigEntry
 
-from .conftest import FRIGATE_ENTRY_ID, add_camera, add_frigate
+from .conftest import FRIGATE_ENTRY_ID, add_camera, add_frigate, global_form
 
 
-async def set_up_discovery(hass: HomeAssistant, auto_discover: bool = True, discover_zones: bool = False) -> None:
+async def set_up_discovery(
+    hass: HomeAssistant, auto_discover: bool = True, discover_zones: bool = False, **options: bool
+) -> None:
+    """Global Settings made, then, as most tests want, Frigate's cameras and image processing entities set up without
+    asking, unless `auto_discover` is off, and any other choices given"""
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
-    await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_AUTO_DISCOVER: auto_discover, CONF_DISCOVER_ZONES: discover_zones}
-    )
+    await hass.config_entries.flow.async_configure(result["flow_id"], {})
     await hass.async_block_till_done()
+    chosen = {CONF_FRIGATE_SILENT: auto_discover, CONF_IMAGE_PROCESSING_SILENT: auto_discover} | options
+    if discover_zones:
+        chosen[CONF_DISCOVER_ZONES] = True
+    entry = next(e for e in hass.config_entries.async_entries(DOMAIN) if e.data.get(CONF_TYPE) == TYPE_DISCOVERY)
+    hass.config_entries.async_update_entry(entry, options=chosen)
+    async_discover(hass)
+    await hass.async_block_till_done(wait_background_tasks=True)
 
 
 def watched(hass: HomeAssistant) -> dict[str, dict]:
@@ -105,7 +126,7 @@ async def test_zones_found_once_switched_on(hass: HomeAssistant):
     result = await hass.config_entries.options.async_init(discovery.entry_id)
     assert result["step_id"] == "discovery"
     await hass.config_entries.options.async_configure(
-        result["flow_id"], {CONF_AUTO_DISCOVER: True, CONF_DISCOVER_ZONES: True, "health": {}}
+        result["flow_id"], global_form(advanced_frigate={"frigate_silent": True, CONF_DISCOVER_ZONES: True})
     )
     await hass.async_block_till_done()
     assert len(watched(hass)) == 5
@@ -180,3 +201,48 @@ async def test_entry_named_without_its_source(hass: HomeAssistant):
     assert Notifier(hass, entry).name == "Front Drive"
     hass.config_entries.async_update_entry(entry, title="Front Drive")
     assert entry_name(entry) == "Front Drive"
+
+
+def test_discovery_settings():
+    """Each source found and offered to begin with, and the one choice of earlier versions still followed until saved"""
+    found = discovery_settings({})
+    assert found == {
+        FRIGATE: SourceDiscovery(find=True, silent=False),
+        ANPR2MQTT: SourceDiscovery(find=True, silent=False),
+        IMAGE_PROCESSING: SourceDiscovery(find=True, silent=False),
+    }
+    earlier = discovery_settings({CONF_AUTO_DISCOVER: True})
+    assert earlier[FRIGATE].silent
+    assert earlier[IMAGE_PROCESSING].silent
+    assert not earlier[ANPR2MQTT].silent
+    # once saved, the new choices instead
+    assert not discovery_settings({CONF_AUTO_DISCOVER: True, CONF_FRIGATE_SILENT: False})[FRIGATE].silent
+
+
+async def test_frigate_not_found_when_off(hass: HomeAssistant):
+    add_frigate(hass)
+    MockConfigEntry(
+        domain=DOMAIN, data={CONF_TYPE: TYPE_DISCOVERY}, options={"frigate_discover": False}, unique_id=TYPE_DISCOVERY
+    ).add_to_hass(hass)
+    async_discover(hass)
+    await hass.async_block_till_done()
+    assert hass.config_entries.flow.async_progress_by_handler(DOMAIN) == []
+
+
+async def test_global_settings_sections(hass: HomeAssistant):
+    """Each source's choices in its own section, out of the way"""
+    add_frigate(hass)
+    await set_up_discovery(hass)
+    discovery = next(e for e in hass.config_entries.async_entries(DOMAIN) if e.data[CONF_TYPE] == TYPE_DISCOVERY)
+    result = await hass.config_entries.options.async_init(discovery.entry_id)
+    schema = result["data_schema"]
+    assert schema is not None
+    sections = [str(key) for key in schema.schema]
+    assert sections[-3:] == ["advanced_frigate", "advanced_anpr2mqtt", "advanced_image_processing"]
+    assert "frigate_genai" in sections
+    shown = {
+        str(key): (key.description or {}).get("suggested_value") for key in schema.schema["advanced_frigate"].schema.schema
+    }
+    # set up without asking, as chosen for these tests
+    assert shown["frigate_discover"] is True
+    assert shown["frigate_silent"] is True

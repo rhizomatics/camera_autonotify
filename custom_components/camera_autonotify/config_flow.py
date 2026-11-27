@@ -53,6 +53,8 @@ from .const import (
     CONF_ACTIONS_GLOBAL,
     CONF_ALERT_ONCE,
     CONF_ANPR2MQTT_ARCHIVE,
+    CONF_ANPR2MQTT_DISCOVER,
+    CONF_ANPR2MQTT_SILENT,
     CONF_ANPR_OWN_CLASSIFICATION,
     CONF_AUTO_DISCOVER,
     CONF_CAMERA_ENTITY,
@@ -66,6 +68,8 @@ from .const import (
     CONF_DVLA_API_KEY_TEST,
     CONF_FINAL_DELAY,
     CONF_FINAL_UPDATE,
+    CONF_FRIGATE_DISCOVER,
+    CONF_FRIGATE_SILENT,
     CONF_GENAI_IMAGE,
     CONF_GENAI_WAIT,
     CONF_HEALTH_BACKOFF,
@@ -75,7 +79,9 @@ from .const import (
     CONF_HISTORY_DAYS,
     CONF_IMAGE,
     CONF_IMAGE_PROCESSING_CONFIDENCE,
+    CONF_IMAGE_PROCESSING_DISCOVER,
     CONF_IMAGE_PROCESSING_EVENTS,
+    CONF_IMAGE_PROCESSING_SILENT,
     CONF_INITIAL_DELAY,
     CONF_KIND_PRIORITIES,
     CONF_KIND_SCENARIOS,
@@ -188,7 +194,7 @@ from .const import (
     VEHICLE_PRIORITY_SOURCE,
     VEHICLE_RULE_PRIORITIES,
 )
-from .discovery import find_anpr, find_cameras
+from .discovery import ANPR2MQTT, FRIGATE, IMAGE_PROCESSING, discovery_settings, find_anpr, find_cameras
 from .entries import entry_name, entry_title, global_settings, wants_last_snapshot
 from .frigate import (
     all_labels,
@@ -267,8 +273,11 @@ SECTION_GENAI = "genai"
 SECTION_NOTIFY = "notify"
 SECTION_ADVANCED = "advanced"
 SECTION_HEALTH = "health"
-SECTION_SUMMARY = "summary"
-SECTION_IMPORT = "anpr2mqtt_import"
+# Global Settings' sections: what Frigate's GenAI adds, its image and periodic report, and each source's own settings
+SECTION_FRIGATE_GENAI = "frigate_genai"
+SECTION_FRIGATE = "advanced_frigate"
+SECTION_ANPR2MQTT = "advanced_anpr2mqtt"
+SECTION_IMAGE_PROCESSING = "advanced_image_processing"
 # the daily summary without Supernotify, with nothing to set, only saying it needs Supernotify
 SECTION_SUMMARY_UNAVAILABLE = "summary_unavailable"
 SECTIONS = (
@@ -277,11 +286,13 @@ SECTIONS = (
     SECTION_NOTIFY,
     SECTION_ADVANCED,
     SECTION_HEALTH,
-    SECTION_SUMMARY,
+    SECTION_FRIGATE_GENAI,
     SECTION_SUMMARY_UNAVAILABLE,
     SECTION_VEHICLES,
     SECTION_VEHICLE_LOOKUP,
-    SECTION_IMPORT,
+    SECTION_FRIGATE,
+    SECTION_ANPR2MQTT,
+    SECTION_IMAGE_PROCESSING,
 )
 # an anpr2mqtt entry's settings as they come, not stored
 ANPR_DEFAULTS: dict[str, Any] = {
@@ -356,42 +367,59 @@ async def proxy_status(hass: HomeAssistant, source_entry_id: str | None = None) 
 
 
 def discovery_schema(
-    auto_discover: bool = False,
-    discover_zones: bool = False,
     health: bool = False,
     deliveries: list[str] | None = None,
     labels: list[str] | None = None,
     actions: list[str] | None = None,
     scenarios: list[str] | None = None,
 ) -> vol.Schema:
-    """What's found, and once set up, what every notification calls each object, the labels of every Frigate server
-    being given, and the health check of each Frigate server and the daily summary, out of the way until wanted, the
-    summary only to be set with Supernotify, whose deliveries are given"""
-    fields_: dict[vol.Marker, Any] = {
-        vol.Required(CONF_AUTO_DISCOVER, default=auto_discover): BooleanSelector(),
-        vol.Required(CONF_DISCOVER_ZONES, default=discover_zones): BooleanSelector(),
-    }
-    if labels is not None:
-        fields_[vol.Optional(CONF_OBJECT_NAMES)] = object_names_selector(labels)
-        fields_[vol.Required(CONF_GENAI_IMAGE, default=DEFAULT_GENAI_IMAGE)] = SelectSelector(
-            SelectSelectorConfig(options=list(IMAGES), mode=SelectSelectorMode.DROPDOWN, translation_key=CONF_IMAGE)
-        )
+    """Global Settings: the buttons of every notification, then a section each, out of the way until wanted, for the
+    health check of each Frigate server, what Frigate's GenAI adds, the vehicles, and for each source, Frigate,
+    anpr2mqtt and image processing, what's found and whether it's set up without asking. The GenAI report only to be
+    set with Supernotify, whose deliveries are given"""
+    fields_: dict[vol.Marker, Any] = {}
     if actions is not None:
         # the buttons on a phone, of those Frigate can do
         fields_[vol.Optional(CONF_ACTIONS)] = _choose(actions, CONF_ACTIONS)
+    frigate: dict[vol.Marker, Any] = {
+        vol.Required(CONF_FRIGATE_DISCOVER, default=True): BooleanSelector(),
+        vol.Required(CONF_FRIGATE_SILENT, default=False): BooleanSelector(),
+        vol.Required(CONF_DISCOVER_ZONES, default=False): BooleanSelector(),
+    }
     if labels is not None:
-        fields_[vol.Required(CONF_SPEED_UNIT, default=SPEED_AUTO)] = SelectSelector(
+        frigate[vol.Optional(CONF_OBJECT_NAMES)] = object_names_selector(labels)
+        frigate[vol.Required(CONF_SPEED_UNIT, default=SPEED_AUTO)] = SelectSelector(
             SelectSelectorConfig(options=list(SPEED_UNITS), mode=SelectSelectorMode.DROPDOWN, translation_key=CONF_SPEED_UNIT)
         )
     if health:
         fields_[vol.Required(SECTION_HEALTH)] = section(vol.Schema(health_schema()), {"collapsed": True})
+        genai: dict[vol.Marker, Any] = {
+            vol.Required(CONF_GENAI_IMAGE, default=DEFAULT_GENAI_IMAGE): SelectSelector(
+                SelectSelectorConfig(options=list(IMAGES), mode=SelectSelectorMode.DROPDOWN, translation_key=CONF_IMAGE)
+            )
+        }
         if deliveries is not None:
-            fields_[vol.Required(SECTION_SUMMARY)] = section(vol.Schema(summary_schema(deliveries)), {"collapsed": True})
-        else:
+            genai.update(summary_schema(deliveries))
+        fields_[vol.Required(SECTION_FRIGATE_GENAI)] = section(vol.Schema(genai), {"collapsed": True})
+        if deliveries is None:
             fields_[vol.Optional(SECTION_SUMMARY_UNAVAILABLE)] = section(vol.Schema({}), {"collapsed": True})
         fields_[vol.Optional(SECTION_VEHICLES)] = section(vol.Schema(vehicles_schema(scenarios)), {"collapsed": True})
         fields_[vol.Optional(SECTION_VEHICLE_LOOKUP)] = section(vol.Schema(lookup_schema()), {"collapsed": True})
-        fields_[vol.Optional(SECTION_IMPORT)] = section(vol.Schema(archive_schema()), {"collapsed": True})
+    fields_[vol.Required(SECTION_FRIGATE)] = section(vol.Schema(frigate), {"collapsed": True})
+    anpr2mqtt: dict[vol.Marker, Any] = {
+        vol.Required(CONF_ANPR2MQTT_DISCOVER, default=True): BooleanSelector(),
+        vol.Required(CONF_ANPR2MQTT_SILENT, default=False): BooleanSelector(),
+    }
+    if health:
+        anpr2mqtt.update(archive_schema())
+    fields_[vol.Required(SECTION_ANPR2MQTT)] = section(vol.Schema(anpr2mqtt), {"collapsed": True})
+    fields_[vol.Required(SECTION_IMAGE_PROCESSING)] = section(
+        vol.Schema({
+            vol.Required(CONF_IMAGE_PROCESSING_DISCOVER, default=True): BooleanSelector(),
+            vol.Required(CONF_IMAGE_PROCESSING_SILENT, default=False): BooleanSelector(),
+        }),
+        {"collapsed": True},
+    )
     return vol.Schema(fields_)
 
 
@@ -884,12 +912,12 @@ class CameraAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
         return {}
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        """The global settings, chiefly automatic discovery, the cameras themselves set up as they're found"""
+        """Global Settings, made with everything as it comes, saying what's found, offered as discovered"""
         await self.async_set_unique_id(TYPE_DISCOVERY)
         self._abort_if_unique_id_configured()
         if user_input is not None:
-            # the cameras are set up as this entry is, each as its own entry to change or delete
-            return self.async_create_entry(title=DISCOVERY_TITLE, data={CONF_TYPE: TYPE_DISCOVERY}, options=user_input)
+            # everything as it comes, each source's cameras offered as discovered, changed later in Global Settings
+            return self.async_create_entry(title=DISCOVERY_TITLE, data={CONF_TYPE: TYPE_DISCOVERY}, options={})
         found = [camera.name for camera in find_cameras(self.hass) + find_anpr(self.hass)]
         await async_load_texts(self.hass)
         if found:
@@ -898,7 +926,7 @@ class CameraAutoNotifyConfigFlow(ConfigFlow, domain=DOMAIN):
             found_text = text(self.hass, CAMERAS_NONE)
         return self.async_show_form(
             step_id="user",
-            data_schema=discovery_schema(),
+            data_schema=vol.Schema({}),
             description_placeholders={
                 "found": found_text,
                 "supernotify": await supernotify_status(self.hass),
@@ -1100,7 +1128,7 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
             # the daily summary's settings kept while they can't be shown, without Supernotify
             kept = (
                 {}
-                if SECTION_SUMMARY in user_input
+                if CONF_SUMMARY_MODE in (user_input.get(SECTION_FRIGATE_GENAI) or {})
                 else {key: value for key, value in self.config_entry.options.items() if key in SUMMARY_OPTIONS}
             )
             settings = kept | flattened(user_input)
@@ -1157,9 +1185,17 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
     ) -> ConfigFlowResult:
         servers = self.hass.config_entries.async_entries(FRIGATE_DOMAIN)
         actions = offered([frigate_config(self.hass, server.entry_id) for server in servers])
+        found = discovery_settings(shown)
+        shown |= {
+            CONF_FRIGATE_DISCOVER: found[FRIGATE].find,
+            CONF_FRIGATE_SILENT: found[FRIGATE].silent,
+            CONF_ANPR2MQTT_DISCOVER: found[ANPR2MQTT].find,
+            CONF_ANPR2MQTT_SILENT: found[ANPR2MQTT].silent,
+            CONF_IMAGE_PROCESSING_DISCOVER: found[IMAGE_PROCESSING].find,
+            CONF_IMAGE_PROCESSING_SILENT: found[IMAGE_PROCESSING].silent,
+        }
+        shown.pop(CONF_AUTO_DISCOVER, None)
         schema = discovery_schema(
-            shown.get(CONF_AUTO_DISCOVER, False),
-            shown.get(CONF_DISCOVER_ZONES, False),
             health=True,
             deliveries=await supernotify_deliveries(self.hass),
             labels=all_labels(self.hass),
@@ -1195,8 +1231,9 @@ class CameraAutoNotifyOptionsFlow(OptionsFlowWithReload):
     async def _summary_undeliverable(self, user_input: dict[str, Any]) -> bool:
         """Whether the summary is switched on with no deliveries chosen, and Supernotify has no e-mail delivery to
         send it by instead, so it would never be delivered"""
-        summary = user_input.get(SECTION_SUMMARY)
-        if not isinstance(summary, dict) or summary.get(CONF_SUMMARY_MODE, SUMMARY_AUTO) == SUMMARY_OFF:
+        summary = user_input.get(SECTION_FRIGATE_GENAI)
+        # the report only offered with Supernotify
+        if not isinstance(summary, dict) or summary.get(CONF_SUMMARY_MODE, SUMMARY_OFF) == SUMMARY_OFF:
             return False
         return not summary.get(CONF_SUMMARY_DELIVERIES) and not await email_deliveries(self.hass)
 

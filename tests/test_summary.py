@@ -16,7 +16,6 @@ from homeassistant.util import dt as dt_util
 
 from custom_components.camera_autonotify.const import (
     CONF_AUTO_DISCOVER,
-    CONF_DISCOVER_ZONES,
     CONF_SUMMARY_CONCERNS,
     CONF_SUMMARY_DELIVERIES,
     CONF_SUMMARY_INTERVAL,
@@ -32,7 +31,7 @@ from custom_components.camera_autonotify.summary import SummarySettings, failure
 from custom_components.camera_autonotify.texts import async_load_texts, said_day
 from tests.ha_testing import MockConfigEntry, async_fire_time_changed, async_mock_service
 
-from .conftest import FRIGATE_ENTRY_ID, FakeMQTT, add_frigate, mock_supernotify
+from .conftest import FRIGATE_ENTRY_ID, FakeMQTT, add_frigate, global_form, mock_supernotify
 from .test_discovery import set_up_discovery
 from .test_tracker import message, review
 
@@ -189,24 +188,21 @@ async def test_summary_in_global_options(hass: HomeAssistant):
     entry = await set_up(hass)
     result = await hass.config_entries.options.async_init(entry.entry_id)
     assert result["data_schema"] is not None
-    summary = next(field for key, field in result["data_schema"].schema.items() if str(key) == "summary")
+    summary = next(field for key, field in result["data_schema"].schema.items() if str(key) == "frigate_genai")
     suggested = {str(key): (key.description or {}).get("suggested_value") for key in summary.schema.schema}
     # Supernotify's e-mail deliveries to begin with
     assert suggested[CONF_SUMMARY_DELIVERIES] == ["email"]
     await hass.config_entries.options.async_configure(
         result["flow_id"],
-        {
-            CONF_AUTO_DISCOVER: False,
-            CONF_DISCOVER_ZONES: False,
-            "health": {},
-            "summary": {
+        global_form(
+            frigate_genai={
                 CONF_SUMMARY_MODE: "on",
                 CONF_SUMMARY_INTERVAL: "4",
                 CONF_SUMMARY_TIME: "08:30:00",
                 CONF_SUMMARY_CONCERNS: True,
                 CONF_SUMMARY_DELIVERIES: ["phones"],
             },
-        },
+        ),
     )
     await hass.async_block_till_done()
     assert SummarySettings.from_options(entry.options) == SummarySettings(
@@ -220,7 +216,7 @@ async def test_summary_deliveries_cleared(hass: HomeAssistant):
     result = await hass.config_entries.options.async_init(entry.entry_id)
     await hass.config_entries.options.async_configure(
         result["flow_id"],
-        {CONF_AUTO_DISCOVER: False, CONF_DISCOVER_ZONES: False, "health": {}, "summary": {CONF_SUMMARY_MODE: "auto"}},
+        global_form(frigate_genai={CONF_SUMMARY_MODE: "auto"}),
     )
     await hass.async_block_till_done()
     assert CONF_SUMMARY_DELIVERIES not in entry.options
@@ -408,15 +404,13 @@ async def test_no_summary_without_supernotify(hass: HomeAssistant, freezer: Froz
     result = await hass.config_entries.options.async_init(entry.entry_id)
     assert result["data_schema"] is not None
     sections = {str(key): field for key, field in result["data_schema"].schema.items()}
-    assert "summary" not in sections
+    assert CONF_SUMMARY_MODE not in {str(key) for key in sections["frigate_genai"].schema.schema}
     assert sections["summary_unavailable"].schema.schema == {}
     # whether the empty section comes back or not
     shown: tuple[dict[str, Any], ...] = ({"summary_unavailable": {}}, {})
     for summary in shown:
         result = await hass.config_entries.options.async_init(entry.entry_id)
-        await hass.config_entries.options.async_configure(
-            result["flow_id"], {CONF_AUTO_DISCOVER: False, CONF_DISCOVER_ZONES: False, "health": {}, **summary}
-        )
+        await hass.config_entries.options.async_configure(result["flow_id"], global_form(**summary))
         await hass.async_block_till_done()
         assert dict(entry.options)[CONF_SUMMARY_MODE] == "on"
 
@@ -435,12 +429,7 @@ async def test_warned_when_summary_undeliverable(hass: HomeAssistant):
     mock_supernotify(hass)
     no_email_delivery(hass)
     entry = await set_up(hass)
-    settings = {
-        CONF_AUTO_DISCOVER: False,
-        CONF_DISCOVER_ZONES: False,
-        "health": {},
-        "summary": {CONF_SUMMARY_MODE: "auto", CONF_SUMMARY_INTERVAL: "4"},
-    }
+    settings = global_form(frigate_genai={CONF_SUMMARY_MODE: "auto", CONF_SUMMARY_INTERVAL: "4"})
     result = await hass.config_entries.options.async_init(entry.entry_id)
     result = await hass.config_entries.options.async_configure(result["flow_id"], settings)
     assert result["type"] == "form"
@@ -459,7 +448,7 @@ async def test_not_warned_when_summary_off(hass: HomeAssistant):
     result = await hass.config_entries.options.async_init(entry.entry_id)
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
-        {CONF_AUTO_DISCOVER: False, CONF_DISCOVER_ZONES: False, "health": {}, "summary": {CONF_SUMMARY_MODE: "off"}},
+        global_form(frigate_genai={CONF_SUMMARY_MODE: "off"}),
     )
     assert result["type"] == "create_entry"
 
@@ -507,7 +496,7 @@ async def test_summary_by_one_email_delivery(
     # and shown as such to begin with
     result = await hass.config_entries.options.async_init(entry.entry_id)
     assert result["data_schema"] is not None
-    summary = next(field for key, field in result["data_schema"].schema.items() if str(key) == "summary")
+    summary = next(field for key, field in result["data_schema"].schema.items() if str(key) == "frigate_genai")
     suggested = {str(key): (key.description or {}).get("suggested_value") for key in summary.schema.schema}
     assert suggested[CONF_SUMMARY_DELIVERIES] == chosen
 

@@ -9,15 +9,7 @@
         "step": {
             "user": {
                 "title": "Frigate-Benachrichtigungen",
-                "description": "Benachrichtigungen zu den Reviews der Frigate-Kameras, gesendet über Supernotify.\n\n{supernotify}{proxy}\n\n{found}",
-                "data": {
-                    "auto_discover": "Kameras automatisch einrichten",
-                    "discover_zones": "Auch Zonen finden"
-                },
-                "data_description": {
-                    "auto_discover": "Jede Frigate-Kamera hinzufügen, sobald sie gefunden wird. Ausschalten, um stattdessen jede einzeln angeboten zu bekommen",
-                    "discover_zones": "Jede Frigate-Zone wie eine Kamera anbieten, für Benachrichtigungen nur zu dieser Zone"
-                }
+                "description": "Benachrichtigungen zu den Reviews der Frigate-Kameras, gesendet über Supernotify.\n\n{supernotify}{proxy}\n\n{found}"
             },
             "confirm": {
                 "title": "Benachrichtigungen für {name}",
@@ -59,20 +51,10 @@
                 "title": "Globale Einstellungen",
                 "description": "Bereits eingerichtete Kameras und Zonen bleiben unverändert.",
                 "data": {
-                    "auto_discover": "Kameras automatisch einrichten",
-                    "discover_zones": "Auch Zonen finden",
-                    "object_names": "Objektnamen",
-                    "genai_image": "GenAI-Bild",
-                    "actions": "Aktionen",
-                    "speed_unit": "Geschwindigkeitseinheit"
+                    "actions": "Aktionen"
                 },
                 "data_description": {
-                    "auto_discover": "Jede Frigate-Kamera hinzufügen, sobald sie gefunden wird. Ausschalten, um stattdessen jede einzeln angeboten zu bekommen",
-                    "discover_zones": "Jede Frigate-Zone wie eine Kamera anbieten, für Benachrichtigungen nur zu dieser Zone",
-                    "object_names": "Wie jedes Frigate-Objekt in allen Benachrichtigungen genannt wird, etwa car als Fahrzeug, oder eine Übersetzung. Hier nicht benannte Objekte behalten den Namen, den Frigate ihnen gibt.",
-                    "genai_image": "Das Bild zu dem, was Frigates GenAI hinzufügt, einer Review-Zusammenfassung oder Objektbeschreibung, für jede Kamera und Zone ohne eigene Wahl. Die animierte Vorschau zeigt, was GenAI angesehen hat, wo die Kamera aufnimmt, sonst das eigene Bild der Kamera.",
-                    "actions": "Die Schaltflächen jeder Benachrichtigung auf dem Telefon, von denen, die Frigate kann: den Clip vor Frigates Aufbewahrungsfrist schützen, das Review in Frigate als gesehen markieren, den Schnappschuss an Frigate+ senden oder die Aufnahme darum exportieren. Noch nicht in E-Mails.",
-                    "speed_unit": "Die Einheit, in der Geschwindigkeiten angegeben werden. Automatisch ist Meilen pro Stunde, wo Straßen danach beschildert sind, nach dem Land von Home Assistant, etwa Großbritannien und die USA, oder wo sein Einheitensystem nicht metrisch ist, und sonst Kilometer pro Stunde."
+                    "actions": "Die Schaltflächen jeder Benachrichtigung auf dem Telefon, von denen, die Frigate kann: den Clip vor Frigates Aufbewahrungsfrist schützen, das Review in Frigate als gesehen markieren, den Schnappschuss an Frigate+ senden oder die Aufnahme darum exportieren. Noch nicht in E-Mails."
                 },
                 "sections": {
                     "health": {
@@ -91,10 +73,11 @@
                             "health_backoff": "Wartezeit vor dem erneuten Versuch einer fehlgeschlagenen Prüfung, die sich bei jeder weiteren Wiederholung verdoppelt."
                         }
                     },
-                    "summary": {
-                        "name": "Regelmäßiger GenAI-Bericht von Frigate",
-                        "description": "Ein Bericht über die Aktivität mehrerer Kameras in den vergangenen Stunden, von Frigates GenAI aus ihren Reviews geschrieben, alle paar Stunden oder einmal am Tag. Er wird per E-Mail gesendet, da er für eine Handy-Benachrichtigung oder einen Sprachassistenten zu lang ist. Jeder Bericht wird von Frigates GenAI-Anbieter geschrieben und unterliegt daher dessen Kosten und Grenzen.",
+                    "frigate_genai": {
+                        "name": "Frigate GenAI",
+                        "description": "Das Bild dessen, was Frigates GenAI hinzufügt, und sein regelmäßiger Bericht. Ein Bericht über die Aktivität mehrerer Kameras in den vergangenen Stunden, von Frigates GenAI aus ihren Reviews geschrieben, alle paar Stunden oder einmal am Tag. Er wird per E-Mail gesendet, da er für eine Handy-Benachrichtigung oder einen Sprachassistenten zu lang ist. Jeder Bericht wird von Frigates GenAI-Anbieter geschrieben und unterliegt daher dessen Kosten und Grenzen.",
                         "data": {
+                            "genai_image": "GenAI-Bild",
                             "summary_mode": "Bericht senden",
                             "summary_interval": "Wie oft",
                             "summary_time": "Beginnend um",
@@ -103,6 +86,7 @@
                             "summary_retries": "Wiederholungen"
                         },
                         "data_description": {
+                            "genai_image": "Das Bild zu dem, was Frigates GenAI hinzufügt, einer Review-Zusammenfassung oder Objektbeschreibung, für jede Kamera und Zone ohne eigene Wahl. Die animierte Vorschau zeigt, was GenAI angesehen hat, wo die Kamera aufnimmt, sonst das eigene Bild der Kamera.",
                             "summary_mode": "Automatisch sendet ihn, wenn Frigate für irgendeine Kamera GenAI-Zusammenfassungen von Reviews erstellt.",
                             "summary_interval": "Jeder Bericht umfasst die Stunden seit dem vorherigen, bis zur Stunde, in der er gesendet wird.",
                             "summary_time": "Wann der erste des Tages gesendet wird, die weiteren dann im gewählten Stundenabstand.",
@@ -157,14 +141,48 @@
                             "dvla_api_key_test": "Beim Absenden A123TST mit dem eingegebenen oder dem gesetzten Schlüssel abfragen, um zu prüfen, ob die DVLA antwortet, ohne etwas zu speichern."
                         }
                     },
-                    "anpr2mqtt_import": {
-                        "name": "Aus anpr2mqtt importieren",
-                        "description": "Übernimmt die Kennzeichengruppen von anpr2mqtt als Fahrzeugkategorien, mit ihren Korrekturen und Ignorierungen, seinen DVLA-Einstellungen und seinem Besuchsverlauf. Sie sehen, was gefunden wurde, bevor etwas importiert wird.",
+                    "advanced_frigate": {
+                        "name": "Erweitert - Frigate",
+                        "description": "Welche Kameras und Zonen von Frigate gefunden werden, und wie jedes Objekt benannt und Geschwindigkeiten angegeben werden.",
                         "data": {
+                            "frigate_discover": "Automatisch finden",
+                            "frigate_silent": "Ohne Nachfrage einrichten",
+                            "discover_zones": "Auch Zonen finden",
+                            "object_names": "Objektnamen",
+                            "speed_unit": "Geschwindigkeitseinheit"
+                        },
+                        "data_description": {
+                            "frigate_discover": "Die Kameras von Frigate finden, und Zonen, wo unten gewählt, jeweils als entdeckt angeboten, zum Hinzufügen oder Ignorieren.",
+                            "frigate_silent": "Jedes Gefundene sofort einrichten, statt es als entdeckt anzubieten.",
+                            "discover_zones": "Jede Frigate-Zone wie eine Kamera anbieten, für Benachrichtigungen nur zu dieser Zone",
+                            "object_names": "Wie jedes Frigate-Objekt in allen Benachrichtigungen genannt wird, etwa car als Fahrzeug, oder eine Übersetzung. Hier nicht benannte Objekte behalten den Namen, den Frigate ihnen gibt.",
+                            "speed_unit": "Die Einheit, in der Geschwindigkeiten angegeben werden. Automatisch ist Meilen pro Stunde, wo Straßen danach beschildert sind, nach dem Land von Home Assistant, etwa Großbritannien und die USA, oder wo sein Einheitensystem nicht metrisch ist, und sonst Kilometer pro Stunde."
+                        }
+                    },
+                    "advanced_anpr2mqtt": {
+                        "name": "Erweitert - anpr2mqtt",
+                        "description": "Welche Kameras und Ereignisse von anpr2mqtt gefunden werden, und der Import aus anpr2mqtt selbst. Übernimmt die Kennzeichengruppen von anpr2mqtt als Fahrzeugkategorien, mit ihren Korrekturen und Ignorierungen, seinen DVLA-Einstellungen und seinem Besuchsverlauf. Sie sehen, was gefunden wurde, bevor etwas importiert wird.",
+                        "data": {
+                            "anpr2mqtt_discover": "Automatisch finden",
+                            "anpr2mqtt_silent": "Ohne Nachfrage einrichten",
                             "anpr2mqtt_archive": "anpr2mqtt-Archiv"
                         },
                         "data_description": {
+                            "anpr2mqtt_discover": "Die Kameras und Ereignisse von anpr2mqtt finden, jeweils als entdeckt angeboten, zum Hinzufügen oder Ignorieren.",
+                            "anpr2mqtt_silent": "Jedes Gefundene sofort einrichten, statt es als entdeckt anzubieten.",
                             "anpr2mqtt_archive": "Ein .tar oder .tar.gz der Ordner config und data von anpr2mqtt, etwa erstellt mit: tar czf anpr2mqtt.tgz config data/plate"
+                        }
+                    },
+                    "advanced_image_processing": {
+                        "name": "Erweitert - Bildverarbeitung",
+                        "description": "Welche Bildverarbeitungs-Entitäten von Home Assistant, die Kennzeichen oder Gesichter lesen, gefunden werden.",
+                        "data": {
+                            "image_processing_discover": "Automatisch finden",
+                            "image_processing_silent": "Ohne Nachfrage einrichten"
+                        },
+                        "data_description": {
+                            "image_processing_discover": "Bildverarbeitungs-Entitäten finden, die Kennzeichen oder Gesichter lesen, jeweils als entdeckt angeboten, zum Hinzufügen oder Ignorieren.",
+                            "image_processing_silent": "Jedes Gefundene sofort einrichten, statt es als entdeckt anzubieten."
                         }
                     }
                 }

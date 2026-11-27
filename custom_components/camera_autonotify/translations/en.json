@@ -9,15 +9,7 @@
         "step": {
             "user": {
                 "title": "Frigate notifications",
-                "description": "Notifications for Frigate camera reviews, sent through Supernotify.\n\n{supernotify}{proxy}\n\n{found}",
-                "data": {
-                    "auto_discover": "Set up cameras automatically",
-                    "discover_zones": "Find zones too"
-                },
-                "data_description": {
-                    "auto_discover": "Add every Frigate camera as it's found. Switch off to be offered each one instead",
-                    "discover_zones": "Offer each Frigate zone like a camera, for notifications about that zone alone"
-                }
+                "description": "Notifications for Frigate camera reviews, sent through Supernotify.\n\n{supernotify}{proxy}\n\n{found}"
             },
             "confirm": {
                 "title": "Notifications for {name}",
@@ -59,20 +51,10 @@
                 "title": "Global Settings",
                 "description": "Cameras and zones already set up are left as they are.",
                 "data": {
-                    "auto_discover": "Set up cameras automatically",
-                    "discover_zones": "Find zones too",
-                    "object_names": "Object names",
-                    "genai_image": "GenAI image",
-                    "actions": "Actions",
-                    "speed_unit": "Speed unit"
+                    "actions": "Actions"
                 },
                 "data_description": {
-                    "auto_discover": "Add every Frigate camera as it's found. Switch off to be offered each one instead",
-                    "discover_zones": "Offer each Frigate zone like a camera, for notifications about that zone alone",
-                    "object_names": "What to call each of Frigate's objects in every notification, such as car as Vehicle, or a translation. Objects not named here are called as Frigate names them.",
-                    "genai_image": "The image of what Frigate's GenAI adds, a review summary or an object description, for every camera and zone that doesn't choose its own. The animated preview is what GenAI looked at, shown where the camera records, and otherwise the camera's own image.",
-                    "actions": "The buttons on each notification on a phone, of those Frigate can do: keep the clip from Frigate's retention, mark the review as seen in Frigate, submit the snapshot to Frigate+, or export the recording around it. Not yet in e-mail.",
-                    "speed_unit": "The unit speeds are said in. Automatic is miles an hour where roads are signed in them, by Home Assistant's country, such as the UK and US, or where its unit system isn't metric, and kilometres an hour otherwise."
+                    "actions": "The buttons on each notification on a phone, of those Frigate can do: keep the clip from Frigate's retention, mark the review as seen in Frigate, submit the snapshot to Frigate+, or export the recording around it. Not yet in e-mail."
                 },
                 "sections": {
                     "health": {
@@ -91,10 +73,11 @@
                             "health_backoff": "How long before trying a failed check again, doubling for each retry after that."
                         }
                     },
-                    "summary": {
-                        "name": "Frigate GenAI Periodic Report",
-                        "description": "A report of activity across multiple cameras for the preceding hours, written by Frigate's GenAI from their reviews, called every few hours or once a day. It goes by e-mail, being too long for a phone's notification or a voice assistant. Each report is written by Frigate's GenAI provider, so is subject to its charges and limits.",
+                    "frigate_genai": {
+                        "name": "Frigate GenAI",
+                        "description": "The image of what Frigate's GenAI adds, and its periodic report. A report of activity across multiple cameras for the preceding hours, written by Frigate's GenAI from their reviews, called every few hours or once a day. It goes by e-mail, being too long for a phone's notification or a voice assistant. Each report is written by Frigate's GenAI provider, so is subject to its charges and limits.",
                         "data": {
+                            "genai_image": "GenAI image",
                             "summary_mode": "Send a report",
                             "summary_interval": "How often",
                             "summary_time": "Starting at",
@@ -103,6 +86,7 @@
                             "summary_retries": "Retries"
                         },
                         "data_description": {
+                            "genai_image": "The image of what Frigate's GenAI adds, a review summary or an object description, for every camera and zone that doesn't choose its own. The animated preview is what GenAI looked at, shown where the camera records, and otherwise the camera's own image.",
                             "summary_mode": "Automatic sends it when Frigate makes GenAI review summaries for any camera.",
                             "summary_interval": "Each report covers the hours since the one before, up to the hour it's sent in.",
                             "summary_time": "When the first of the day is sent, and the others every so many hours from it.",
@@ -157,14 +141,48 @@
                             "dvla_api_key_test": "When submitted, look up A123TST with the key typed, or the one set, to check the DVLA answers, without saving anything."
                         }
                     },
-                    "anpr2mqtt_import": {
-                        "name": "Import from anpr2mqtt",
-                        "description": "Bring over anpr2mqtt's plate groups as vehicle categories, with their corrections and ignores, its DVLA settings and its visit history. You'll see what's found before anything is imported.",
+                    "advanced_frigate": {
+                        "name": "Advanced - Frigate",
+                        "description": "Which of Frigate's cameras and zones are found, and how each object is named and speeds said.",
                         "data": {
+                            "frigate_discover": "Find automatically",
+                            "frigate_silent": "Set up without asking",
+                            "discover_zones": "Find zones too",
+                            "object_names": "Object names",
+                            "speed_unit": "Speed unit"
+                        },
+                        "data_description": {
+                            "frigate_discover": "Find Frigate's cameras, and zones where chosen below, each offered as discovered, to add or ignore.",
+                            "frigate_silent": "Set up each one found straight away, rather than offering it as discovered.",
+                            "discover_zones": "Offer each Frigate zone like a camera, for notifications about that zone alone",
+                            "object_names": "What to call each of Frigate's objects in every notification, such as car as Vehicle, or a translation. Objects not named here are called as Frigate names them.",
+                            "speed_unit": "The unit speeds are said in. Automatic is miles an hour where roads are signed in them, by Home Assistant's country, such as the UK and US, or where its unit system isn't metric, and kilometres an hour otherwise."
+                        }
+                    },
+                    "advanced_anpr2mqtt": {
+                        "name": "Advanced - anpr2mqtt",
+                        "description": "Which of anpr2mqtt's cameras and events are found, and importing from anpr2mqtt itself. Bring over anpr2mqtt's plate groups as vehicle categories, with their corrections and ignores, its DVLA settings and its visit history. You'll see what's found before anything is imported.",
+                        "data": {
+                            "anpr2mqtt_discover": "Find automatically",
+                            "anpr2mqtt_silent": "Set up without asking",
                             "anpr2mqtt_archive": "anpr2mqtt archive"
                         },
                         "data_description": {
+                            "anpr2mqtt_discover": "Find anpr2mqtt's cameras and events, each offered as discovered, to add or ignore.",
+                            "anpr2mqtt_silent": "Set up each one found straight away, rather than offering it as discovered.",
                             "anpr2mqtt_archive": "A .tar or .tar.gz of anpr2mqtt's config and data folders, such as made with: tar czf anpr2mqtt.tgz config data/plate"
+                        }
+                    },
+                    "advanced_image_processing": {
+                        "name": "Advanced - Image Processing",
+                        "description": "Which of Home Assistant's image processing entities, reading plates or faces, are found.",
+                        "data": {
+                            "image_processing_discover": "Find automatically",
+                            "image_processing_silent": "Set up without asking"
+                        },
+                        "data_description": {
+                            "image_processing_discover": "Find image processing entities that read plates or faces, each offered as discovered, to add or ignore.",
+                            "image_processing_silent": "Set up each one found straight away, rather than offering it as discovered."
                         }
                     }
                 }

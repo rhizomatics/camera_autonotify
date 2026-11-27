@@ -111,12 +111,12 @@ def event_entries(hass: HomeAssistant) -> list[ConfigEntry]:
 async def test_found_and_set_up(hass: HomeAssistant):
     """The event entity, its own entry, by its unique id, set up as Frigate's cameras are, beside the plate sensor"""
     add_events(hass)
-    await set_up_discovery(hass)
+    await set_up_discovery(hass, anpr2mqtt_silent=True)
     assert [(e.unique_id, e.data["source_name"], e.data["source"]) for e in event_entries(hass)] == [
         ("anpr2mqtt:event:face_front", "face_front", "anpr2mqtt")
     ]
-    # the plate sensor offered, as always
-    assert any(f["step_id"] == "confirm_anpr" for f in hass.config_entries.flow.async_progress_by_handler(DOMAIN))
+    # and the plate sensor, as chosen for anpr2mqtt
+    assert any(e.unique_id == "anpr2mqtt:anpr_front" for e in hass.config_entries.async_entries(DOMAIN))
 
 
 async def test_offered_with_automatic_discovery_off(hass: HomeAssistant):
@@ -138,7 +138,7 @@ async def test_notified(hass: HomeAssistant, freezer: FrozenDateTimeFactory, ext
     calls = mock_supernotify(hass)
     add_events(hass)
     hass.states.async_set(EVENT, NOW.isoformat(), fired())
-    await set_up_discovery(hass)
+    await set_up_discovery(hass, anpr2mqtt_silent=True)
     freezer.tick(STARTUP_GRACE + 1)
     when = dt_util.utcnow()
     hass.states.async_set(EVENT, when.isoformat(), fired(when))
@@ -168,7 +168,7 @@ async def test_linked_camera_scenarios_and_priority(hass: HomeAssistant, freezer
     add_frigate(hass, cameras={"front": []})
     add_events(hass, scene=False)
     hass.states.async_set("camera.front", "idle", {"friendly_name": "Front Door"})
-    await set_up_discovery(hass)
+    await set_up_discovery(hass, anpr2mqtt_silent=True)
     entry = event_entries(hass)[0]
     hass.config_entries.async_update_entry(entry, options={"priority": "high", "scenarios": ["face_seen"]})
     await hass.config_entries.async_reload(entry.entry_id)
@@ -189,7 +189,7 @@ async def test_not_notified_when_chosen(hass: HomeAssistant, freezer: FrozenDate
     freezer.move_to(NOW)
     calls = mock_supernotify(hass)
     add_events(hass)
-    await set_up_discovery(hass)
+    await set_up_discovery(hass, anpr2mqtt_silent=True)
     entry = event_entries(hass)[0]
     hass.config_entries.async_update_entry(entry, options={"priority": "none"})
     await hass.config_entries.async_reload(entry.entry_id)
@@ -204,7 +204,7 @@ async def test_not_notified_when_chosen(hass: HomeAssistant, freezer: FrozenDate
 async def test_event_entity_gone(hass: HomeAssistant):
     """Removed from anpr2mqtt, so a repair rather than retrying"""
     add_events(hass)
-    await set_up_discovery(hass)
+    await set_up_discovery(hass, anpr2mqtt_silent=True)
     entry = event_entries(hass)[0]
     registry = er.async_get(hass)
     registry.async_remove(registry.async_get_entity_id("event", "mqtt", "face_front") or "")
@@ -216,7 +216,7 @@ async def test_event_entity_gone(hass: HomeAssistant):
 async def test_settings_form(hass: HomeAssistant):
     mock_supernotify(hass)
     add_events(hass)
-    await set_up_discovery(hass)
+    await set_up_discovery(hass, anpr2mqtt_silent=True)
     entry = event_entries(hass)[0]
     form = await hass.config_entries.options.async_init(entry.entry_id)
     assert form["step_id"] == "anpr_event"

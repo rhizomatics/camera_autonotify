@@ -107,9 +107,11 @@ async def test_unavailable_with_frigate(hass: HomeAssistant, fake_mqtt: FakeMQTT
     await hass.async_block_till_done()
     entity_id = er.async_get(hass).async_get_entity_id(Platform.CAMERA, DOMAIN, f"{entry.entry_id}_last_snapshot")
     assert entity_id is not None
-    assert (state := hass.states.get(entity_id)) is not None
+    state = hass.states.get(entity_id)
+    assert state is not None
     assert state.state != "unavailable"
     coordinator.last_update_success = False
     listeners[-1]()
-    assert (state := hass.states.get(entity_id)) is not None
+    state = hass.states.get(entity_id)
+    assert state is not None
     assert state.state == "unavailable"

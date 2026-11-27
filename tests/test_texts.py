@@ -14,8 +14,6 @@ from homeassistant.core import HomeAssistant
 
 from custom_components.camera_autonotify import texts
 from custom_components.camera_autonotify.const import (
-    CONF_AUTO_DISCOVER,
-    CONF_DISCOVER_ZONES,
     CONF_IMAGE,
     CONF_OBJECT_NAMES,
     DOMAIN,
@@ -27,7 +25,7 @@ from custom_components.camera_autonotify.texts import async_load_texts, text
 from custom_components.camera_autonotify.tracker import Review
 from tests.ha_testing import MockConfigEntry
 
-from .conftest import EN_JSON, FakeMQTT, add_frigate
+from .conftest import EN_JSON, FakeMQTT, add_frigate, global_form
 from .test_discovery import set_up_discovery
 from .test_notifier import BASE, DETECTION, REVIEW_ID, decision, external_url, notifier  # noqa: F401
 from .test_settings import entry_titled, fields_of, open_settings
@@ -162,12 +160,12 @@ async def test_object_names_in_global_settings(hass: HomeAssistant):
     discovery = next(e for e in hass.config_entries.async_entries(DOMAIN) if e.data[CONF_TYPE] == TYPE_DISCOVERY)
     result = await hass.config_entries.options.async_init(discovery.entry_id)
     shown = fields_of(dict(result))
-    named = shown[CONF_OBJECT_NAMES].config
+    named = shown[f"advanced_frigate.{CONF_OBJECT_NAMES}"].config
     assert named["multiple"] is True
     assert named["fields"]["object"]["selector"]["select"]["options"] == ["bark", "car", "cat", "fox", "person"]
     names = [{"object": "car", "name": "Vehicle"}]
     await hass.config_entries.options.async_configure(
-        result["flow_id"], {CONF_AUTO_DISCOVER: True, CONF_DISCOVER_ZONES: False, CONF_OBJECT_NAMES: names, "health": {}}
+        result["flow_id"], global_form(advanced_frigate={CONF_OBJECT_NAMES: names})
     )
     await hass.async_block_till_done()
     assert own_names(object_names(hass)) == {"car": "Vehicle"}
