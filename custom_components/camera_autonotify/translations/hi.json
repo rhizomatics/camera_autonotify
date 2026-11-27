@@ -40,6 +40,10 @@
             "confirm_image_processing": {
                 "title": "{name} के लिए सूचनाएँ",
                 "description": "जब Home Assistant स्कैन करे, तब {name} को अपने कैमरे की छवियों में जो प्लेटें या चेहरे मिलें उनकी सूचना पाएँ?\n\n{supernotify}"
+            },
+            "confirm_anpr_event": {
+                "title": "{name} के लिए सूचनाएँ",
+                "description": "क्या anpr2mqtt जब {name} बताए, जैसे कोई चेहरा या दृश्य बदलना, कैमरे की अपनी तस्वीरों से, तब सूचना मिले?\n\n{supernotify}"
             }
         },
         "error": {
@@ -373,6 +377,42 @@
             "dvla_test": {
                 "title": "DVLA कुंजी जाँच",
                 "description": "{result}"
+            },
+            "anpr_event": {
+                "title": "{name} के लिए सूचनाएँ",
+                "description": "anpr2mqtt जो {name} के रूप में बताता है, जैसे कोई चेहरा या दृश्य बदलना, कैमरे की अपनी तस्वीरों से।",
+                "data": {
+                    "linked_camera_auto": "जुड़ा कैमरा अपने-आप चुनें",
+                    "linked_camera": "जुड़ा कैमरा",
+                    "quiet_period": "शांत अवधि",
+                    "priority": "प्राथमिकता",
+                    "scenarios": "Supernotify परिदृश्य"
+                },
+                "data_description": {
+                    "linked_camera_auto": "Frigate, या UniFi Protect, Viseron या Blue Iris में वही कैमरा खोजें, anpr2mqtt उसके बारे में जो कहता है, उसके क्षेत्र या उसके नाम से, कभी anpr2mqtt का अपना कैमरा या ONVIF वाला नहीं। इसे नीचे चुनने के लिए बंद करें, या कोई नहीं के लिए वहाँ खाली छोड़ें।",
+                    "linked_camera": "Frigate, या UniFi Protect, Viseron या Blue Iris में वही कैमरा चुनें, ताकि सूचनाएँ उसका नाम उपयोग करें और Supernotify का कैमरा स्नूज़ उसे कवर करे। केवल इन्हीं के कैमरे पेश किए जाते हैं, anpr2mqtt का अपना कैमरा या ONVIF से वही कैमरा नहीं। केवल तब उपयोग होता है जब अपने-आप न चुना गया हो।",
+                    "quiet_period": "इतने समय में दोबारा सूचित न करें, क्योंकि एक को अगले से अलग नहीं बताया जा सकता। जहाँ इवेंट के लिए anpr2mqtt का min_event_gap_seconds सेट है, वहाँ ज़रूरी नहीं।",
+                    "priority": "या सूचित न करें।",
+                    "scenarios": "सूचना पर ये Supernotify परिदृश्य लागू करें।"
+                },
+                "sections": {
+                    "notify": {
+                        "name": "प्राप्तकर्ता",
+                        "description": "किसे और क्या सूचित किया जाए। सामान्य चुनाव के लिए खाली छोड़ें।",
+                        "data": {
+                            "targets": "प्राप्तकर्ता",
+                            "target": "प्राप्तकर्ता",
+                            "custom_target": "कस्टम प्राप्तकर्ता",
+                            "deliveries": "डिलीवरी"
+                        },
+                        "data_description": {
+                            "targets": "जिन notify एंटिटी को भेजना है। Home Assistant ऐप वाले हर फ़ोन के लिए खाली छोड़ें।",
+                            "target": "किसे या क्या सूचित करना है, किसी भी Supernotify सूचना की तरह। Supernotify को चुनने देने के लिए खाली छोड़ें।",
+                            "custom_target": "Home Assistant से बाहर के प्राप्तकर्ता, जैसे ई-मेल पते या फ़ोन नंबर।",
+                            "deliveries": "सूचनाओं को इन Supernotify डिलीवरी तक सीमित करें। Supernotify को चुनने देने के लिए खाली छोड़ें।"
+                        }
+                    }
+                }
             }
         },
         "error": {

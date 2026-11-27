@@ -40,6 +40,10 @@
             "confirm_image_processing": {
                 "title": "Notifications for {name}",
                 "description": "Get notified of the plates or faces {name} finds in its own camera's images, as Home Assistant scans them?\n\n{supernotify}"
+            },
+            "confirm_anpr_event": {
+                "title": "Notifications for {name}",
+                "description": "Get notified when anpr2mqtt reports {name}, such as a face or a scene change, by the camera's own images?\n\n{supernotify}"
             }
         },
         "error": {
@@ -373,6 +377,42 @@
             "dvla_test": {
                 "title": "DVLA key test",
                 "description": "{result}"
+            },
+            "anpr_event": {
+                "title": "Notifications for {name}",
+                "description": "What anpr2mqtt reports as {name}, such as a face or a scene change, from the camera's own images.",
+                "data": {
+                    "linked_camera_auto": "Choose the linked camera automatically",
+                    "linked_camera": "Linked camera",
+                    "quiet_period": "Quiet period",
+                    "priority": "Priority",
+                    "scenarios": "Supernotify scenarios"
+                },
+                "data_description": {
+                    "linked_camera_auto": "Find the same camera in Frigate, or UniFi Protect, Viseron or Blue Iris, from what anpr2mqtt says of it, its area or its name, never anpr2mqtt's own camera nor one by ONVIF. Switch off to choose it below, or leave that empty for none.",
+                    "linked_camera": "Pick the same camera in Frigate, or UniFi Protect, Viseron or Blue Iris, so the notifications use its name and Supernotify's camera snooze covers it. Only their cameras are offered, not anpr2mqtt's own camera, nor the same camera by ONVIF. Only used when not chosen automatically.",
+                    "quiet_period": "Don't notify again within this long, since one can't be told from the next. Not needed where anpr2mqtt's min_event_gap_seconds is set for the event.",
+                    "priority": "Or Don't notify.",
+                    "scenarios": "Apply these Supernotify scenarios to the notification."
+                },
+                "sections": {
+                    "notify": {
+                        "name": "Targets",
+                        "description": "Who and what is notified. Leave empty for the usual choice.",
+                        "data": {
+                            "targets": "Targets",
+                            "target": "Targets",
+                            "custom_target": "Custom targets",
+                            "deliveries": "Deliveries"
+                        },
+                        "data_description": {
+                            "targets": "Notify entities to send to. Leave empty for every phone with the Home Assistant app.",
+                            "target": "Who or what to notify, as for any Supernotify notification. Leave empty for Supernotify to choose.",
+                            "custom_target": "Targets outside of Home Assistant, such as e-mail addresses or phone numbers.",
+                            "deliveries": "Limit notifications to these Supernotify deliveries. Leave empty for Supernotify to choose."
+                        }
+                    }
+                }
             }
         },
         "error": {

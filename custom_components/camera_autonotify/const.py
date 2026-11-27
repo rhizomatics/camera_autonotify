@@ -27,6 +27,10 @@ CONF_SOURCE_NAME: Final[str] = "source_name"
 # source name, and the MQTT entry as the source entry
 TYPE_ANPR: Final[str] = "anpr"
 SOURCE_ANPR2MQTT: Final[str] = "anpr2mqtt"
+# anpr2mqtt's other events, with no target, such as a face or a scene change, each an event entity, one entry for each,
+# by its unique id, not the same again within the quiet period
+TYPE_ANPR_EVENT: Final[str] = "anpr_event"
+DEFAULT_EVENT_QUIET_PERIOD: Final[int] = 30
 # an image processing entity of Home Assistant's, such as OpenALPR's, as a source of its own, its own scans of its own
 # camera notified: what it's notified of, plates or faces, by its device class, the camera whose image is notified, the
 # same plate or face not again within the quiet period, and the priority of a face, a plate's being by the vehicle rules

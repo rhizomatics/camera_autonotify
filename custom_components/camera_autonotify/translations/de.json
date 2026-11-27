@@ -40,6 +40,10 @@
             "confirm_image_processing": {
                 "title": "Benachrichtigungen für {name}",
                 "description": "Über die Kennzeichen oder Gesichter benachrichtigt werden, die {name} in den Bildern der eigenen Kamera findet, während Home Assistant sie scannt?\n\n{supernotify}"
+            },
+            "confirm_anpr_event": {
+                "title": "Benachrichtigungen für {name}",
+                "description": "Benachrichtigt werden, wenn anpr2mqtt {name} meldet, etwa ein Gesicht oder eine Szenenänderung, aus den eigenen Bildern der Kamera?\n\n{supernotify}"
             }
         },
         "error": {
@@ -373,6 +377,42 @@
             "dvla_test": {
                 "title": "DVLA-Schlüsseltest",
                 "description": "{result}"
+            },
+            "anpr_event": {
+                "title": "Benachrichtigungen für {name}",
+                "description": "Was anpr2mqtt als {name} meldet, etwa ein Gesicht oder eine Szenenänderung, aus den eigenen Bildern der Kamera.",
+                "data": {
+                    "linked_camera_auto": "Verknüpfte Kamera automatisch wählen",
+                    "linked_camera": "Verknüpfte Kamera",
+                    "quiet_period": "Ruhezeit",
+                    "priority": "Priorität",
+                    "scenarios": "Supernotify-Szenarien"
+                },
+                "data_description": {
+                    "linked_camera_auto": "Dieselbe Kamera in Frigate, UniFi Protect, Viseron oder Blue Iris finden, nach dem, was anpr2mqtt über sie sagt, ihrem Bereich oder ihrem Namen, nie anpr2mqtts eigene Kamera oder eine über ONVIF. Ausschalten, um sie unten zu wählen, oder dort leer lassen für keine.",
+                    "linked_camera": "Dieselbe Kamera in Frigate, UniFi Protect, Viseron oder Blue Iris wählen, damit die Benachrichtigungen ihren Namen verwenden und Supernotifys Kamera-Snooze sie abdeckt. Nur deren Kameras werden angeboten, nicht anpr2mqtts eigene Kamera und nicht dieselbe Kamera über ONVIF. Nur verwendet, wenn nicht automatisch gewählt.",
+                    "quiet_period": "Innerhalb dieser Zeit nicht erneut benachrichtigen, da eines nicht vom nächsten zu unterscheiden ist. Nicht nötig, wo min_event_gap_seconds von anpr2mqtt für das Ereignis gesetzt ist.",
+                    "priority": "Oder Nicht benachrichtigen.",
+                    "scenarios": "Diese Supernotify-Szenarien auf die Benachrichtigung anwenden."
+                },
+                "sections": {
+                    "notify": {
+                        "name": "Empfänger",
+                        "description": "Wer und was benachrichtigt wird. Leer lassen für die übliche Wahl.",
+                        "data": {
+                            "targets": "Ziele",
+                            "target": "Ziele",
+                            "custom_target": "Benutzerdefinierte Ziele",
+                            "deliveries": "Zustellungen"
+                        },
+                        "data_description": {
+                            "targets": "Notify-Entitäten, an die gesendet wird. Leer lassen für jedes Handy mit der Home Assistant App.",
+                            "target": "Wer oder was benachrichtigt wird, wie bei jeder Supernotify-Benachrichtigung. Leer lassen, damit Supernotify wählt.",
+                            "custom_target": "Ziele außerhalb von Home Assistant, etwa E-Mail-Adressen oder Telefonnummern.",
+                            "deliveries": "Benachrichtigungen auf diese Supernotify-Zustellungen beschränken. Leer lassen, damit Supernotify wählt."
+                        }
+                    }
+                }
             }
         },
         "error": {

@@ -51,10 +51,44 @@ Every licence plate read, by Frigate's plate recognition (ANPR/ALPR), an image p
 2. **Frigate's plates, enhanced**: it can listen for Frigate plate messages, and enrich them. Not needed when using Camera AutoNotify
 3. **Any other detection** a camera can make that results in an image sent by FTP or to a NAS, such as a face, or a line crossed
 
-- **What you need**: anpr2mqtt 1.3.0 or later, with its Home Assistant devices on (`device_creation`, as it comes). Each anpr2mqtt camera is then found and offered as *Discovered*, even with *Set up cameras automatically* on, so its setup can import from anpr2mqtt. Frigate isn't needed
+- **What you need**: anpr2mqtt 1.3.0 or later, 1.4.0 for other events, with its Home Assistant devices on (`device_creation`, as it comes). Each anpr2mqtt camera is then found and offered as *Discovered*, even with *Set up cameras automatically* on, so its setup can import from anpr2mqtt. Frigate isn't needed
 - **What's sent**: details of the vehicle as a JSON payload on an MQTT topic, and the image itself as a binary payload on a different topic. See [Home Assistant Integration](https://anpr2mqtt.rhizomatics.org.uk/homeassistant/) for the details. This can also include an area for the camera to show up as for Home Assistant, and the identity of the linked camera.
 - **Headline**: the vehicle and where, named by its description, or else its category, or else its colour and make from the DVLA, such as *Red Peugeot at Driveway*, or else *Unknown vehicle JX123YYZ at Driveway*
 - **Health**: anpr2mqtt going unavailable is notified, and again when it's back, with the timing of the Frigate health checks
+
+#### Other Events
+
+From anpr2mqtt 1.4.0, any other event a camera uploads images for, such as a face or a scene change, set up in
+anpr2mqtt by its `target_type` (see its [Other Events](https://anpr2mqtt.rhizomatics.org.uk/camera/#other-events)),
+is an `event` entity, found and set up here as a source of its own, as Frigate's cameras are. Each is notified as
+it fires, titled by anpr2mqtt's `description` at the linked camera, such as *Face at Front*, with the event's image.
+
+| Setting | Default | What it does |
+| ------- | ------- | ------------ |
+| Linked camera | Found | As for plates |
+| Quiet period | 30 seconds | Not notified again within this long, since one can't be told from the next. Not needed where anpr2mqtt's `min_event_gap_seconds` is set |
+| Priority | Medium | Or *Don't notify* |
+| Supernotify scenarios | None | Added to each, for scenarios of your own to act on |
+
+For example, to hear of faces only while the alarm is set, choose `face_seen` in *Supernotify scenarios*, and in
+Supernotify:
+
+```yaml
+face_seen: {}
+quiet_faces_at_home:
+  conditions:
+    - condition: template
+      value_template: "{{ 'face_seen' in applied_scenarios }}"
+    - condition: state
+      entity_id: alarm_control_panel.home_alarm_control
+      state: disarmed
+  delivery:
+    .*:
+      enabled: false
+```
+
+A second image, such as the whole scene beside the face, waits on Supernotify's
+[`extra_images`](https://github.com/rhizomatics/supernotify/issues/348).
 
 #### Avoiding Duplicate Notifications
 

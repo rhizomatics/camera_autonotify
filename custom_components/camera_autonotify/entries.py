@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from homeassistant.const import CONF_TYPE
 from homeassistant.core import HomeAssistant, callback
 
-from .const import CONF_LAST_SNAPSHOT, DOMAIN, TYPE_ANPR, TYPE_DISCOVERY, TYPE_IMAGE_PROCESSING, TYPE_ZONE
+from .const import CONF_LAST_SNAPSHOT, DOMAIN, TYPE_ANPR, TYPE_ANPR_EVENT, TYPE_DISCOVERY, TYPE_IMAGE_PROCESSING, TYPE_ZONE
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -23,7 +23,7 @@ IMAGE_PROCESSING_SUFFIX = " (Image processing)"
 def entry_title(name: str, entry_type: str | None) -> str:
     """A new entry's title: its name, and for Frigate's cameras and zones, or an image processing entity, where it's
     from"""
-    if entry_type == TYPE_ANPR:
+    if entry_type in (TYPE_ANPR, TYPE_ANPR_EVENT):
         return name
     return f"{name}{IMAGE_PROCESSING_SUFFIX if entry_type == TYPE_IMAGE_PROCESSING else FRIGATE_SUFFIX}"
 
