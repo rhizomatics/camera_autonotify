@@ -40,22 +40,25 @@ Whatever the source, the same set of options are available for configuring notif
 
 1. Use the button above, or look for **Camera Autonotify** in the Home Assistant Marketplace (its one of the default repositories), install it and restart Home Assistant
 2. In *Settings*, *Devices & services*, choose *Add integration* and pick *Camera AutoNotify*
-3. Leave *Set up cameras automatically* on, and submit
+3. Submit, and each Frigate camera is offered as *Discovered* on the *Devices & services* page, as any device
+   found is, and so is any you add to Frigate later. Choose *Add* on each you want, or *Ignore*
 
-That's all. Every Frigate camera is set up straight away, and so is any you add to Frigate later. Each is listed on the integration's page, alongside *Global Settings*, and notifies Frigate's alerts with no further settings.
+Each camera added is listed on the integration's page, alongside *Global Settings*, and notifies Frigate's alerts
+with no further settings.
 
-To stop the notifications for a camera, disable it rather than delete it, since a deleted camera is found and set up again.
+To stop the notifications for a camera, disable it rather than delete it, since a deleted camera is offered again.
 
 ### Removing
 
-1. In *Settings*, *Devices & services*, open *Camera AutoNotify* and delete *Global Settings* first, so the cameras aren't found and set up again, then delete each camera and zone
+1. In *Settings*, *Devices & services*, open *Camera AutoNotify* and delete *Global Settings* first, so the cameras aren't offered again, then delete each camera and zone
 2. Remove *Camera AutoNotify* in Marketplace and restart Home Assistant
 
 It adds no automations, scripts or YAML of its own, and changes nothing in Frigate, so there is nothing else to clear up. If you moved from the Frigate blueprint, re-enable its automations to go back to it.
 
-### Choosing Cameras Yourself
+### Setting Up Every Camera Automatically
 
-Turn *Set up cameras automatically* off, on the first screen or later from *Global Settings*, and cameras are instead offered as *Discovered* on the *Devices & services* page, beside Frigate's own. Choose *Add* to set one up, or *Ignore* on any you don't want.
+Turn *Set up cameras automatically* on, on the first screen or later from *Global Settings*, and every camera found
+is set up straight away, without being offered first.
 
 ### Zones
 

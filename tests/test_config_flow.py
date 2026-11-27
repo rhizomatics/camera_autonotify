@@ -36,8 +36,18 @@ async def test_discovery_entry_created(hass: HomeAssistant):
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"] == {CONF_TYPE: TYPE_DISCOVERY}
-    # cameras found by default, and not zones
-    assert result["options"] == {CONF_AUTO_DISCOVER: True, CONF_DISCOVER_ZONES: False}
+    # cameras offered as discovered, as Home Assistant does, and not zones
+    assert result["options"] == {CONF_AUTO_DISCOVER: False, CONF_DISCOVER_ZONES: False}
+
+
+async def test_cameras_offered_by_default(hass: HomeAssistant):
+    add_frigate(hass)
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
+    await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    await hass.async_block_till_done()
+    assert [e.data.get(CONF_TYPE) for e in hass.config_entries.async_entries(DOMAIN)] == [TYPE_DISCOVERY]
+    offered = [f for f in hass.config_entries.flow.async_progress_by_handler(DOMAIN) if f["step_id"] == "confirm"]
+    assert len(offered) == 2
 
 
 async def test_supernotify_present(hass: HomeAssistant):

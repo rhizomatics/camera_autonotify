@@ -23,7 +23,7 @@ You need the same things as the blueprint, apart from the automations:
 1. **Write down what you changed.** For each of the blueprint's automations, open it in *Settings*,
    *Automations & scenes*, choose *Edit in YAML* from its menu, and copy the `use_blueprint` `input` section somewhere. Only the inputs listed there differ from the blueprint's defaults. One automation may cover more than one camera, so note which.
 2. **Install Camera AutoNotify** from the Home Assistant Marketplace, and restart.
-3. **Add the integration** in *Settings*, *Devices & services*. To be told only by Camera AutoNotify from the start, turn *Set up cameras automatically* off on the first screen and add each camera when you're ready, from *Discovered*. Otherwise leave it on, and every camera is set up straight away.
+3. **Add the integration** in *Settings*, *Devices & services*. Each camera is offered as *Discovered*, to add when you're ready, so you can disable the blueprint's automation for it at the same time.
 4. **Disable the blueprint's automations** once the cameras are set up, or you'll be told twice. Disable rather than delete them until you're happy, so you can go back.
 5. **Set each camera's settings** from what you wrote down, using the [table](#where-each-input-is-now) below. A camera's settings are under its entry on the integration's page. Watch the units, since the blueprint's *Timeout* is in minutes and *Stop updates after* is in seconds.
 6. **Set who's told.** Leave the targets empty and Supernotify chooses, as it's set up to. To tell only some, choose them under *Image and targets* in a camera's settings, or set up recipients
