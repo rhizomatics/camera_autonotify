@@ -2,6 +2,10 @@
 title: What's New
 ---
 
+# 1.2.2
+## 🐞 Fixes
+- Health notifications call a Frigate server *Frigate*, where its Frigate entry is titled by its address, as the Frigate integration titles it, with the address in brackets in writing only, and a camera by its name without *(Frigate)*. Spoken by a voice assistant, they say how long, such as *over 5 minutes*, rather than a clock time, and never the address
+
 # 1.2.1
 ## 📝 Other changes
 - Everything found, Frigate's cameras and zones, anpr2mqtt's cameras and events, and image processing entities, is offered as *Discovered*, to add or ignore, as Home Assistant does for any device found, rather than set up without asking. Each source has *Find automatically* and *Set up without asking* in its own *Advanced* section of Global Settings. An install that had *Set up cameras automatically* on keeps setting up Frigate's cameras and image processing entities without asking until Global Settings is next saved
