@@ -657,6 +657,12 @@
         },
         "mqtt_not_ready": {
             "message": "MQTT उपलब्ध नहीं है, इसलिए जब तक यह उपलब्ध नहीं होता Frigate की समीक्षाओं को फ़ॉलो नहीं किया जा सकता"
+        },
+        "global_settings_missing": {
+            "message": "पहले Camera AutoNotify की वैश्विक सेटिंग्स सेट करें"
+        },
+        "source_gone": {
+            "message": "{name} का स्रोत हट गया है"
         }
     },
     "common": {
@@ -773,6 +779,10 @@
         "lookup_refused": {
             "title": "वाहन जानकारी अस्वीकृत",
             "description": "{provider} ने API कुंजी अस्वीकार कर दी, इसलिए प्लेटें नहीं देखी जा रहीं। Camera AutoNotify की वैश्विक सेटिंग्स के वाहन जानकारी भाग में कुंजी जाँचें।"
+        },
+        "source_gone": {
+            "title": "{name} का स्रोत हट गया है",
+            "description": "इसका Frigate सर्वर, या इसके लिए anpr2mqtt की इकाई, हटा दी गई है, इसलिए {name} कुछ भी सूचित नहीं कर सकता। Camera AutoNotify की प्रविष्टियों से {name} को हटाएँ, या स्रोत फिर से सेट करें।"
         }
     },
     "services": {

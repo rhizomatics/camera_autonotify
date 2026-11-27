@@ -122,6 +122,21 @@ addopts = [
     "--cov-fail-under=90",
 ]
 
+# strict for the integration, by the Home Assistant quality scale's strict-typing rule, the tests' functions left
+# unannotated, as pytest's fixtures make them
+[tool.mypy]
+strict = true
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_calls = false
+disallow_any_generics = false
+warn_return_any = false
+# an entry's state, narrowed by one assert, changed by a reload before the next
+strict_equality = false
+
 [[tool.mypy.overrides]]
 module = ["pytest_homeassistant_custom_component.*", "pytest_homeassistant.*"]
 follow_untyped_imports = true

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from typing import Any, Protocol
 
 from aiohttp import ClientError
@@ -96,6 +96,8 @@ class FrigateCoordinator(Protocol):
 
     last_update_success: bool
     data: dict[str, Any] | None
+
+    def async_add_listener(self, update_callback: Callable[[], None], context: object = None) -> Callable[[], None]: ...
 
 
 @callback
@@ -344,14 +346,16 @@ def genai_reviews_seen(hass: HomeAssistant) -> dict[str, float]:
     """When a review summary last came from each Frigate server over MQTT, as a timestamp, by its topic prefix, since
     Home Assistant started"""
     data: dict[str, Any] = hass.data.setdefault(DOMAIN, {})
-    return data.setdefault(DATA_GENAI_SEEN, {})
+    seen: dict[str, float] = data.setdefault(DATA_GENAI_SEEN, {})
+    return seen
 
 
 @callback
 def fact_stores(hass: HomeAssistant) -> dict[str, FactStore]:
     """What's known of each Frigate server's tracked objects, by topic prefix, kept while any camera is followed"""
     data: dict[str, Any] = hass.data.setdefault(DOMAIN, {})
-    return data.setdefault(DATA_FACTS, {})
+    stores: dict[str, FactStore] = data.setdefault(DATA_FACTS, {})
+    return stores
 
 
 @callback

@@ -6,12 +6,13 @@ from typing import TYPE_CHECKING
 
 from homeassistant.components import mqtt
 from homeassistant.const import CONF_TYPE, Platform
-from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import issue_registry as ir
 
 from .actions import async_listen
-from .anpr import AnprWatcher
-from .anpr_events import AnprEventWatcher
+from .anpr import AnprWatcher, sensor_entity
+from .anpr_events import AnprEventWatcher, event_entity
 from .const import (
     CONF_SOURCE_ENTRY_ID,
     DISCOVERY_TITLE,
@@ -19,8 +20,10 @@ from .const import (
     DOMAIN,
     TYPE_ANPR,
     TYPE_ANPR_EVENT,
+    TYPE_CAMERA,
     TYPE_DISCOVERY,
     TYPE_IMAGE_PROCESSING,
+    TYPE_ZONE,
 )
 from .device import async_register_device
 from .discovery import async_discover, async_start_discovery
@@ -58,8 +61,44 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     return True
 
 
+# an entry whose source has gone for good, its Frigate entry deleted, or anpr2mqtt's entity for it removed, one repair
+# for each such entry, until the entry is removed
+ISSUE_SOURCE_GONE = "source_gone"
+
+
+def _source_gone(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Whether the entry's source has gone for good, not only not ready yet. An image processing entity, often set up
+    from YAML with no registry entry, may only turn up after starting, so isn't judged"""
+    kind = entry.data.get(CONF_TYPE)
+    if kind in (TYPE_CAMERA, TYPE_ZONE, None):
+        return hass.config_entries.async_get_entry(entry.data.get(CONF_SOURCE_ENTRY_ID, "")) is None
+    if kind == TYPE_ANPR:
+        return sensor_entity(hass, entry) is None
+    if kind == TYPE_ANPR_EVENT:
+        return event_entity(hass, entry) is None
+    return False
+
+
+def _issue_id(entry: ConfigEntry) -> str:
+    return f"{ISSUE_SOURCE_GONE}_{entry.entry_id}"
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: CameraAutoNotifyConfigEntry) -> bool:
     entry.runtime_data = None
+    if _source_gone(hass, entry):
+        ir.async_create_issue(
+            hass,
+            DOMAIN,
+            _issue_id(entry),
+            is_fixable=False,
+            severity=ir.IssueSeverity.WARNING,
+            translation_key=ISSUE_SOURCE_GONE,
+            translation_placeholders={"name": entry_name(entry)},
+        )
+        raise ConfigEntryError(
+            translation_domain=DOMAIN, translation_key=ISSUE_SOURCE_GONE, translation_placeholders={"name": entry_name(entry)}
+        )
+    ir.async_delete_issue(hass, DOMAIN, _issue_id(entry))
     if entry.data.get(CONF_TYPE) == TYPE_DISCOVERY:
         # no reviews to watch, only to look again now that what's discovered may have been switched, the health
         # of each Frigate server, and its daily summary
@@ -102,6 +141,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: CameraAutoNotifyConfigEn
     async_register_device(hass, entry, entry_name(entry))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: CameraAutoNotifyConfigEntry) -> None:
+    ir.async_delete_issue(hass, DOMAIN, _issue_id(entry))
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: CameraAutoNotifyConfigEntry) -> bool:

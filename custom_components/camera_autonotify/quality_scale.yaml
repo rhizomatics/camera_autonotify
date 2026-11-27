@@ -4,13 +4,16 @@
 # (HA 2026.11; 54 rules: Bronze 20, Silver 10, Gold 21, Platinum 3). No rules added, removed,
 # renamed or moved since the set Supernotify verified on 2026-08-06.
 #
-# The integration has no entity platforms: it follows Frigate reviews over MQTT and notifies through
-# Supernotify or notify entities, with one device per camera or zone entry (device.py). The entity
-# rules are exempt for that reason.
+# The integration follows Frigate reviews over MQTT, and anpr2mqtt and image processing sources, and notifies
+# through Supernotify or notify entities, with one device per entry (device.py). Its only entity is a camera's
+# optional Last notification snapshot camera (camera.py).
 #
 # Changelog
 # 2026-11-06: first file. Silver met once docs-removal-instructions is done (same change).
 # 2026-11-13: exception-translations done.
+# 2026-11-27: Platinum. The camera entity, actions, DVLA lookups and anpr2mqtt sources added since are now
+#   assessed; strict typing, action errors, a repair for an entry whose source has gone, troubleshooting docs
+#   and icons added.
 
 rules:
   # ==================
@@ -18,12 +21,14 @@ rules:
   # ==================
 
   action-setup:
-    status: exempt
-    comment: Registers no actions. It calls supernotify.notify, supernotify's enquire actions and notify.send_message.
+    status: done
+    comment: |
+      services.py, registered in async_setup: classify_plate, add_plate, remove_plate, list_vehicle_categories and reset_sightings.
 
   appropriate-polling:
-    status: exempt
-    comment: Nothing is polled (iot_class local_push). Reviews arrive on Frigate's MQTT reviews topic (hub.py).
+    status: done
+    comment: |
+      The camera entity isn't polled (should_poll False). Frigate's health check interval is a setting (health.py).
 
   brands:
     status: done
@@ -51,8 +56,8 @@ rules:
     comment: No requirements in manifest.json.
 
   docs-actions:
-    status: exempt
-    comment: Provides no actions.
+    status: done
+    comment: docs/vehicles.md, How it Works, Actions.
 
   docs-conditions:
     status: exempt
@@ -75,16 +80,19 @@ rules:
     comment: Provides no triggers.
 
   entity-event-setup:
-    status: exempt
-    comment: No entities. The MQTT subscription and timers belong to the watcher and are removed through entry.async_on_unload.
+    status: done
+    comment: |
+      camera.py subscribes to the Frigate coordinator in async_added_to_hass, released with async_on_remove.
 
   entity-unique-id:
-    status: exempt
-    comment: No entities.
+    status: done
+    comment: |
+      camera.py: {entry_id}_last_snapshot.
 
   has-entity-name:
-    status: exempt
-    comment: No entities.
+    status: done
+    comment: |
+      camera.py, on the entry's device, from HA 2026.8 where devices are linked; named in full before that, with no device.
 
   runtime-data:
     status: done
@@ -113,8 +121,9 @@ rules:
   # ==================
 
   action-exceptions:
-    status: exempt
-    comment: Provides no actions.
+    status: done
+    comment: |
+      services.py raises a translated ServiceValidationError where a plate can't be added or removed without Global Settings.
 
   config-entry-unloading:
     status: done
@@ -132,8 +141,8 @@ rules:
     comment: README.md "Install" (the two discovery options), "Choosing Cameras Yourself" and "Zones".
 
   entity-unavailable:
-    status: exempt
-    comment: No entities.
+    status: done
+    comment: camera.py is available as the Frigate integration's coordinator finds the server.
 
   integration-owner:
     status: done
@@ -142,12 +151,11 @@ rules:
   log-when-unavailable:
     status: exempt
     comment: |
-      Connects to no device or service of its own. MQTT broker loss is logged by Home
-      Assistant's MQTT integration, and a missing Frigate entry holds setup in ConfigEntryNotReady.
+      Connects to nothing of its own. The Frigate integration logs its server's loss, and health.py notifies it.
 
   parallel-updates:
-    status: exempt
-    comment: No entity platforms.
+    status: done
+    comment: camera.py sets PARALLEL_UPDATES = 0, nothing being polled.
 
   reauthentication-flow:
     status: exempt
@@ -175,8 +183,7 @@ rules:
   discovery:
     status: done
     comment: |
-      discovery.py finds Frigate cameras and zones in the registries, set up by themselves (import)
-      or offered as integration_discovery flows with automatic discovery off.
+      discovery.py finds Frigate cameras and zones, anpr2mqtt's sensors and event entities, and image processing entities, set up by themselves (import) or offered as integration_discovery flows.
 
   discovery-update-info:
     status: exempt
@@ -205,11 +212,8 @@ rules:
     comment: README.md "Settings" and "What Gets Sent".
 
   docs-troubleshooting:
-    status: todo
-    comment: |
-      "Video on iPhones" covers one symptom. Missing: what to do when nothing is sent (the
-      "Nothing to notify" warning in notifier.py, MQTT on a different broker from Frigate, the
-      notification proxy switched off) or an entry stays not ready.
+    status: done
+    comment: README.md Troubleshooting.
 
   docs-use-cases:
     status: done
@@ -220,20 +224,20 @@ rules:
     comment: discovery.py listens for Frigate entity registry creations and picks up cameras and zones added after setup.
 
   entity-category:
-    status: exempt
-    comment: No entities.
+    status: done
+    comment: The Last notification snapshot camera is the entry's main entity, so has no category.
 
   entity-device-class:
     status: exempt
-    comment: No entities.
+    comment: Cameras have no device classes.
 
   entity-disabled-by-default:
     status: exempt
-    comment: No entities.
+    comment: The camera entity is only made when chosen in the camera's settings.
 
   entity-translations:
-    status: exempt
-    comment: No entities.
+    status: done
+    comment: camera.py's translation_key last_snapshot, in translations/*.json entity.camera.
 
   exception-translations:
     status: done
@@ -243,8 +247,8 @@ rules:
       screens' notes are in its "common" section, read in Home Assistant's language through texts.py.
 
   icon-translations:
-    status: exempt
-    comment: No entities.
+    status: done
+    comment: icons.json, for the camera entity and each action.
 
   reconfiguration-flow:
     status: exempt
@@ -253,19 +257,14 @@ rules:
       change is in the options flow.
 
   repair-issues:
-    status: todo
+    status: done
     comment: |
-      Candidates: no notify targets and no Supernotify (notifier.py logs "Nothing to notify"), and
-      an entry whose Frigate entry has been deleted (see stale-devices). Both are only logged or
-      retried today.
+      __init__.py raises source_gone, with ConfigEntryError, for an entry whose Frigate entry or anpr2mqtt entity has been removed, until the entry is removed. vehicles.py raises lookup_refused for a refused DVLA key.
 
   stale-devices:
-    status: todo
+    status: done
     comment: |
-      An entry keeps the Frigate entry ID it was found under. If Frigate is deleted, or removed and
-      added again, frigate_config() returns None for it forever, so the old entries stay in
-      "retrying setup" next to the new ones discovery creates. Remove them, or raise a repair, when
-      the source Frigate entry no longer exists.
+      An entry whose source has gone is a repair, its device going with the entry when it's removed (__init__.py).
 
   # ==================
   # PLATINUM TIER
@@ -276,9 +275,9 @@ rules:
     comment: No requirements.
 
   inject-websession:
-    status: exempt
-    comment: Makes no HTTP requests.
+    status: done
+    comment: frigate.py and vehicles.py use async_get_clientsession.
 
   strict-typing:
-    status: todo
-    comment: mypy runs in CI, but without strict = true in pyproject.toml.
+    status: done
+    comment: mypy strict = true in pyproject.toml for the integration, run in CI by pre-commit.

@@ -657,6 +657,12 @@
         },
         "mqtt_not_ready": {
             "message": "MQTT ist nicht verfügbar, daher können Frigates Reviews erst verfolgt werden, wenn es verfügbar ist"
+        },
+        "global_settings_missing": {
+            "message": "Richten Sie zuerst die globalen Einstellungen von Camera AutoNotify ein"
+        },
+        "source_gone": {
+            "message": "Die Quelle von {name} ist weg"
         }
     },
     "common": {
@@ -773,6 +779,10 @@
         "lookup_refused": {
             "title": "Fahrzeugabfrage abgelehnt",
             "description": "{provider} hat den API-Schlüssel abgelehnt, daher werden keine Kennzeichen nachgeschlagen. Den Schlüssel im Abschnitt Fahrzeugabfrage der globalen Einstellungen von Camera AutoNotify prüfen."
+        },
+        "source_gone": {
+            "title": "Die Quelle von {name} ist weg",
+            "description": "Sein Frigate-Server oder die Entität von anpr2mqtt dafür wurde entfernt, daher kann {name} nichts melden. Entfernen Sie {name} aus den Einträgen von Camera AutoNotify oder richten Sie die Quelle erneut ein."
         }
     },
     "services": {

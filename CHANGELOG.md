@@ -2,12 +2,9 @@
 title: What's New
 ---
 
-## New!
-
-> Camera Autonotify was first released in October 2026 with support only for Frigate notifications. Its intended to be a `1.0.0` release by the end of 2026, with [ANPR2MQTT](https://anpr2mqtt.rhizomatics.org.uk) as the second integration. Ideas, improvements and other feedback very welcome - use the [Github Issues](https://github.com/rhizomatics/camera_autonotify/issues) to add them.
-
 # 1.2.0
 ## ✨ Enhancements
+- **Home Assistant quality scale: Platinum** (self-assessed). An entry whose Frigate server, or anpr2mqtt entity, has been removed is now a repair rather than retrying forever, the plate actions say when Global Settings are missing, the Last notification snapshot camera is unavailable while Frigate is, with a [Troubleshooting](index.md#troubleshooting) section, icons for the actions, and strict typing
 - **anpr2mqtt's other events**, such as a face or a scene change, from anpr2mqtt 1.4.0, each found and set up as a source of its own, notified as *Face at Front* with the event's image, and its own priority, quiet period and Supernotify scenarios ([#45](https://github.com/rhizomatics/camera_autonotify/issues/45)). See [Other Events](vehicles.md#other-events)
 
 # 1.1.0
