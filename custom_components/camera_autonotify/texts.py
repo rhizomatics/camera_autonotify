@@ -58,11 +58,14 @@ FACT_VISITORS = {"daily": FACT_DAILY_VISITOR, "weekly": FACT_WEEKLY_VISITOR, "oc
 # a Frigate server failing its health check, and answering again, named by its title
 HEALTH_DOWN_TITLE = "health_down_title"
 HEALTH_DOWN = "health_down"
+# as a voice assistant says it, how long rather than since when, which a clock time read out isn't
+HEALTH_DOWN_SPOKEN = "health_down_spoken"
 HEALTH_UP_TITLE = "health_up_title"
 HEALTH_UP = "health_up"
 # a camera Frigate has no video from, while not disabled in Frigate, and its video back, named as its entry
 CAMERA_DOWN_TITLE = "camera_down_title"
 CAMERA_DOWN = "camera_down"
+CAMERA_DOWN_SPOKEN = "camera_down_spoken"
 CAMERA_UP_TITLE = "camera_up_title"
 CAMERA_UP = "camera_up"
 # a plate read by anpr2mqtt, the vehicle named as anpr2mqtt describes it, or by its plate, at the camera, with the

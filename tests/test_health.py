@@ -39,6 +39,7 @@ from custom_components.camera_autonotify.health import (
     Health,
     HealthMonitor,
     HealthSettings,
+    server_names,
 )
 from custom_components.camera_autonotify.notifier import async_notify_message
 from custom_components.camera_autonotify.texts import async_load_texts, said_duration
@@ -183,7 +184,12 @@ async def test_server_failure_and_recovery_notified(hass: HomeAssistant, freezer
     await advance(hass, freezer, 1)
     assert len(calls) == 1
     assert calls[0].data["title"] == HEALTH_DOWN_TITLE
-    assert calls[0].data["message"].startswith("frigate:5000 has failed its health check since ")
+    # Frigate, titled by its address by the Frigate integration, with the address in writing only
+    assert calls[0].data["message"].startswith("Frigate (frigate:5000) has failed its health check since ")
+    # how long, not since when, an address and a clock time read out being no use
+    assert calls[0].data["spoken_message"] == (
+        "Frigate is not responding. Frigate has not responded for over 1 minute, so camera notifications may have stopped."
+    )
     assert calls[0].data["priority"] == "high"
     assert calls[0].data["extra_data"]["mobile_push_notification_tag"] == TAG
 
@@ -195,7 +201,8 @@ async def test_server_failure_and_recovery_notified(hass: HomeAssistant, freezer
     await advance(hass, freezer, 60)
     assert len(calls) == 2
     assert calls[1].data["title"] == HEALTH_UP_TITLE
-    assert calls[1].data["message"] == "frigate:5000 is responding again, after 3 minutes."
+    assert calls[1].data["message"] == "Frigate (frigate:5000) is responding again, after 3 minutes."
+    assert calls[1].data["spoken_message"] == "Frigate is back. Frigate is responding again, after 3 minutes."
     assert calls[1].data["priority"] == "low"
     # taking the place of the failure's notification
     assert calls[1].data["extra_data"]["mobile_push_notification_tag"] == TAG
@@ -203,7 +210,7 @@ async def test_server_failure_and_recovery_notified(hass: HomeAssistant, freezer
     assert client.async_get_version.await_count == 0
 
     diagnostics = await async_get_config_entry_diagnostics(hass, entry)
-    assert diagnostics["health"] == {FRIGATE: {"kind": "server", "name": "frigate:5000", "failures": 0, "down": False}}
+    assert diagnostics["health"] == {FRIGATE: {"kind": "server", "name": "Frigate", "failures": 0, "down": False}}
 
 
 async def test_server_asked_without_coordinator(hass: HomeAssistant, freezer: FrozenDateTimeFactory):
@@ -301,6 +308,11 @@ async def test_camera_offline_and_back(hass: HomeAssistant, freezer: FrozenDateT
     assert len(calls) == 1
     assert calls[0].data["title"] == "Courtyard camera is offline"
     assert calls[0].data["message"].startswith("Frigate has had no video from Courtyard since ")
+    assert (
+        calls[0]
+        .data["spoken_message"]
+        .startswith("Courtyard camera is offline. Frigate has had no video from Courtyard for over ")
+    )
     # to whoever the camera's own notifications go to
     assert calls[0].data["target"] == {"entity_id": ["person.jeff"]}
     assert calls[0].data["extra_data"]["mobile_push_notification_tag"] == f"camera_autonotify_health_{camera.entry_id}"
@@ -573,3 +585,17 @@ async def test_message_failure_logged(hass: HomeAssistant, caplog: pytest.LogCap
     hass.services.async_register("supernotify", "notify", fail)
     await async_notify_message(hass, HEALTH_DOWN_TITLE, "frigate:5000 has failed", "high", TAG)
     assert "Notification failed: Frigate is not responding" in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("title", "url", "names"),
+    [
+        ("10.111.10.100:5000", "http://10.111.10.100:5000", ("Frigate", "10.111.10.100:5000")),
+        ("http://frigate.local:5000", "http://frigate.local:5000", ("Frigate", "http://frigate.local:5000")),
+        # renamed, so said as named
+        ("Barn Frigate", "http://10.0.0.2:5000", ("Barn Frigate", None)),
+        ("", None, ("Frigate", None)),
+    ],
+)
+def test_server_names(title: str, url: str | None, names: tuple[str, str | None]):
+    assert server_names(title, url) == names

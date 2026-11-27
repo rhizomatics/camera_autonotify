@@ -45,6 +45,7 @@ from .const import (
     FRIGATE_DOMAIN,
     TYPE_CAMERA,
 )
+from .entries import entry_name
 from .frigate import (
     camera_enabled,
     camera_has_video,
@@ -56,10 +57,12 @@ from .frigate import (
 from .notifier import async_notify_message
 from .texts import (
     CAMERA_DOWN,
+    CAMERA_DOWN_SPOKEN,
     CAMERA_DOWN_TITLE,
     CAMERA_UP,
     CAMERA_UP_TITLE,
     HEALTH_DOWN,
+    HEALTH_DOWN_SPOKEN,
     HEALTH_DOWN_TITLE,
     HEALTH_UP,
     HEALTH_UP_TITLE,
@@ -161,6 +164,23 @@ class Subject:
     # the camera's name as Frigate has it, and its entry's options, for who is told
     camera: str | None = None
     options: Mapping[str, Any] = field(default_factory=dict, compare=False)
+    # said after the name in writing only, such as a server's address
+    detail: str | None = None
+
+    def said(self, spoken: bool = False) -> str:
+        return f"{self.name} ({self.detail})" if self.detail and not spoken else self.name
+
+
+FRIGATE_NAME = "Frigate"
+
+
+def server_names(title: str, url: object) -> tuple[str, str | None]:
+    """What a Frigate server is called: its entry's title, unless that's only its address, as the Frigate integration
+    titles it, when it's Frigate, with the address said after it in writing, an address read out being no name"""
+    address = str(url or "").partition("://")[2].rstrip("/") or str(url or "")
+    if title and title in (str(url or ""), address):
+        return FRIGATE_NAME, title
+    return title or FRIGATE_NAME, None
 
 
 @dataclass
@@ -212,12 +232,13 @@ class HealthMonitor:
         subjects: dict[str, Subject] = {}
         if self.settings.enabled:
             for entry in self.hass.config_entries.async_entries(FRIGATE_DOMAIN, include_disabled=False):
-                subjects[entry.entry_id] = Subject(Kind.SERVER, entry.title, entry.entry_id)
+                name, detail = server_names(entry.title, entry.data.get("url"))
+                subjects[entry.entry_id] = Subject(Kind.SERVER, name, entry.entry_id, detail=detail)
         for entry in self.hass.config_entries.async_entries(DOMAIN, include_disabled=False):
             if entry.data.get(CONF_TYPE) == TYPE_CAMERA and entry.options.get(CONF_STATUS_CHECK, True):
                 subjects[entry.entry_id] = Subject(
                     Kind.CAMERA,
-                    entry.title,
+                    entry_name(entry),
                     entry.data[CONF_SOURCE_ENTRY_ID],
                     entry.data[CONF_SOURCE_NAME],
                     dict(entry.options),
@@ -376,23 +397,29 @@ class HealthMonitor:
         tag = f"{DOMAIN}_health_{key}"
         if change is Change.UP:
             health.failing_since = None
+        key_name = "server" if subject.kind is Kind.SERVER else "camera"
+        names, spoken_names = {key_name: subject.said()}, {key_name: subject.said(spoken=True)}
         if subject.kind is Kind.SERVER:
-            names = {"server": subject.name}
-            down_title, down, up_title, up = HEALTH_DOWN_TITLE, HEALTH_DOWN, HEALTH_UP_TITLE, HEALTH_UP
+            down_title, down, spoken_down = HEALTH_DOWN_TITLE, HEALTH_DOWN, HEALTH_DOWN_SPOKEN
+            up_title, up = HEALTH_UP_TITLE, HEALTH_UP
         else:
-            names = {"camera": subject.name}
-            down_title, down, up_title, up = CAMERA_DOWN_TITLE, CAMERA_DOWN, CAMERA_UP_TITLE, CAMERA_UP
+            down_title, down, spoken_down = CAMERA_DOWN_TITLE, CAMERA_DOWN, CAMERA_DOWN_SPOKEN
+            up_title, up = CAMERA_UP_TITLE, CAMERA_UP
+        took = said_duration(self.hass, now - since)
         if change is Change.DOWN:
-            _LOGGER.warning("CAMERA_AUTONOTIFY %s %s is down", subject.kind, subject.name)
+            _LOGGER.warning("CAMERA_AUTONOTIFY %s %s is down", subject.kind, subject.said())
             local = dt_util.as_local(dt_util.utc_from_timestamp(since)).strftime("%H:%M")
             title, message = text(self.hass, down_title, **names), text(self.hass, down, **names, since=local)
+            spoken = text(self.hass, spoken_down, **spoken_names, duration=took)
             priority = PRIORITY_DOWN
         else:
-            _LOGGER.info("CAMERA_AUTONOTIFY %s %s is back", subject.kind, subject.name)
-            took = said_duration(self.hass, now - since)
+            _LOGGER.info("CAMERA_AUTONOTIFY %s %s is back", subject.kind, subject.said())
             title, message = text(self.hass, up_title, **names), text(self.hass, up, **names, duration=took)
+            spoken = text(self.hass, up, **spoken_names, duration=took)
             priority = PRIORITY_UP
-        await async_notify_message(self.hass, title, message, priority, tag, subject.options)
+        # the title then the message, as a voice assistant says it, never an address nor a clock time
+        said = f"{text(self.hass, up_title if change is not Change.DOWN else down_title, **spoken_names)}. {spoken}"
+        await async_notify_message(self.hass, title, message, priority, tag, subject.options, {"spoken_message": said})
 
 
 @callback
