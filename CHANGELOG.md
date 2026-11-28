@@ -4,6 +4,7 @@ title: What's New
 
 # 1.2.2
 ## 🐞 Fixes
+- A plate seen only once or a few times before is no longer said to be *At an unusual time* whenever it's seen again, as its earliest and latest times were the same or close together. A usual time of day is judged once it's been seen 5 times
 - Health notifications call a Frigate server *Frigate*, where its Frigate entry is titled by its address, as the Frigate integration titles it, with the address in brackets in writing only, and a camera by its name without *(Frigate)*. Spoken by a voice assistant, they say how long, such as *over 5 minutes*, rather than a clock time, and never the address
 
 # 1.2.1

@@ -201,6 +201,8 @@ VISITOR_OCCASIONAL = "occasional"
 VISITOR_PREVIOUSLY_SEEN = "previously_seen"
 WEEK = timedelta(days=7)
 MONTH = timedelta(days=30)
+# sightings before a plate has a usual time of day, so one seen once isn't at an unusual time whenever it's seen again
+USUAL_SIGHTINGS = 5
 
 
 def visitor(sightings: list[datetime], now: datetime) -> str | None:
@@ -236,7 +238,7 @@ def analyse(sightings: list[datetime], now: datetime, min_gap: float) -> History
         hourly_counts=dict(sorted(hourly.items())),
         earliest_time=earliest.isoformat() if earliest else None,
         latest_time=latest.isoformat() if latest else None,
-        within_time_range=(earliest <= now.time() <= latest) if earliest and latest else None,
+        within_time_range=(earliest <= now.time() <= latest) if earliest and latest and len(times) >= USUAL_SIGHTINGS else None,
         is_new_visit=last is None or not (timedelta(0) <= now - last < timedelta(seconds=min_gap)),
         visitor=visitor(sightings, now),
     )

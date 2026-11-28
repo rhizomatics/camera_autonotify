@@ -119,16 +119,23 @@ def at(hour: int, minute: int = 0, day: int = 10) -> datetime:
 
 
 def test_history():
-    sightings = [at(9, 15, day=1), at(13, 5, day=2), at(13, 40, day=3)]
+    sightings = [at(9, 15, day=1), at(13, 5, day=2), at(13, 40, day=3), at(10, day=4), at(11, day=5)]
     found = analyse(sightings, at(14, day=10), min_gap=300)
-    assert found.previous_sightings == 3
-    assert found.last_seen == "2026-11-03T13:40:00"
-    assert found.hourly_counts == {9: 1, 13: 2}
+    assert found.previous_sightings == 5
+    assert found.last_seen == "2026-11-05T11:00:00"
+    assert found.hourly_counts == {9: 1, 10: 1, 11: 1, 13: 2}
     assert (found.earliest_time, found.latest_time) == ("09:15:00", "13:40:00")
     # later in the day than ever seen before
     assert found.within_time_range is False
     assert found.is_new_visit
     assert analyse(sightings, at(10, day=10), min_gap=300).within_time_range is True
+
+
+def test_no_usual_time_till_seen_often():
+    """Seen once before, or only a few times, there's no usual time for it to be outside of"""
+    assert analyse([at(9)], at(14), min_gap=300).within_time_range is None
+    assert analyse([at(9, day=d) for d in range(1, 5)], at(14), min_gap=300).within_time_range is None
+    assert analyse([at(9, day=d) for d in range(1, 6)], at(14), min_gap=300).within_time_range is False
 
 
 def test_new_visit_after_gap():
