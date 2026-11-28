@@ -5,29 +5,20 @@
 
 ## Summary
 
-A periodic check of Frigate's config and logs, and of how Camera AutoNotify is set up against them, written up by
-an AI Task entity the user chooses, and sent by e-mail through Supernotify, like the
+A periodic check of Frigate's config and logs, and of how Camera AutoNotify is set up against them, written up by an AI Task entity the user chooses, and sent by e-mail through Supernotify, like the
 [periodic GenAI report](https://camera-autonotify.rhizomatics.org.uk/genai/#periodic-reports). Off to begin with.
 The user can choose to hear nothing when there's nothing wrong.
 
 ## Motivation
 
-Spiking [RFC 0004](rfc0004_richer_frigate.md) on the live install turned up config problems that had been there,
-silently, for days or longer, none of which anything reported:
+Spiking [RFC 0004](rfc0004_richer_frigate.md) on the live install turned up config problems that had been there, silently, for days or longer, none of which anything reported:
 
-- an old `model.labelmap` override, from before a Frigate+ model, had turned the model's `package` class into
-  `car`, so packages were reported as cars
-- cameras' own `objects.track` replaced the global one, leaving out the logo attributes the model offers, and on
-  one camera `person`
-- a zone drawn in pixels for one camera's resolution made Frigate's profile manager fail to reset another camera's
-  `detect` section on every profile change, logged as an error and nothing more
-- the Frigate integration's copy of the config stayed stale until it was reloaded, so anything reading it, Camera
-  AutoNotify's settings included, saw the old config
+- an old `model.labelmap` override, from before a Frigate+ model, had turned the model's `package` class into `car`, so packages were reported as cars
+- cameras' own `objects.track` replaced the global one, leaving out the logo attributes the model offers, and on one camera `person`
+- a zone drawn in pixels for one camera's resolution made Frigate's profile manager fail to reset another camera's `detect` section on every profile change, logged as an error and nothing more
+- the Frigate integration's copy of the config stayed stale until it was reloaded, so anything reading it, Camera AutoNotify's settings included, saw the old config
 - cars stopping as they came into view of the doorbell camera were left out of reviews until they moved off, a
   tyre fitter's van for 45 minutes, as [RFC 0012](rfc0012_events_first.md) found
-
-Each was found by reading the config and the logs together and asking whether they made sense, which is what a
-model is good at, given the right material.
 
 ## Design
 
