@@ -14,7 +14,6 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from datetime import datetime, time, timedelta
-from functools import lru_cache
 from typing import Any
 
 KIND_KNOWN = "known"
@@ -57,18 +56,12 @@ def distance(first: str, second: str) -> int:
     return previous[-1]
 
 
-@lru_cache(maxsize=256)
-def _compile_pattern(text: str) -> re.Pattern[str] | None:
-    try:
-        return re.compile(text, re.IGNORECASE)
-    except re.error:
-        return None
-
-
 def _matches(text: str, plate: str, fuzzy: bool) -> bool:
     if is_pattern(text):
-        pattern = _compile_pattern(text)
-        return pattern.fullmatch(plate) is not None if pattern is not None else False
+        try:
+            return re.fullmatch(text, plate, re.IGNORECASE) is not None
+        except re.error:
+            return False
     wanted = normalised(text)
     return plate == wanted or (fuzzy and len(wanted) > MATCH_DISTANCE + 2 and distance(plate, wanted) <= MATCH_DISTANCE)
 
