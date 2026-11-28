@@ -275,7 +275,7 @@ async def test_frigate_sightings_said(hass: HomeAssistant, frozen: FrozenDateTim
     frozen.tick(timedelta(hours=1))
     other = replace(decision(), review=replace(decision().review, id="another"))
     vehicle = await found.async_vehicle(other)
-    assert found.ruled(other, vehicle)[1].message == "PX19TVD - Previous sightings: 1 - At an unusual time"
+    assert found.ruled(other, vehicle)[1].message == "PX19TVD - Previous sightings: 1"
 
 
 async def test_no_vehicle_without_a_plate(hass: HomeAssistant):
