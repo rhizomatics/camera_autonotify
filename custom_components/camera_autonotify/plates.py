@@ -14,6 +14,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from datetime import datetime, time, timedelta
+from functools import lru_cache
 from typing import Any
 
 KIND_KNOWN = "known"
@@ -56,12 +57,18 @@ def distance(first: str, second: str) -> int:
     return previous[-1]
 
 
+@lru_cache(maxsize=256)
+def _compile_pattern(text: str) -> re.Pattern[str] | None:
+    try:
+        return re.compile(text, re.IGNORECASE)
+    except re.error:
+        return None
+
+
 def _matches(text: str, plate: str, fuzzy: bool) -> bool:
     if is_pattern(text):
-        try:
-            return re.fullmatch(text, plate, re.IGNORECASE) is not None
-        except re.error:
-            return False
+        pattern = _compile_pattern(text)
+        return pattern.fullmatch(plate) is not None if pattern is not None else False
     wanted = normalised(text)
     return plate == wanted or (fuzzy and len(wanted) > MATCH_DISTANCE + 2 and distance(plate, wanted) <= MATCH_DISTANCE)
 
@@ -80,12 +87,17 @@ class PlateEntry:
             return cls(data.strip()) if data.strip() else None
         if not isinstance(data, dict) or not str(data.get("plate") or "").strip():
             return None
-        corrections = data.get("corrections") or []
-        if isinstance(corrections, str):
-            corrections = [corrections]
+        raw_corrections = data.get("corrections") or []
+        if isinstance(raw_corrections, str):
+            corrections: list[object] | tuple[object, ...] | set[object] = [raw_corrections]
+        elif isinstance(raw_corrections, (list, tuple, set)):
+            corrections = raw_corrections
+        else:
+            corrections = ()
+        description = str(data["description"]).strip() or None if data.get("description") else None
         return cls(
             str(data["plate"]).strip(),
-            str(data["description"]).strip() if data.get("description") else None,
+            description,
             tuple(str(c).strip() for c in corrections if str(c).strip()),
         )
 
@@ -109,8 +121,8 @@ class Category:
             name=name,
             kind=KIND_DANGEROUS if data.get("kind") == KIND_DANGEROUS else KIND_KNOWN,
             ignore=bool(data.get("ignore")),
-            description=data.get("description") or None,
-            icon=data.get("icon") or None,
+            description=str(data["description"]).strip() or None if data.get("description") else None,
+            icon=str(data["icon"]).strip() or None if data.get("icon") else None,
             lookup=bool(data.get("lookup")),
             plates=tuple(entry for entry in entries if entry is not None),
         )
@@ -140,6 +152,10 @@ class Match:
         return self.category.description if self.category is not None else None
 
 
+def _priority(category: Category) -> tuple[bool, bool]:
+    return (category.outcome != KIND_IGNORED, category.kind != KIND_DANGEROUS)
+
+
 @dataclass
 class PlateRegister:
     """Every category, matching each plate read to one, the most specific first: an exact plate, then an expression,
@@ -147,18 +163,32 @@ class PlateRegister:
 
     categories: list[Category] = field(default_factory=list)
 
+    def _ordered(self) -> list[Category]:
+        return sorted(self.categories, key=_priority)
+
+    def _correction(self, plate: str, ordered: list[Category] | None = None) -> tuple[str, Category] | None:
+        for category in ordered if ordered is not None else self._ordered():
+            for entry in category.plates:
+                if is_pattern(entry.plate):
+                    continue
+                if any(_matches(c, plate, fuzzy=False) for c in entry.corrections):
+                    return normalised(entry.plate), category
+        return None
+
     def correct(self, read: str) -> str:
         """A plate read, as the plate it's really a misread of, where a correction says so"""
         plate = normalised(read)
-        for category in self.categories:
-            for entry in category.plates:
-                if any(_matches(c, plate, fuzzy=False) for c in entry.corrections) and not is_pattern(entry.plate):
-                    return normalised(entry.plate)
-        return plate
+        found = self._correction(plate)
+        return found[0] if found is not None else plate
 
     def match(self, read: str) -> Match:
-        plate = self.correct(read)
-        ordered = sorted(self.categories, key=lambda c: (c.outcome != KIND_IGNORED, c.kind != KIND_DANGEROUS))
+        raw = normalised(read)
+        ordered = self._ordered()
+        exact = self._exact(raw, ordered)
+        corrected = self._correction(raw, ordered)
+        if exact is not None and (corrected is None or _priority(exact[0]) <= _priority(corrected[1])):
+            return Match(read, raw, exact[0], exact[1])
+        plate = corrected[0] if corrected is not None else raw
         for fuzzy, patterns in ((False, False), (False, True), (True, False)):
             for category in ordered:
                 for entry in category.plates:
@@ -166,6 +196,14 @@ class PlateRegister:
                         # a misread within a character is the plate it's a misread of
                         return Match(read, normalised(entry.plate) if fuzzy else plate, category, entry)
         return Match(read, plate)
+
+    @staticmethod
+    def _exact(plate: str, ordered: list[Category]) -> tuple[Category, PlateEntry] | None:
+        for category in ordered:
+            for entry in category.plates:
+                if not is_pattern(entry.plate) and _matches(entry.plate, plate, fuzzy=False):
+                    return category, entry
+        return None
 
 
 @dataclass(frozen=True)
@@ -216,7 +254,7 @@ def visitor(sightings: list[datetime], now: datetime) -> str | None:
         return VISITOR_WEEKLY
     first = min(sightings)
     months = int((now - first) / MONTH)
-    if months and all(any(now - (n + 1) * MONTH <= seen < now - n * MONTH for seen in sightings) for n in range(months)):
+    if months > 0 and all(any(now - (n + 1) * MONTH <= seen < now - n * MONTH for seen in sightings) for n in range(months)):
         return VISITOR_OCCASIONAL
     return VISITOR_PREVIOUSLY_SEEN
 
@@ -236,7 +274,7 @@ def analyse(sightings: list[datetime], now: datetime, min_gap: float) -> History
         hourly_counts=dict(sorted(hourly.items())),
         earliest_time=earliest.isoformat() if earliest else None,
         latest_time=latest.isoformat() if latest else None,
-        within_time_range=(earliest <= now.time() <= latest) if earliest and latest else None,
+        within_time_range=(earliest <= now.time() <= latest) if earliest is not None and latest is not None else None,
         is_new_visit=last is None or not (timedelta(0) <= now - last < timedelta(seconds=min_gap)),
         visitor=visitor(sightings, now),
     )

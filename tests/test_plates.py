@@ -111,7 +111,33 @@ def test_entries_from_data():
     assert PlateEntry.from_data("  ") is None
     assert PlateEntry.from_data({"description": "no plate"}) is None
     assert PlateEntry.from_data({"plate": "AB1", "corrections": "AB7"}) == PlateEntry("AB1", None, ("AB7",))
-    assert Category.from_data("X", {"plates": [None, 5]}).plates == ()
+    assert PlateEntry.from_data({"plate": "AB1", "description": "   ", "corrections": 123}) == PlateEntry("AB1")
+    assert Category.from_data("X", {"plates": [None, 5], "description": "  ", "icon": " "}) == Category("X")
+
+
+def test_corrections_respect_category_priority():
+    """Higher-priority categories' corrections win, and lower-priority corrections don't steal exact matches"""
+    plates = PlateRegister([
+        Category.from_data(
+            "Known",
+            {
+                "plates": [
+                    {"plate": "TJ912UKL", "corrections": ["SHARED1", "B4DM.*"]},
+                    {"plate": "AB12CDE"},
+                    {"plate": "AB12CDF", "corrections": ["AB12CD."]},
+                ]
+            },
+        ),
+        Category.from_data("Watch", {"kind": "dangerous", "plates": [{"plate": "B4DM3N", "corrections": ["SHARED1"]}]}),
+        Category.from_data("Ignored", {"ignore": True, "plates": [{"plate": "I3Z", "corrections": ["SHARED2"]}]}),
+        Category.from_data("Other", {"plates": [{"plate": "OT11HER", "corrections": ["SHARED2"]}]}),
+    ])
+    # dangerous and ignored corrections win over known corrections
+    assert (plates.correct("SHARED1"), plates.match("SHARED1").kind) == ("B4DM3N", "dangerous")
+    assert (plates.correct("SHARED2"), plates.match("SHARED2").kind) == ("I3Z", "ignored")
+    # known regex correction does not shadow an exact dangerous plate or exact known plate
+    assert (plates.match("B4DM3N").plate, plates.match("B4DM3N").kind) == ("B4DM3N", "dangerous")
+    assert plates.match("AB12CDE").plate == "AB12CDE"
 
 
 def at(hour: int, minute: int = 0, day: int = 10) -> datetime:
@@ -172,6 +198,8 @@ def days_ago(*days: float) -> list[datetime]:
         (days_ago(10, 75), "previously_seen"),
         # too new to say more
         (days_ago(10), "previously_seen"),
+        # future sightings do not vacuously satisfy monthly regularity
+        ([NOW + timedelta(days=40)], "previously_seen"),
         ([], None),
     ],
 )
